@@ -5,10 +5,10 @@ namespace Loab.Sim
 {
     public static class Economy
     {
-        public static readonly string[] EventNames = { "Pub Quiz", "Comedy Night", "Open Mic Night" };
+        public static string[] EventNames => EventKinds.Names;
         public static string EventName(int kind) => EventNames[Math.Max(0, Math.Min(EventNames.Length - 1, kind))];
         /// <summary>How much a segment wants to come to / join in with this kind of event.</summary>
-        public static float EventAffinity(SegmentDef d, int kind) => kind == 0 ? d.Quiz : kind == 1 ? d.Comedy : d.Stage * 0.9f;
+        public static float EventAffinity(SegmentDef d, int kind) => EventKinds.Affinity(d, kind);
 
         public const float RentPerWeek = 1500f;
         public const float UtilitiesPerNight = 60f;
@@ -125,7 +125,8 @@ namespace Loab.Sim
                 if (ev != null)
                 {
                     float aff2 = EventAffinity(d, ev.kind);
-                    float draw = (ev.kind == 0 ? 10f : ev.kind == 2 ? 7f : 6f) + ev.act.following * 0.25f + ev.promo * 0.06f;
+                    float draw = EventKinds.BaseDraw(ev.kind) * (ev.kind == EventKinds.Match && Calendar.Today(s)?.NeedsScreens == true ? 2.2f : 1f)
+                                 + ev.act.following * 0.25f + ev.promo * 0.06f;
                     float ticketDrag = ev.ticket > 0 ? (float)Math.Exp(-ev.ticket * 0.05f * d.PriceSensitivity) : 1f;
                     eventExtra += draw * aff2 * d.Share * (0.4f + v.SegMatch[i]) * rep * ticketDrag * 1.6f;
                 }
@@ -319,6 +320,30 @@ namespace Loab.Sim
 
         // ---- Acts ----------------------------------------------------------------------------------------
 
+        static readonly string[] BandFirst = { "The", "The", "Velvet", "Electric", "Paper", "Midnight", "Copper", "Brass" };
+        static readonly string[] BandSecond = { "Lanterns", "Foxes", "Harbour Lights", "Satellites", "Owls", "Rivals", "Tide", "Accordions", "Static" };
+        static readonly string[] BandGenres = { "indie", "folk", "blues", "jazz trio", "covers band", "soul", "ska", "rock" };
+
+        /// Acts for Live Music, Karaoke and Big Match Screening (task K6).
+        public static void AddNewEventActs(GameState s, Rng r)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                int q = r.Range(35, 85);
+                int follow = Math.Max(0, q - 35 + r.Range(-10, 20));
+                s.agency.Add(new Act
+                {
+                    uid = s.nextUid++, kind = EventKinds.LiveMusic, name = r.Pick(BandFirst) + " " + r.Pick(BandSecond), style = r.Pick(BandGenres),
+                    fee = (int)(80 + q * q * 0.035f + follow * 2f) / 10 * 10, quality = q, reliability = r.Range(60, 98), following = follow,
+                    volatility = r.Range(0.15f, 0.4f),
+                });
+            }
+            s.agency.Add(new Act { uid = s.nextUid++, kind = EventKinds.Karaoke, name = "Karaoke machine (you host)", style = "DIY", fee = 25, quality = 45, reliability = 100, following = 0, volatility = 0.45f });
+            s.agency.Add(new Act { uid = s.nextUid++, kind = EventKinds.Karaoke, name = "Diva Dave's Karaoke", style = "big personality", fee = 120, quality = 70, reliability = 92, following = 20, volatility = 0.25f });
+            s.agency.Add(new Act { uid = s.nextUid++, kind = EventKinds.Match, name = "Basic sports channel", style = "the main games", fee = 60, quality = 50, reliability = 100, following = 10, volatility = 0.3f });
+            s.agency.Add(new Act { uid = s.nextUid++, kind = EventKinds.Match, name = "Premium sports package", style = "every game, every angle", fee = 160, quality = 68, reliability = 100, following = 30, volatility = 0.25f });
+        }
+
         public static void AddOpenMicActs(GameState s, Rng r)
         {
             s.agency.Add(new Act { uid = s.nextUid++, kind = 2, name = "Open Mic (you host)", style = "anything goes", fee = 30, quality = r.Range(30, 70), reliability = 100, following = 5, volatility = 0.6f });
@@ -332,6 +357,7 @@ namespace Loab.Sim
             s.agency.Add(new Act { uid = s.nextUid++, kind = 0, name = "Quizmaster Quentin", style = "classic", fee = 90, quality = 70, reliability = 95, following = 15, volatility = 0.15f });
             s.agency.Add(new Act { uid = s.nextUid++, kind = 0, name = "The QuizBot 3000", style = "machine", fee = 45, quality = 56, reliability = 80, following = 5, volatility = 0.45f });
             AddOpenMicActs(s, r);
+            AddNewEventActs(s, new Rng(s.seed + (ulong)s.day * 7UL + 555UL)); // own stream, so older draws are unchanged
             int n = 5;
             for (int i = 0; i < n; i++)
             {
@@ -395,7 +421,7 @@ namespace Loab.Sim
             var goods = new List<Note>(); var bads = new List<Note>();
             foreach (var kv in Good) if (c.Has(kv.Key)) goods.Add(kv.Key);
             foreach (var kv in Bad) if (c.Has(kv.Key)) bads.Add(kv.Key);
-            string evName = svc.Event == null ? "event" : svc.Event.kind == 0 ? "quiz" : svc.Event.kind == 1 ? "comedy" : "open mic";
+            string evName = svc.Event == null ? "event" : EventKinds.Short[svc.Event.kind];
             string drink = c.drink?.Name ?? (c.regular != null ? Content.Drink(c.regular.favDrink)?.Name : null) ?? "pint";
             string Fill(string t) => t.Replace("{drink}", drink).Replace("{event}", evName);
 

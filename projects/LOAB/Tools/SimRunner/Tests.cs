@@ -35,6 +35,7 @@ public static class Tests
         Test("rota: staff off tonight aren't there or paid; long streaks wear them down", Rota);
         Test("themes: a Craft Beer Hall and a Wine & Cocktail Lounge can be recognised", NewThemes);
         Test("cocktail lab: signatures go on the menu, sell, and are capped at three", CocktailLab);
+        Test("events: live music, karaoke and the big match run end to end", NewEvents);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -352,6 +353,35 @@ public static class Tests
         // Uninvented recipes never appear on a fresh menu.
         var h = Game.NewCareer(72, 1);
         Assert(!h.S.menu.Exists(m => m.onMenu && Content.Drink(m.id).Signature), "a signature is on a new career's menu");
+    }
+
+    static void NewEvents()
+    {
+        foreach (int kind in new[] { EventKinds.LiveMusic, EventKinds.Karaoke, EventKinds.Match })
+        {
+            var g = Game.NewSandbox(31);
+            g.S.unlockedItems.AddRange(new[] { "stage", "tv", "speakers" });
+            Program.TryPlace(g, "stage"); Program.TryPlace(g, "tv"); Program.TryPlace(g, "speakers");
+            g.Recompute();
+            var act = g.S.agency.Find(a => a.kind == kind);
+            Assert(act != null, $"no acts for {EventKinds.Names[kind]}");
+            Assert(g.BookEvent(act.uid, 0, 150, EventKinds.DefaultTicket(kind)) == null, $"couldn't book {EventKinds.Names[kind]}");
+            g.OpenDoors(); int t = 0;
+            while (g.Phase == Phase.Service && t++ < 20000) { g.Svc.Step(); g.EndServiceIfDone(); }
+            var n = g.LastNight;
+            Assert(n.eventName != null && n.eventName.StartsWith(EventKinds.Names[kind]), $"event name '{n.eventName}'");
+            Assert(n.eventOutcome != null && n.eventOutcome != "Didn't happen", $"{EventKinds.Names[kind]} outcome '{n.eventOutcome}'");
+            Assert(g.S.GetFlag(EventKinds.FlagKey[kind] + "_hosted") == 1, "hosted flag not set");
+        }
+        // Without a screen, karaoke can't be booked.
+        var h = Game.NewCareer(32, 1);
+        h.S.items.RemoveAll(i => Content.Item(i.id).Fn == ItemFn.Screen); h.Recompute();
+        var k = h.S.agency.Find(a => a.kind == EventKinds.Karaoke);
+        Assert(h.BookEvent(k.uid, 1, 0, 0) != null, "booked karaoke with no screen");
+        // Old saves without the new acts get them on load.
+        h.S.agency.RemoveAll(a => a.kind >= EventKinds.LiveMusic);
+        var reloaded = new Game(JsonSerializer.Deserialize<GameState>(JsonSerializer.Serialize(h.S, Json), Json));
+        Assert(reloaded.S.agency.Exists(a => a.kind == EventKinds.Match), "old save didn't get the new acts");
     }
 
     static void CashCrisisArc()

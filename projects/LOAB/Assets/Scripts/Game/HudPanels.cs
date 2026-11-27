@@ -373,7 +373,7 @@ namespace Loab.Game
 
         void BuildEvents(VisualElement p)
         {
-            Title(p, "Events", "Book a Pub Quiz, Comedy Night or Open Mic. Promotion brings a bigger crowd. Acts are hit and miss: high quality is safer, volatile acts are a gamble.");
+            Title(p, "Events", "Book a quiz, comedy, open mic, live music, karaoke or the big match. Promotion brings a bigger crowd. Acts are hit and miss: high quality is safer, volatile acts are a gamble.");
             if (G.S.residencyDay >= 0)
             {
                 var rc = El("card");
@@ -404,13 +404,17 @@ namespace Loab.Game
                 }
             }
             p.Add(Lbl("BOOK A NIGHT", "section"));
-            var kinds = Row(
-                Toggle("Pub Quiz", _eventKind == 0, () => { _eventKind = 0; _eventTicket = 0; MarkDirty(); }),
-                Toggle("Comedy Night", _eventKind == 1, () => { _eventKind = 1; _eventTicket = 5; MarkDirty(); }),
-                Toggle("Open Mic", _eventKind == 2, () => { _eventKind = 2; _eventTicket = 0; MarkDirty(); }));
+            var kinds = Row();
+            kinds.AddToClassList("wrap");
+            for (int k = 0; k < EventKinds.Count; k++)
+            {
+                int kk = k;
+                kinds.Add(Toggle(EventKinds.Names[k], _eventKind == k, () => { _eventKind = kk; _eventTicket = EventKinds.DefaultTicket(kk); MarkDirty(); }));
+            }
             p.Add(kinds);
-            if (_eventKind >= 1 && !G.V.HasStage) p.Add(Lbl($"{Economy.EventName(_eventKind)} needs a Small Stage (Build > Stage & Music).", "chip-bad"));
-            if (_eventKind == 2) p.Add(Lbl("Open mic is cheap and wildly unpredictable. Creatives and students love it.", "hint"));
+            var blocker = EventKinds.Requirement(_eventKind, G.V);
+            if (blocker != null) p.Add(Lbl($"{Economy.EventName(_eventKind)} {blocker}.", "chip-bad"));
+            p.Add(Lbl(EventKinds.Hint[_eventKind], "hint"));
 
             var days = Row(); days.AddToClassList("wrap");
             days.Add(Lbl("Night:", "card-sub"));
@@ -432,14 +436,15 @@ namespace Loab.Game
                 promo.Add(Toggle(a == 0 ? "None" : $"£{a}", _eventPromo == a, () => { _eventPromo = a; MarkDirty(); }));
             }
             p.Add(promo);
-            var tix = Row(Lbl(_eventKind == 0 ? "Entry:" : "Tickets:", "card-sub"));
-            foreach (var t in _eventKind == 1 ? new[] { 0, 5, 10, 15 } : new[] { 0, 1, 2 })
+            var tix = Row(Lbl(EventKinds.DoorTicket(_eventKind) ? "Tickets:" : "Entry:", "card-sub"));
+            foreach (var t in EventKinds.TicketOptions(_eventKind))
             {
                 int tt = t;
                 tix.Add(Toggle(t == 0 ? "Free" : $"£{t}", _eventTicket == t, () => { _eventTicket = tt; MarkDirty(); }));
             }
             p.Add(tix);
-            p.Add(Lbl(_eventKind == 0 ? "QUIZMASTERS" : _eventKind == 1 ? "COMEDY AGENCY (new acts each Monday)" : "OPEN MIC HOSTS", "section"));
+            string[] agencyTitles = { "QUIZMASTERS", "COMEDY AGENCY (new acts each Monday)", "OPEN MIC HOSTS", "BANDS (new line-up each Monday)", "KARAOKE HOSTS", "SPORTS SUBSCRIPTIONS" };
+            p.Add(Lbl(agencyTitles[_eventKind], "section"));
             foreach (var act in G.S.agency.Where(a => a.kind == _eventKind))
             {
                 var a = act;

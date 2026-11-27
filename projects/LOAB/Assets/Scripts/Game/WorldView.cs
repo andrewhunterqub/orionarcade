@@ -697,7 +697,7 @@ namespace Loab.Game
 
         void SyncPerformer(Service svc)
         {
-            _eventLive = svc.Event != null && (svc.EventPhase == 1 || svc.EventPhase == 3);
+            _eventLive = svc.Event != null && svc.Event.kind != EventKinds.Match && (svc.EventPhase == 1 || svc.EventPhase == 3); // the match is on the screens
             if (_performer == null)
             {
                 _performer = CharView.Create(_agentRoot);

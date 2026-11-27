@@ -116,6 +116,7 @@ namespace Loab.Sim
             if (string.IsNullOrEmpty(s.scenario)) s.scenario = null;
             s.agency ??= new List<Act>();
             if (!s.agency.Exists(a => a.kind == 2)) Economy.AddOpenMicActs(s, new Rng(s.seed + 99)); // saves from before Open Mic
+            if (!s.agency.Exists(a => a.kind == EventKinds.LiveMusic)) Economy.AddNewEventActs(s, new Rng(s.seed + 98)); // saves from before K6
             s.menu ??= new List<MenuEntry>(); s.staff ??= new List<StaffMember>(); s.events ??= new List<BookedEvent>();
             L = new Layout(s);
             // LastNight isn't saved separately: restore it from history so a loaded game behaves like one that never left.
@@ -460,7 +461,7 @@ namespace Loab.Sim
                 if (S.events.Exists(e => e.day == day)) return;
                 var a = S.residencyAct;
                 Spend(a.fee, "Residency");
-                S.events.Add(new BookedEvent { uid = S.nextUid++, day = day, kind = a.kind, act = a, promo = 0, ticket = a.kind == 1 ? 5 : 0 });
+                S.events.Add(new BookedEvent { uid = S.nextUid++, day = day, kind = a.kind, act = a, promo = 0, ticket = EventKinds.DefaultTicket(a.kind) });
                 return;
             }
         }
@@ -567,12 +568,13 @@ namespace Loab.Sim
             if (act == null) return Fail("Act not available");
             int day = S.day + dayOffset;
             if (S.events.Exists(e => e.day == day)) return Fail("You've already got an event that night");
-            if (act.kind >= 1 && !V.HasStage) return Fail($"{Economy.EventName(act.kind)} needs a Small Stage. Build one first");
+            var blocker = EventKinds.Requirement(act.kind, V);
+            if (blocker != null) return Fail($"{Economy.EventName(act.kind)} {blocker}");
             float cost = act.fee + promo;
             if (S.cash < cost && S.difficulty > 0) return Fail("Not enough cash");
             Spend(cost, "Event booking");
             S.events.Add(new BookedEvent { uid = S.nextUid++, day = day, kind = act.kind, act = act, promo = promo, ticket = ticket });
-            if (act.kind == 1) S.agency.Remove(act); // comedians are booked out
+            if (act.kind == EventKinds.Comedy || act.kind == EventKinds.LiveMusic) S.agency.Remove(act); // comedians and bands are booked out
             Changed?.Invoke();
             return null;
         }
@@ -730,11 +732,10 @@ namespace Loab.Sim
                 {
                     rec.eventName = Economy.EventName(svc.Event.kind) + " with " + svc.Event.act.name;
                     rec.eventOutcome = svc.EventOutcome ?? "Didn't happen";
-                    if (svc.Event.kind == 0) S.SetFlag("quiz_hosted", S.GetFlag("quiz_hosted") + 1);
-                    else if (svc.Event.kind == 1) S.SetFlag("comedy_hosted", S.GetFlag("comedy_hosted") + 1);
-                    else S.SetFlag("openmic_hosted", S.GetFlag("openmic_hosted") + 1);
-                    if (svc.EventOutcome == "Viral hit") { S.reputation += 6; for (int i = 0; i < S.awareness.Length; i++) S.awareness[i] += 0.04f; AddTag(svc.Event.kind == 0 ? "Best Quiz in Town" : svc.Event.kind == 1 ? "Best Comedy Night" : "Legendary Open Mic"); }
-                    else if (svc.EventOutcome == "Hit") { S.reputation += 2.5f; string hk = svc.Event.kind == 0 ? "quiz_hits" : svc.Event.kind == 1 ? "comedy_hits" : "openmic_hits"; S.SetFlag(hk, S.GetFlag(hk) + 1); }
+                    string hostedKey = EventKinds.FlagKey[svc.Event.kind] + "_hosted";
+                    S.SetFlag(hostedKey, S.GetFlag(hostedKey) + 1);
+                    if (svc.EventOutcome == "Viral hit") { S.reputation += 6; for (int i = 0; i < S.awareness.Length; i++) S.awareness[i] += 0.04f; AddTag(EventKinds.ViralTag[svc.Event.kind]); }
+                    else if (svc.EventOutcome == "Hit") { S.reputation += 2.5f; string hk = EventKinds.FlagKey[svc.Event.kind] + "_hits"; S.SetFlag(hk, S.GetFlag(hk) + 1); }
                     else if (svc.EventOutcome == "Flop") S.reputation -= 2;
                     bool hit = svc.EventOutcome == "Hit" || svc.EventOutcome == "Viral hit";
                     bool isResidency = S.residencyDay >= 0 && svc.Event.act.name == S.residencyAct.name;
@@ -743,7 +744,7 @@ namespace Loab.Sim
                         S.residencyAct.following = Math.Min(100, S.residencyAct.following + 6);
                         rec.moments.Add($"Residency night with {S.residencyAct.name} is building a real following.");
                     }
-                    else if (hit && svc.Event.kind >= 1 && S.residencyDay < 0 && S.pendingCard == null)
+                    else if (hit && svc.Event.kind >= 1 && svc.Event.kind != EventKinds.Match && S.residencyDay < 0 && S.pendingCard == null)
                     {
                         var a = svc.Event.act;
                         S.residencyOffer = new Act { kind = a.kind, name = a.name, style = a.style, fee = a.fee, quality = a.quality, reliability = a.reliability, following = a.following, volatility = a.volatility };

@@ -121,9 +121,10 @@ namespace Loab.Sim
             }
 
             Event = s.events.Find(e => e.day == s.day);
-            if (Event != null && Event.kind >= 1 && !V.HasStage)
+            var eventBlocker = Event != null ? EventKinds.Requirement(Event.kind, V) : null;
+            if (eventBlocker != null)
             {
-                Say($"No stage, no show: the {Economy.EventName(Event.kind)} was called off.", 2);
+                Say($"The {Economy.EventName(Event.kind)} was called off: it {eventBlocker}.", 2);
                 Event = null;
             }
 
@@ -132,7 +133,7 @@ namespace Loab.Sim
             var seasonNote = Economy.SeasonNote(s);
             if (seasonNote != null) Say(seasonNote, 1);
             if (Event != null)
-                Say(Event.kind == 0 ? $"Tonight: Pub Quiz with {Event.act.name}, from 8pm." : Event.kind == 1 ? $"Tonight: Comedy Night headlined by {Event.act.name}, from 8pm." : $"Tonight: Open Mic Night ({Event.act.name}), from 8pm. Anything could happen.", 3);
+                Say(EventKinds.Tonight(Event.kind, Event.act.name), 3);
             if (BarPoints.Count == 0) Say("There's no bar counter! Nobody can be served.", 2);
             if (s.staff.Find(m => m.role == Roles.Bartender) == null) Say("No bartenders on the rota. You'll have to serve everyone yourself.", 2);
             if (s.staff.Find(m => m.role == Roles.Bartender) == null) SetOwnerBehindBar(true);
@@ -332,7 +333,7 @@ namespace Loab.Sim
             if (c.name == null) c.name = Content.RandomName(R);
 
             // Comedy tickets
-            if (Event != null && Event.kind == 1 && Event.ticket > 0 && T < EventEndTime)
+            if (Event != null && EventKinds.DoorTicket(Event.kind) && Event.ticket > 0 && T < EventEndTime)
             {
                 if (forEvent || T >= 100)
                 {
@@ -346,7 +347,7 @@ namespace Loab.Sim
             if (forEvent && Event != null && EventPhase >= 1 && EventPhase <= 3)
             {
                 c.watching = true;
-                if (Event.kind != 1 && Event.ticket > 0) TicketIncome += Event.ticket;
+                if (!EventKinds.DoorTicket(Event.kind) && Event.ticket > 0) TicketIncome += Event.ticket;
             }
             Customers.Add(c);
             Arrivals++;
@@ -832,7 +833,8 @@ namespace Loab.Sim
             {
                 float p = 0.00022f * (c.alcoholic - 2) * d.RowdyBase * (V.Axes[Axis.Energy] / 55f)
                           * (S.responsibleService ? 0.5f : 1f) * (S.difficulty == 0 ? 0.5f : S.difficulty == 2 ? 1.5f : 1f)
-                          * (DoorStaffOn ? 0.55f : 1f); // a visible bouncer keeps people in line
+                          * (DoorStaffOn ? 0.55f : 1f) // a visible bouncer keeps people in line
+                          * (Event != null && Event.kind == EventKinds.Karaoke && EventPhase >= 1 && EventPhase <= 3 ? 1.4f : 1f); // karaoke gets lively
                 if (R.Chance(p)) MakeRowdy(c);
             }
             if (c.rowdy)
@@ -870,7 +872,7 @@ namespace Loab.Sim
             if (c.state == CState.Standing) return "Wish I could find a seat.";
             if (c.Has(Note.HatedMusic)) return "Who chose this music?";
             if (c.Has(Note.LovedDrink)) return $"This {c.drink?.Name ?? "drink"} is incredible.";
-            if (c.watching && EventPerf > 65) return Event.kind == 0 ? "We're definitely winning this round." : Event.kind == 1 ? "I can't breathe, this is so funny." : "That last act gave me chills.";
+            if (c.watching && EventPerf > 65) return EventKinds.GoodThought(Event.kind);
             if (c.Has(Note.LovedVibe)) return "Love the feel of this place.";
             var complaint = VibeCalc.Complaint(V.Axes, c.def);
             if (complaint != null) return complaint + ".";
@@ -1246,6 +1248,13 @@ namespace Loab.Sim
                     if (V.HasSpeakers) perf += 6;
                     if (Staff.Exists(s => s.present && s.m != null && s.m.HasTrait("secret_comic"))) perf += 8;
                     if (late) perf -= 8;
+                    if (Event.kind == EventKinds.Karaoke) perf += (V.Axes[Axis.Energy] - 50f) / 5f;           // a lively room sings along
+                    if (Event.kind == EventKinds.Match)
+                    {
+                        perf = act.quality * 0.6f + 18f + Math.Min(V.Screens, 3) * 5f + R.Gaussian() * 14f;      // the game itself decides a lot
+                        if (Calendar.Today(S)?.NeedsScreens == true) perf += 18f;                               // Big Tournament night
+                    }
+                    if (Event.kind == EventKinds.LiveMusic && S.volume < 40) perf -= 6;                         // bands want it loud
                     EventPerf = Math.Max(5, Math.Min(100, perf));
                     if (late) Say($"{act.name} is running late. The crowd is getting restless...", 2);
                 }
@@ -1257,9 +1266,9 @@ namespace Loab.Sim
                     {
                         if (!c.Inside || c.state == CState.Leaving) continue;
                         float aff = Economy.EventAffinity(c.def, Event.kind);
-                        if (R.Chance(aff)) { c.watching = true; joined++; if (Event.kind != 1 && Event.ticket > 0) TicketIncome += Event.ticket; }
+                        if (R.Chance(aff)) { c.watching = true; joined++; if (!EventKinds.DoorTicket(Event.kind) && Event.ticket > 0) TicketIncome += Event.ticket; }
                     }
-                    Say(Event.kind == 0 ? $"Pens at the ready! The quiz begins with {joined} players." : Event.kind == 1 ? $"Lights down. Comedy Night begins for a crowd of {joined}." : $"The open mic sign-up sheet is full. {joined} people are watching.", 3);
+                    Say(EventKinds.StartLine(Event.kind, Event.act.name, joined), 3);
                 }
                 return;
             }
@@ -1273,6 +1282,23 @@ namespace Loab.Sim
                     if (round < 6)
                         Say($"Quiz round {round} done. {Content.QuizTeams[(S.day + round * 3) % Content.QuizTeams.Length]} {(EventPerf > 60 ? "are loving it." : EventPerf > 40 ? "lead narrowly." : "are arguing with the quizmaster.")}", 3);
                     foreach (var c in Customers) if (c.watching) c.thirst = Math.Max(c.thirst, 0.6f);
+                }
+                if (into >= 120) EndEvent();
+            }
+            else if (Event.kind >= EventKinds.LiveMusic)
+            {
+                // Live music, karaoke and the match: a beat every 20 minutes (task K6).
+                int beat = (int)(into / 20f);
+                if (beat > _quizRound && beat <= 6)
+                {
+                    _quizRound = beat;
+                    if (beat < 6)
+                    {
+                        float roll = EventPerf + R.Gaussian() * 18f;
+                        Say(EventBeat(Event.kind, beat, roll), roll > 70 ? 1 : roll < 35 ? 2 : 3);
+                        if (Event.kind == EventKinds.Match && roll > 85) Moments.Add("A last-minute winner on the big screen. The whole bar went up.");
+                    }
+                    foreach (var c in Customers) if (c.watching) c.thirst = Math.Max(c.thirst, 0.65f);
                 }
                 if (into >= 120) EndEvent();
             }
@@ -1323,6 +1349,26 @@ namespace Loab.Sim
             }
         }
 
+        string EventBeat(int kind, int beat, float roll)
+        {
+            switch (kind)
+            {
+                case EventKinds.LiveMusic:
+                    return roll > 70 ? $"{Event.act.name} launch into a song everyone knows. The floor's bouncing."
+                         : roll > 40 ? $"{Event.act.name} play a new one. Polite nodding."
+                         : "Feedback squeals through the speakers. Everyone winces.";
+                case EventKinds.Karaoke:
+                    return roll > 70 ? "Someone absolutely nails a power ballad. Lighters (phones) in the air."
+                         : roll > 40 ? "A table of friends murder a boy-band classic. Big cheers anyway."
+                         : "Nobody wants the mic. The host sings again.";
+                default:
+                    return beat == 3 ? "Half-time. Rush at the bar!"
+                         : roll > 70 ? "GOAL! The place erupts."
+                         : roll > 40 ? "A tense spell. Nails being bitten."
+                         : "A dull stretch. People drift to the bar.";
+            }
+        }
+
         void EndEvent()
         {
             EventPhase = 4;
@@ -1332,13 +1378,13 @@ namespace Loab.Sim
                 if (EventPerf >= 60) c.Mark(Note.LovedEvent);
                 else if (EventPerf < 38) c.Mark(Note.EventBombed);
             }
-            string what = Event.kind == 0 ? "quiz" : Event.kind == 1 ? "comedy night" : "open mic";
+            string what = EventKinds.Short[Event.kind];
             // Going viral needs a great show AND people there to film and share it: promotion and a full room help (task T7).
             float viralChance = 0.16f + Math.Min(0.35f, Event.promo / 600f) + Math.Min(0.25f, Inside / (float)Capacity * 0.4f);
             if (EventPerf >= 90 && R.Next() < viralChance) { EventOutcome = "Viral hit"; Say($"Incredible {what}! Clips are flying round social media.", 1); }
             else if (EventPerf >= 66) { EventOutcome = "Hit"; Say($"The {what} went down a storm.", 1); }
             else if (EventPerf >= 48) { EventOutcome = "Decent"; Say($"A decent {what}. Nobody's complaining.", 0); }
-            else { EventOutcome = "Flop"; Say(Event.kind == 0 ? "The quiz was a shambles. Two teams walked out." : Event.kind == 1 ? $"{Event.act.name} died on stage. Tumbleweed." : "The open mic was... brave. Very brave.", 2); }
+            else { EventOutcome = "Flop"; Say(EventKinds.FlopLine(Event.kind, Event.act.name), 2); }
             Moments.Add($"{Economy.EventName(Event.kind)} with {Event.act.name}: {EventOutcome.ToLowerInvariant()}.");
         }
 
