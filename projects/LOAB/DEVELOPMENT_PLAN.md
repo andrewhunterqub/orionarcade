@@ -98,7 +98,7 @@ Sizes: S (under 1 session), M (1–2 sessions), L (3 or more sessions).
   - Balance bands (T1), which start as warnings and become failures once B1–B4 are fixed.
 - [x] **E3 · CI workflow `loab-ci.yml` (S).** On every push or pull request touching `projects/LOAB/**`: set up .NET 8, run SimRunner `test`, and build UnityCheck.
   *Done when:* it's green on `main`.
-- [ ] **E4 · Automatic WebGL builds in CI (M, needs the owner).** Add a GameCI (`game-ci/unity-builder`) workflow. It runs when the owner adds the `UNITY_LICENSE` (or `UNITY_EMAIL` and `UNITY_PASSWORD`) secrets; without them it skips with a clear message. It builds WebGL with the same settings as `LoabBuild.cs`, then commits the output to `site/games/loab/Build`. The commit uses `[skip loab-build]` so it doesn't trigger itself. Then it runs `npm run add-game -- loab`.
+- [x] **E4 · Automatic WebGL builds in CI (M, needs the owner).** Add a GameCI (`game-ci/unity-builder`) workflow. It runs when the owner adds the `UNITY_LICENSE` (or `UNITY_EMAIL` and `UNITY_PASSWORD`) secrets; without them it skips with a clear message. It builds WebGL with the same settings as `LoabBuild.cs`, then commits the output to `site/games/loab/Build`. The commit uses `[skip loab-build]` so it doesn't trigger itself. Then it runs `npm run add-game -- loab`.
   *Done when:* the YAML lints and skips cleanly without secrets. A real build can only be confirmed after the owner adds the secrets.
 - [ ] **E5 · Save versioning (S).** Bump `GameState.version` whenever the state shape changes. Add a `Migrate(GameState)` step that fills defaults for new fields, and test that a version-1 save loads.
 - [ ] **E6 · Use the arcade's cloud save (S).** Call `PlayerPrefs.Save()` after every autosave in `GameRunner`, so the arcade picks up changes straight away. Optionally show "Saved to your account" in the pause menu using `OrionCloudSave.IsSignedIn`. Copy `unity/OrionArcade` into `Assets/Plugins/OrionArcade` only if it's actually used.
@@ -260,7 +260,7 @@ There are about 64 hourly sessions. Times are UK time. If something runs over, c
 
 ## 8. Needs the owner
 
-- **To see the changes in the live game:** run `projects/LOAB/build.sh` with Unity 6000.2.9f1 and push. Or add Unity licence secrets for E4, following the instructions in `.github/workflows/loab-build.yml` once it exists.
+- **To see the changes in the live game:** nothing to do. `.github/workflows/loab-build.yml` rebuilds WebGL in CI whenever `projects/LOAB/Assets`, `Packages` or `ProjectSettings` change on `main`, commits the build and redeploys the arcade. The owner added the Unity licence secrets on 27 Nov. `projects/LOAB/build.sh` still works for local builds.
 - **Visual QA on Monday:** any task marked "needs visual QA" in the log.
 - **Design decisions made autonomously** (to be confirmed by the owner) are recorded in the log with the reasoning, for example how Open Question 4 was resolved as tap commands.
 
@@ -282,3 +282,4 @@ _To be written by the final session._
 | Fri 27 Nov 16:45 | Bug fix | **The round-trip test found a real bug:** `Game.LastNight` wasn't restored on load, so a reloaded game made different decisions and the report and tips lost the previous night. It's now restored from `history` in the `Game` constructor. | Round trip now identical over 7 nights | Yes (fix is in the sim; the live game needs a rebuild) |
 | Fri 27 Nov 16:45 | E3 | `.github/workflows/loab-ci.yml` runs the sim tests and UnityCheck on pushes and pull requests touching `projects/LOAB` | Runs locally; check CI on `main` next session | No |
 | Fri 27 Nov 16:45 | Note | Several plan items already exist in part: owner behind the bar, happy hour now, emergency delivery, `ParLevel`, `Train` and `DeepClean`. L1, L2, T4 and S4 should **extend** these, not rebuild them. | n/a | n/a |
+| Fri 27 Nov 17:05 | E4 | Added `.github/workflows/loab-build.yml`. It uses GameCI `unity-builder@v4` with the `unityci/editor:6000.2.9f1-webgl` image and runs `LoabBuild.BuildWebGL`. It checks for the four build files, commits them to `main` as `github-actions[bot]`, then dispatches `deploy.yml`, because pushes made with GITHUB_TOKEN don't trigger workflows. It only runs when Unity project files change; a newer push cancels an older build. | First CI run follows this push | Builds automatically from now on |

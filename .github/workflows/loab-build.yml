@@ -1,0 +1,116 @@
+name: LOAB WebGL build
+
+# Builds Let's Own A Bar! for WebGL with Unity in CI (GameCI) and commits the build to site/games/loab,
+# then starts the Pages deploy so the arcade serves it. See projects/LOAB/DEVELOPMENT_PLAN.md task E4.
+#
+# Needs these repository secrets (Settings > Secrets and variables > Actions):
+#   UNITY_LICENSE   contents of Unity_lic.ulf (Unity Hub > Preferences > Licenses > Add > Get a free personal license)
+#   UNITY_EMAIL     Unity account email
+#   UNITY_PASSWORD  Unity account password
+on:
+  push:
+    branches: [main]
+    paths:
+      - "projects/LOAB/Assets/**"
+      - "projects/LOAB/Packages/**"
+      - "projects/LOAB/ProjectSettings/**"
+      - ".github/workflows/loab-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write # commit the build
+  actions: write # start the Pages deploy (pushes made with GITHUB_TOKEN don't trigger workflows)
+
+concurrency:
+  group: loab-build
+  cancel-in-progress: true # a newer push supersedes an older build
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check secrets
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          missing=""
+          [ -n "$UNITY_LICENSE" ] || missing="$missing UNITY_LICENSE"
+          [ -n "$UNITY_EMAIL" ] || missing="$missing UNITY_EMAIL"
+          [ -n "$UNITY_PASSWORD" ] || missing="$missing UNITY_PASSWORD"
+          if [ -n "$missing" ]; then echo "::error::Missing repository secrets:$missing"; exit 1; fi
+
+      # The Unity editor image is large; make room on the runner.
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          docker-images: false
+          swap-storage: false
+
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: projects/LOAB/Library
+          key: loab-library-webgl-${{ hashFiles('projects/LOAB/Packages/**', 'projects/LOAB/ProjectSettings/**') }}
+          restore-keys: loab-library-webgl-
+
+      - name: Build WebGL
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: projects/LOAB
+          targetPlatform: WebGL
+          unityVersion: 6000.2.9f1
+          # LoabBuild writes straight to site/games/loab (../../site/games/loab from the project).
+          buildMethod: LoabBuild.BuildWebGL
+          allowDirtyBuild: true
+
+      - name: Check build output
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" site/games/loab projects/LOAB || true
+          ls -la site/games/loab/Build
+          for f in loab.loader.js loab.framework.js.unityweb loab.data.unityweb loab.wasm.unityweb; do
+            [ -s "site/games/loab/Build/$f" ] || { echo "::error::Build is missing $f"; exit 1; }
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Update manifest and validate
+        run: |
+          npm run -s add-game -- loab
+          npm run -s check
+
+      - name: Commit the build to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/games/loab site/games/games.json
+          if git diff --cached --quiet; then echo "Build unchanged; nothing to commit."; echo "CHANGED=0" >> "$GITHUB_ENV"; exit 0; fi
+          git commit -m "LOAB: WebGL build from ${GITHUB_SHA::7}"
+          for i in 1 2 3 4; do
+            git pull --rebase origin main && git push origin HEAD:main && break
+            echo "Push failed, retrying ($i)"; sleep $((i * 10))
+          done
+          echo "CHANGED=1" >> "$GITHUB_ENV"
+
+      - name: Deploy the arcade
+        if: env.CHANGED == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --ref main
