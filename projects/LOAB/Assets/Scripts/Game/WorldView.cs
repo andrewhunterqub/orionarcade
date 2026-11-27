@@ -89,12 +89,16 @@ namespace Loab.Game
         void BuildRoom()
         {
             var s = _g.S;
+            // Everything that never moves goes under one root and is statically batched at the end.
+            var st = new GameObject("Static").transform;
+            st.SetParent(_roomRoot);
+            _staticRoot = st;
             for (int x = 0; x < s.gridW; x++)
                 for (int y = 0; y < s.gridH; y++)
                 {
                     var tile = GameObject.CreatePrimitive(PrimitiveType.Cube);
                     Destroy(tile.GetComponent<Collider>());
-                    tile.transform.SetParent(_roomRoot);
+                    tile.transform.SetParent(st);
                     tile.transform.localPosition = new Vector3(x, -0.05f, y);
                     tile.transform.localScale = new Vector3(1f, 0.1f, 1f);
                     _floorTiles.Add(tile.GetComponent<Renderer>());
@@ -112,19 +116,19 @@ namespace Loab.Game
             float minX = -1.75f, maxX = w + 0.75f, minZ = -3.15f, maxZ = h + 0.75f;
             var pc = new Vector3((minX + maxX) / 2f, 0, (minZ + maxZ) / 2f);
             var pz = new Vector3(maxX - minX, 0, maxZ - minZ);
-            _plinth = Part(_roomRoot, PrimitiveType.Cube, new Vector3(pc.x, -0.38f, pc.z), new Vector3(pz.x, 0.7f, pz.z), ModelFactory.Mat(PlinthWood)).GetComponent<Renderer>();
+            _plinth = Part(st, PrimitiveType.Cube, new Vector3(pc.x, -0.38f, pc.z), new Vector3(pz.x, 0.7f, pz.z), ModelFactory.Mat(PlinthWood)).GetComponent<Renderer>();
             _rainBox = new Bounds(new Vector3(pc.x, 2.5f, pc.z), new Vector3(pz.x, 5f, pz.z));
-            Part(_roomRoot, PrimitiveType.Cube, new Vector3(pc.x, -0.025f, pc.z), new Vector3(pz.x - 0.02f, 0.03f, pz.z - 0.02f), ModelFactory.Mat(Pavement));
-            Part(_roomRoot, PrimitiveType.Cube, new Vector3(pc.x, -0.0f, minZ + 0.18f), new Vector3(pz.x - 0.02f, 0.05f, 0.14f), ModelFactory.Mat(Kerb));
+            Part(st, PrimitiveType.Cube, new Vector3(pc.x, -0.025f, pc.z), new Vector3(pz.x - 0.02f, 0.03f, pz.z - 0.02f), ModelFactory.Mat(Pavement));
+            Part(st, PrimitiveType.Cube, new Vector3(pc.x, -0.0f, minZ + 0.18f), new Vector3(pz.x - 0.02f, 0.05f, 0.14f), ModelFactory.Mat(Kerb));
             // Foam-board trim where the model's ground meets the plinth
-            Part(_roomRoot, PrimitiveType.Cube, new Vector3(pc.x, -0.035f, minZ - 0.005f), new Vector3(pz.x + 0.02f, 0.05f, 0.03f), ModelFactory.Mat(FoamBoard));
+            Part(st, PrimitiveType.Cube, new Vector3(pc.x, -0.035f, minZ - 0.005f), new Vector3(pz.x + 0.02f, 0.05f, 0.03f), ModelFactory.Mat(FoamBoard));
             // Name plaque on the front (cream card on a darker mount)
-            _plaqueMount = Part(_roomRoot, PrimitiveType.Cube, new Vector3(pc.x, -0.36f, minZ - 0.01f), new Vector3(3.6f, 0.46f, 0.03f), ModelFactory.Mat(0x2b1d14)).GetComponent<Renderer>();
-            _plaqueCard = Part(_roomRoot, PrimitiveType.Cube, new Vector3(pc.x, -0.36f, minZ - 0.025f), new Vector3(3.4f, 0.36f, 0.02f), ModelFactory.Mat(0xFFF1C9)).GetComponent<Renderer>();
+            _plaqueMount = Part(st, PrimitiveType.Cube, new Vector3(pc.x, -0.36f, minZ - 0.01f), new Vector3(3.6f, 0.46f, 0.03f), ModelFactory.Mat(0x2b1d14)).GetComponent<Renderer>();
+            _plaqueCard = Part(st, PrimitiveType.Cube, new Vector3(pc.x, -0.36f, minZ - 0.025f), new Vector3(3.4f, 0.36f, 0.02f), ModelFactory.Mat(0xFFF1C9)).GetComponent<Renderer>();
             _plinthTier = -1;
 
             // ---- Studio (brief 9.3): seamless floor that catches the plinth's soft shadow.
-            var studio = Part(_roomRoot, PrimitiveType.Cube, new Vector3(pc.x, -0.78f, pc.z), new Vector3(400f, 0.05f, 400f), ModelFactory.Mat(0x9FB2C0));
+            var studio = Part(st, PrimitiveType.Cube, new Vector3(pc.x, -0.78f, pc.z), new Vector3(400f, 0.05f, 400f), ModelFactory.Mat(0x9FB2C0));
             _studioFloor = studio.GetComponent<Renderer>();
             _studioFloor.sharedMaterial = new Material(ModelFactory.Mat(0x9FB2C0));
 
@@ -133,22 +137,22 @@ namespace Loab.Game
             Massing(new Vector3((w - 1) / 2f - 2f, 0, maxZ + 4.2f), new Vector3(9f, 2.4f, 4.5f), dx);
 
             // ---- Pavement furniture
-            Part(_roomRoot, PrimitiveType.Cube, new Vector3(dx, 0.005f, -0.25f), new Vector3(0.9f, 0.02f, 0.5f), ModelFactory.Mat(0xA8573A));
-            Part(_roomRoot, PrimitiveType.Cylinder, new Vector3(dx - 3f, 1.4f, -2.6f), new Vector3(0.12f, 1.4f, 0.12f), ModelFactory.Mat(0x2b2b2b));
-            Part(_roomRoot, PrimitiveType.Sphere, new Vector3(dx - 3f, 2.9f, -2.6f), new Vector3(0.4f, 0.4f, 0.4f), ModelFactory.Glow(0xFFD27A, 2f));
+            Part(st, PrimitiveType.Cube, new Vector3(dx, 0.005f, -0.25f), new Vector3(0.9f, 0.02f, 0.5f), ModelFactory.Mat(0xA8573A));
+            Part(st, PrimitiveType.Cylinder, new Vector3(dx - 3f, 1.4f, -2.6f), new Vector3(0.12f, 1.4f, 0.12f), ModelFactory.Mat(0x2b2b2b));
+            Part(st, PrimitiveType.Sphere, new Vector3(dx - 3f, 2.9f, -2.6f), new Vector3(0.4f, 0.4f, 0.4f), ModelFactory.Glow(0xFFD27A, 2f));
             // Hanging pub sign: bottle green with cream lettering (brief 7.1)
-            Part(_roomRoot, PrimitiveType.Cube, new Vector3(dx + 1.4f, 1.5f, -0.75f), new Vector3(0.1f, 3f, 0.1f), ModelFactory.Mat(0x2b1b10));
-            Part(_roomRoot, PrimitiveType.Cube, new Vector3(dx + 1.0f, 2.95f, -0.75f), new Vector3(0.9f, 0.08f, 0.08f), ModelFactory.Mat(0x2b1b10));
-            Part(_roomRoot, PrimitiveType.Cube, new Vector3(dx + 0.85f, 2.35f, -0.75f), new Vector3(1.5f, 0.85f, 0.06f), ModelFactory.Mat(0x3D8A7A));
-            Part(_roomRoot, PrimitiveType.Cube, new Vector3(dx + 0.85f, 2.35f, -0.79f), new Vector3(1.38f, 0.73f, 0.02f), ModelFactory.Mat(0xFFF1C9));
-            Part(_roomRoot, PrimitiveType.Cube, new Vector3(dx + 0.85f, 2.35f, -0.8f), new Vector3(1.32f, 0.67f, 0.02f), ModelFactory.Mat(0x3D8A7A));
+            Part(st, PrimitiveType.Cube, new Vector3(dx + 1.4f, 1.5f, -0.75f), new Vector3(0.1f, 3f, 0.1f), ModelFactory.Mat(0x2b1b10));
+            Part(st, PrimitiveType.Cube, new Vector3(dx + 1.0f, 2.95f, -0.75f), new Vector3(0.9f, 0.08f, 0.08f), ModelFactory.Mat(0x2b1b10));
+            Part(st, PrimitiveType.Cube, new Vector3(dx + 0.85f, 2.35f, -0.75f), new Vector3(1.5f, 0.85f, 0.06f), ModelFactory.Mat(0x3D8A7A));
+            Part(st, PrimitiveType.Cube, new Vector3(dx + 0.85f, 2.35f, -0.79f), new Vector3(1.38f, 0.73f, 0.02f), ModelFactory.Mat(0xFFF1C9));
+            Part(st, PrimitiveType.Cube, new Vector3(dx + 0.85f, 2.35f, -0.8f), new Vector3(1.32f, 0.67f, 0.02f), ModelFactory.Mat(0x3D8A7A));
             // Planters either side of the door
             foreach (var px in new[] { dx - 1.4f, dx + 2.6f })
             {
                 if (px < minX + 0.4f || px > maxX - 0.4f) continue;
-                Part(_roomRoot, PrimitiveType.Cube, new Vector3(px, 0.2f, -1.15f), new Vector3(0.7f, 0.4f, 0.45f), ModelFactory.Mat(0x8a5a3a));
-                Part(_roomRoot, PrimitiveType.Sphere, new Vector3(px - 0.15f, 0.5f, -1.15f), new Vector3(0.38f, 0.32f, 0.38f), ModelFactory.Mat(0x6CC070));
-                Part(_roomRoot, PrimitiveType.Sphere, new Vector3(px + 0.17f, 0.52f, -1.12f), new Vector3(0.34f, 0.36f, 0.34f), ModelFactory.Mat(0x5aab5e));
+                Part(st, PrimitiveType.Cube, new Vector3(px, 0.2f, -1.15f), new Vector3(0.7f, 0.4f, 0.45f), ModelFactory.Mat(0x8a5a3a));
+                Part(st, PrimitiveType.Sphere, new Vector3(px - 0.15f, 0.5f, -1.15f), new Vector3(0.38f, 0.32f, 0.38f), ModelFactory.Mat(0x6CC070));
+                Part(st, PrimitiveType.Sphere, new Vector3(px + 0.17f, 0.52f, -1.12f), new Vector3(0.34f, 0.36f, 0.34f), ModelFactory.Mat(0x5aab5e));
             }
             var lampLight = new GameObject("StreetLamp").AddComponent<Light>();
             lampLight.transform.SetParent(_roomRoot);
@@ -166,9 +170,11 @@ namespace Loab.Game
                 _fill.transform.SetParent(Rig.Cam.transform, false);
             }
             _practicalDirty = true;
+            StaticBatchingUtility.Combine(st.gameObject);
         }
 
         Light _practicalLamp;
+        Transform _staticRoot;
         Renderer _plinth, _plaqueMount, _plaqueCard;
         int _plinthTier = -1;
         Bounds _rainBox;
@@ -229,7 +235,7 @@ namespace Loab.Game
         {
             float baseY = -0.755f;
             var root = new GameObject("WhiteCardBuilding").transform;
-            root.SetParent(_roomRoot);
+            root.SetParent(_staticRoot);
             root.localPosition = centre;
             Part(root, PrimitiveType.Cube, new Vector3(0, baseY + size.y / 2f, 0), size, ModelFactory.Mat(WhiteCard));
             // Window cut-outs on the street face and the side facing the bar
