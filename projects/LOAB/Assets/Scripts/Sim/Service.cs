@@ -1067,7 +1067,7 @@ namespace Loab.Sim
                 Say($"{c.drink.Name} has run out!", 2);
             }
             Takings += price;
-            Cogs += c.drink.UnitCost;
+            Cogs += c.drink.UnitCost * Economy.CostMult(S);
             c.spent += price;
             c.drinks++;
             Served++;
@@ -1374,7 +1374,7 @@ namespace Loab.Sim
             var d = Content.Drink(drinkId);
             var m = S.Menu(drinkId);
             if (d == null || m == null) return "Unknown drink";
-            float cost = d.CaseSize * d.UnitCost * 1.6f;
+            float cost = d.CaseSize * d.UnitCost * Economy.CostMult(S) * 1.6f;
             if (T + 20 >= LastOrders) return "Too late: it wouldn't arrive before last orders";
             if (S.cash < cost && S.difficulty > 0) return "Not enough cash";
             S.cash -= cost;

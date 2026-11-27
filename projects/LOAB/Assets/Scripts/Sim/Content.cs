@@ -153,9 +153,13 @@ namespace Loab.Sim
             _items[id] = d;
         }
 
+        /// Wholesale cost multiplier on the base costs below: gives about 55-65% gross margin at normal prices,
+        /// in line with UK pub "wet" margins (was 1.25, about 70%, which made money too easy; task T5).
+        public const float WholesaleMarkup = 1.55f;
+
         static void Drink(string id, string name, DrinkCat cat, string sup, float cost, float price, float prep, params string[] themes)
         {
-            var d = new DrinkDef { Id = id, Name = name, Cat = cat, Supplier = sup, UnitCost = cost * 1.25f, DefaultPrice = price, PrepMinutes = prep, Themes = themes };
+            var d = new DrinkDef { Id = id, Name = name, Cat = cat, Supplier = sup, UnitCost = cost * WholesaleMarkup, DefaultPrice = price, PrepMinutes = prep, Themes = themes };
             Drinks.Add(d);
             _drinks[id] = d;
         }

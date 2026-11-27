@@ -325,7 +325,7 @@ namespace Loab.Sim
             return null;
         }
 
-        public float CaseCost(string id) { var d = Content.Drink(id); return d.CaseSize * d.UnitCost; }
+        public float CaseCost(string id) { var d = Content.Drink(id); return d.CaseSize * d.UnitCost * Economy.CostMult(S); }
 
         public string OrderStock(string id, int cases)
         {
@@ -746,7 +746,7 @@ namespace Loab.Sim
             // Money
             rec.wages = wages;
             float utilities = Economy.UtilitiesPerNight + rec.customers * 0.4f;
-            float rent = S.DayOfWeek == 6 ? Economy.RentPerWeek * (S.difficulty == 0 ? 0.8f : S.difficulty == 2 ? 1.3f : 1f) : 0;
+            float rent = S.DayOfWeek == 6 ? Economy.WeeklyRent(S) : 0;
             float dog = S.GetFlag("dog") == 1 ? 5 : 0;
             float loan = 0;
             if (S.loanBalance > 0) { loan = Math.Min(S.loanDaily, S.loanBalance); S.loanBalance -= loan; }

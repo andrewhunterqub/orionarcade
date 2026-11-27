@@ -483,7 +483,7 @@ namespace Loab.Game
             Title(p, "Money", "Rent is due every Sunday night. Wages and bills are paid nightly. Stock is paid for when you order it.");
             var s = G.S;
             p.Add(Row(Lbl("Cash", "slider-label"), Lbl(Money(s.cash), "price")));
-            p.Add(Row(Lbl("Rent", "slider-label"), Lbl($"{Money(Economy.RentPerWeek * (s.difficulty == 0 ? 0.8f : s.difficulty == 2 ? 1.3f : 1f))} on Sunday" + (s.DayOfWeek == 6 ? " (TONIGHT)" : $" (in {6 - s.DayOfWeek} days)"), "card-sub")));
+            p.Add(Row(Lbl("Rent", "slider-label"), Lbl($"{Money(Economy.WeeklyRent(s))} on Sunday" + (s.DayOfWeek == 6 ? " (TONIGHT)" : $" (in {6 - s.DayOfWeek} days)"), "card-sub")));
             p.Add(Row(Lbl("Wages", "slider-label"), Lbl($"{Money(s.staff.Sum(m => m.wage))} a night", "card-sub")));
             if (s.loanBalance > 0) p.Add(Row(Lbl("Loan", "slider-label"), Lbl($"{Money(s.loanBalance)} left at {Money(s.loanDaily)}/night", "card-sub")));
             p.Add(Row(Lbl("Spent today", "slider-label"), Lbl(Money(G.SpentToday), "card-sub")));

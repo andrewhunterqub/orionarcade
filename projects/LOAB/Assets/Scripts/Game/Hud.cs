@@ -748,7 +748,7 @@ namespace Loab.Game
             {
                 if (!me.onMenu) continue;
                 var d = Content.Drink(me.id);
-                float cost = d.CaseSize * d.UnitCost * 1.6f;
+                float cost = d.CaseSize * d.UnitCost * Economy.CostMult(G.S) * 1.6f;
                 var id = me.id;
                 var b = Btn($"{d.Name}  -  {me.stock} left  -  £{cost:0}", () => { var e = G.Svc.EmergencyDelivery(id); if (e != null) Flash(e); CloseOverlay(); }, "option");
                 if (me.stock < 20) b.AddToClassList("btn-bad");

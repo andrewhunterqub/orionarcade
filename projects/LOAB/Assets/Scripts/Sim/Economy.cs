@@ -12,7 +12,24 @@ namespace Loab.Sim
 
         public const float RentPerWeek = 1400f;
         public const float UtilitiesPerNight = 60f;
+        /// How strongly footfall falls as prices rise above normal (times each segment's price sensitivity).
+        public const float PriceElasticity = 4.0f;
+        /// How strongly footfall rises when prices are below normal ("great value" draws a crowd).
+        public const float ValueDraw = 2.2f;
         public const float BaseFootfall = 270f;
+
+        // ---- Difficulty and running costs (task T5) ---------------------------------------------------
+        /// Supplier prices: Relaxed 0.92x, Hardcore 1.07x.
+        public static float CostMult(GameState s) => s.difficulty == 0 ? 0.92f : s.difficulty == 2 ? 1.07f : 1f;
+        /// Footfall: Relaxed 1.08x, Hardcore 0.93x.
+        public static float FootfallMult(GameState s) => s.difficulty == 0 ? 1.08f : s.difficulty == 2 ? 0.93f : 1f;
+        /// The landlord reviews the rent as the bar's reputation grows, and a bigger unit costs more.
+        public static float WeeklyRent(GameState s)
+        {
+            float diff = s.difficulty == 0 ? 0.8f : s.difficulty == 2 ? 1.3f : 1f;
+            float rent = RentPerWeek * diff * (1f + s.reputation / 100f * 0.9f) * (s.gridW / 16f);
+            return (float)Math.Round(rent / 10f) * 10f;
+        }
 
         public static readonly string[] Weathers = { "Sunny", "Cloudy", "Rain", "Storm", "Mild" };
 
@@ -46,7 +63,7 @@ namespace Loab.Sim
         /// <summary>Expected customers per segment tonight, plus extra event-driven arrivals.</summary>
         public static void ExpectedArrivals(GameState s, VibeReport v, float[] outExpected, BookedEvent ev, out float eventExtra)
         {
-            float foot = BaseFootfall * SeasonMult(s) * WeatherMult(s.weather) * (1f - s.rivalPressure * 0.3f);
+            float foot = BaseFootfall * FootfallMult(s) * SeasonMult(s) * WeatherMult(s.weather) * (1f - s.rivalPressure * 0.3f);
             if (s.day == 0) foot *= 1.5f; // opening-night curiosity
             float rep = 0.35f + s.reputation / 100f * 1.25f;
             float ratio = VibeCalc.PriceRatio(s);
@@ -56,7 +73,7 @@ namespace Loab.Sim
             {
                 var d = Content.Segments[i];
                 float day = d.DayWeights[s.DayOfWeek] * (s.DayOfWeek >= 4 ? 1.15f : 1f);
-                float price = (float)Math.Exp(-d.PriceSensitivity * Math.Max(0, ratio - 1f) * 2.2f) * (1f + d.PriceSensitivity * Math.Max(0, 1f - ratio) * 0.8f);
+                float price = (float)Math.Exp(-d.PriceSensitivity * Math.Max(0, ratio - 1f) * PriceElasticity) * (1f + d.PriceSensitivity * Math.Max(0, 1f - ratio) * ValueDraw);
                 float ent = 1f + d.Games * Math.Min(v.Games, 3) * 0.06f + d.Screens * (v.Screens > 0 ? 0.22f : 0f) + d.Stage * (v.HasStage ? 0.06f : 0f);
                 float theme = 1f;
                 if (v.ActiveTheme != null && d.ThemeAffinity.TryGetValue(v.ActiveTheme.Def.Id, out float aff)) theme += aff * 0.25f;
