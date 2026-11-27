@@ -234,7 +234,7 @@ namespace Loab.Game
             var topRow = Row(
                 Btn(restock > 0 ? $"Restock all ({Money(restock)})" : "Stock looks healthy", () => { var e = G.RestockAll(); if (e != null) Flash(e); else _run.Audio.Play("coin"); }, "btn-primary"),
                 Btn($"Clean lines £40 ({G.S.lineQuality:0}%)", () => { var e = G.CleanLines(); if (e != null) Flash(e); }),
-                Btn($"Deep clean £60 ({G.S.cleanliness:0}%)", () => { var e = G.DeepClean(); if (e != null) Flash(e); }));
+                Btn($"Deep clean £{G.DeepCleanCost} ({G.S.cleanliness:0}%)", () => { var e = G.DeepClean(); if (e != null) Flash(e); }));
             topRow.AddToClassList("wrap");
             p.Add(topRow);
             var resp = Btn(G.S.responsibleService ? "Responsible service: ON" : "Responsible service: OFF", () => G.SetResponsible(!G.S.responsibleService), "btn-small");

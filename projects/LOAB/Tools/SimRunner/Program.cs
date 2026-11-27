@@ -82,7 +82,11 @@ public static class Program
             var a = s.applicants.Where(x => x.role == 0).OrderByDescending(x => x.speed).FirstOrDefault();
             if (a != null) g.Hire(a.uid);
         }
-        if (!s.staff.Any(m => m.role == 1) && s.day > 4 && s.cash > 2500)
+        int floor = s.staff.Count(m => m.role == 1);
+        if (last != null && last.thoughts.Any(t => t.Contains("dirty")) && s.cleanliness < 80 && s.cash > 4000) g.DeepClean();
+        bool dirtyComplaints = last != null && last.thoughts.Any(t => t.Contains("dirty"));
+        // Hire floor staff once open a few nights, and add more if the report keeps saying it's dirty.
+        if (((floor == 0 && s.day > 4) || (dirtyComplaints && floor < 3 && floor * 2 < bartenders + 1)) && s.cash > 2500)
         {
             var a = s.applicants.FirstOrDefault(x => x.role == 1) ?? s.applicants.FirstOrDefault();
             if (a != null) { a.role = 1; g.Hire(a.uid); }

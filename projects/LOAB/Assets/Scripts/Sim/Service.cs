@@ -142,6 +142,11 @@ namespace Loab.Sim
         bool IsScheduledHappyHour() { if (S.happyHourStart < 0) return false; float h = 18 + T / 60f; return h >= S.happyHourStart && h < S.happyHourStart + 1; }
         public float Price(MenuEntry m) => HappyHour ? m.price * (1f - S.happyHourDiscount / 100f) : m.price;
 
+        /// Below this cleanliness, customers start to notice the mess.
+        public const float GrimeThreshold = 45f;
+        /// Minutes-weighted dirt a customer puts up with before they think the place is dirty.
+        public const float GrimeToComplain = 8f;
+
         public float CleanlinessNow
         {
             get
@@ -765,9 +770,11 @@ namespace Loab.Sim
 
             if (V.ActiveTheme != null && d.ThemeAffinity.TryGetValue(V.ActiveTheme.Def.Id, out float aff)) target += aff * 10f;
 
+            // Customers judge the whole visit, not one glance: a brief dip or a spill they walk past
+            // doesn't make the place "dirty", sitting in a mess for a while does.
             float clean = CleanlinessNow;
             target += (clean - 65f) * 0.3f;
-            if (clean < 40) c.Mark(Note.Dirty);
+            if (clean < GrimeThreshold) c.grime += (GrimeThreshold - clean) / 15f;
 
             float occ = Inside / (float)Capacity;
             float crowdPref = (d.VibePref[Axis.Energy] - 50f) / 50f;
@@ -789,8 +796,9 @@ namespace Loab.Sim
             foreach (var i in Incidents)
             {
                 if (i.resolved || i.kind != IncidentKind.Spill) continue;
-                if (Math.Abs(i.cell.x - c.x) + Math.Abs(i.cell.y - c.y) < 2) { target -= 6; c.Mark(Note.Dirty); break; }
+                if (Math.Abs(i.cell.x - c.x) + Math.Abs(i.cell.y - c.y) < 2) { target -= 6; c.grime += 1.5f; break; }
             }
+            if (c.grime >= GrimeToComplain) c.Mark(Note.Dirty);
 
             if (c.regular != null) target += 5;
             if (_busker) target += 4;

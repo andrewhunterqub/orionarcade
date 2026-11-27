@@ -472,11 +472,14 @@ namespace Loab.Sim
             return null;
         }
 
+        /// A contract clean: priced by floor area so it stays a real decision as the bar grows (£256 for the starting unit).
+        public int DeepCleanCost => 80 + S.gridW * S.gridH;
+
         public string DeepClean()
         {
             if (S.cleanliness >= 98) return Fail("It's already spotless");
-            if (S.cash < 60 && S.difficulty > 0) return Fail("Not enough cash");
-            Spend(60, "Deep clean");
+            if (S.cash < DeepCleanCost && S.difficulty > 0) return Fail("Not enough cash");
+            Spend(DeepCleanCost, "Deep clean");
             S.cleanliness = 100;
             Changed?.Invoke();
             return null;
