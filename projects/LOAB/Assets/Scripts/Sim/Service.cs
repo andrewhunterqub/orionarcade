@@ -20,6 +20,9 @@ namespace Loab.Sim
     {
         public const float Tick = 0.1f;
         public const float LastOrders = 330f, Close = 360f, HardEnd = 420f;
+        /// Tonight's last orders and closing time: normally 23:30 and midnight, earlier if the owner calls it (task L2).
+        public float LastOrdersAt = LastOrders, CloseAt = Close;
+        public bool ClosedEarly => LastOrdersAt < LastOrders;
 
         public readonly GameState S;
         public readonly Layout L;
@@ -203,12 +206,12 @@ namespace Loab.Sim
                 CheckQueues();
             }
 
-            if (T >= Close)
+            if (T >= CloseAt)
             {
                 foreach (var c in Customers) if (c.Inside && c.state != CState.Leaving) Leave(c, false);
             }
             Customers.RemoveAll(c => c.state == CState.Gone);
-            if ((T >= Close && Customers.Count == 0) || T >= HardEnd) Finished = true;
+            if ((T >= CloseAt && Customers.Count == 0) || T >= HardEnd) Finished = true;
         }
 
         /// <summary>Run the rest of the night instantly.</summary>
@@ -232,7 +235,7 @@ namespace Loab.Sim
 
         void SpawnArrivals()
         {
-            if (T >= LastOrders) return;
+            if (T >= LastOrdersAt) return;
             if (_henAt >= 0 && T >= _henAt)
             {
                 _henAt = -1;
@@ -394,10 +397,10 @@ namespace Loab.Sim
         void Decide(Customer c)
         {
             if (c.state == CState.Leaving || c.state == CState.Gone) return;
-            bool closing = T >= LastOrders;
+            bool closing = T >= LastOrdersAt;
             float stayed = T - c.arrivedAt;
 
-            if (T >= Close) { Leave(c, false); return; }
+            if (T >= CloseAt) { Leave(c, false); return; }
             if (c.bladder > 0.8f)
             {
                 if (GoToilet(c)) return;
@@ -1338,10 +1341,25 @@ namespace Loab.Sim
 
         public Incident IncidentForCustomer(Customer c) => Incidents.Find(i => !i.resolved && i.customer == c);
 
+        /// Call last orders now, with closing 30 minutes later. For a rough night: fewer drinks, fewer incidents,
+        /// a few grumbles. Not before 9pm.
+        public string CallLastOrdersEarly()
+        {
+            if (T >= LastOrdersAt) return "It's already last orders";
+            if (T < 180) return "Too early: you can call it from 9pm";
+            LastOrdersAt = T;
+            CloseAt = T + 30f;
+            foreach (var c in Customers) if (c.Inside) c.mood -= 4;
+            foreach (var c in Customers) if (c.Inside && c.rowdy) { c.rowdy = false; c.mood -= 6; }
+            Say($"Last orders! Doors close at {Clock(CloseAt)}.", 1);
+            Moments.Add($"You called last orders early, at {Clock(T)}.");
+            return null;
+        }
+
         public string StartHappyHour()
         {
             if (HappyHourUsed) return "You've already run a happy hour tonight";
-            if (T >= LastOrders) return "It's last orders";
+            if (T >= LastOrdersAt) return "It's last orders";
             HappyHourUsed = true;
             HappyHourUntil = T + 60;
             Say($"Happy hour! {S.happyHourDiscount}% off for the next hour.", 1);
@@ -1381,7 +1399,7 @@ namespace Loab.Sim
             var m = S.Menu(drinkId);
             if (d == null || m == null) return "Unknown drink";
             float cost = d.CaseSize * d.UnitCost * Economy.CostMult(S) * 1.6f;
-            if (T + 20 >= LastOrders) return "Too late: it wouldn't arrive before last orders";
+            if (T + 20 >= LastOrdersAt) return "Too late: it wouldn't arrive before last orders";
             if (S.cash < cost && S.difficulty > 0) return "Not enough cash";
             S.cash -= cost;
             EmergencySpend += cost;

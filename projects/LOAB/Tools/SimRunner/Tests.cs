@@ -25,6 +25,7 @@ public static class Tests
         Test("migration: an old, incomplete save loads and plays", OldSaveLoads);
         Test("weekly statement: the lines add up to the profit", WeeklyStatementAddsUp);
         Test("cash crisis: loan, then final demand, then bankrupt only after the deadline", CashCrisisArc);
+        Test("last orders early: the night ends sooner and can't be called before 9pm", LastOrdersEarly);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -121,6 +122,21 @@ public static class Tests
             Assert(Math.Abs(lines - w.Profit) < 1f, $"day {g.S.day}: lines {lines:0.00} vs profit {w.Profit:0.00}");
             if (g.S.DayOfWeek == 0) Assert(w.Rent > 0, $"day {g.S.day}: no rent in the week just ended");
         }
+    }
+
+    static void LastOrdersEarly()
+    {
+        var g = Game.NewCareer(91, 1);
+        g.OpenDoors();
+        Assert(g.Svc.CallLastOrdersEarly() != null, "allowed before 9pm");
+        while (g.Svc.T < 200) g.Svc.Step();
+        Assert(g.Svc.CallLastOrdersEarly() == null, "refused at 9:20pm");
+        Assert(g.Svc.CloseAt < Service.Close, "closing time didn't move");
+        int ticks = 0;
+        while (g.Phase == Phase.Service && ticks++ < 20000) { g.Svc.Step(); g.EndServiceIfDone(); }
+        Assert(g.Phase == Phase.Report, "night didn't finish");
+        Assert(g.Svc.T < Service.Close, $"night ran until {Service.Clock(g.Svc.T)}");
+        Assert(g.LastNight.moments.Exists(m => m.Contains("last orders early")), "no moment recorded");
     }
 
     static void CashCrisisArc()

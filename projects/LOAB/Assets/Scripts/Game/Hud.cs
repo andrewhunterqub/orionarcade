@@ -27,7 +27,7 @@ namespace Loab.Game
         string _tab;
         bool _dirty;
         float _hintUntil;
-        Button _behindBtn, _happyBtn, _collectBtn;
+        Button _behindBtn, _happyBtn, _collectBtn, _lastOrdersBtn;
         public bool TextFocused;
         int _tooltipFrame;
 
@@ -202,7 +202,9 @@ namespace Loab.Game
             _collectBtn = Btn("Collect glasses", () => { var e = G.Svc?.CollectGlasses(); if (e != null) Flash(e); else _run.Audio.Play("place"); }, "action");
             _behindBtn = Btn("Help behind\nthe bar", () => { if (G.Svc != null) G.Svc.SetOwnerBehindBar(!G.Svc.OwnerBehindBar); }, "action");
             var emerg = Btn("Emergency\ndelivery", () => ShowEmergency(), "action");
-            _actions.Add(_happyBtn); _actions.Add(_collectBtn); _actions.Add(_behindBtn); _actions.Add(emerg);
+            _lastOrdersBtn = Btn("Last orders\n(close early)", () => { var e = G.Svc?.CallLastOrdersEarly(); if (e != null) Flash(e); else _run.Audio.Play("bell"); }, "action");
+            _lastOrdersBtn.tooltip = "Call last orders now and close 30 minutes later. Fewer drinks sold, but it calms a rowdy night.";
+            _actions.Add(_happyBtn); _actions.Add(_collectBtn); _actions.Add(_behindBtn); _actions.Add(emerg); _actions.Add(_lastOrdersBtn);
             _root.Add(_actions);
 
             _feed = El("feed");
@@ -362,7 +364,7 @@ namespace Loab.Game
             if (G.Phase == Phase.Service && G.Svc != null)
             {
                 var svc = G.Svc;
-                _clock.text = Service.Clock(Mathf.Min(svc.T, Service.Close));
+                _clock.text = Service.Clock(Mathf.Min(svc.T, svc.CloseAt));
                 _custVal.text = $"{svc.Inside}/{svc.Capacity}";
                 _custLabel.text = "inside";
                 for (int i = 0; i < _speedBtns.Count; i++)
@@ -370,7 +372,8 @@ namespace Loab.Game
                     bool on = i == 0 ? _run.Paused : !_run.Paused && Mathf.Approximately(_run.SpeedMult, i == 1 ? 1 : i == 2 ? 2 : 4);
                     _speedBtns[i].EnableInClassList("btn-on", on);
                 }
-                _happyBtn.SetEnabled(!svc.HappyHourUsed && svc.T < Service.LastOrders);
+                _happyBtn.SetEnabled(!svc.HappyHourUsed && svc.T < svc.LastOrdersAt);
+                _lastOrdersBtn.SetEnabled(svc.T >= 180 && svc.T < svc.LastOrdersAt);
                 _happyBtn.text = svc.HappyHour ? "Happy Hour\nON" : svc.HappyHourUsed ? "Happy Hour\nused" : $"Happy Hour\n({s.happyHourDiscount}% off, 1 hour)";
                 _collectBtn.text = svc.CollectCooldown > 0 ? "Collect glasses\n(washing...)" : $"Collect glasses\n({CountGlasses(svc)} dirty)";
                 _behindBtn.text = svc.OwnerBehindBar ? "Behind the bar\n(you're serving)" : "Help behind\nthe bar";
