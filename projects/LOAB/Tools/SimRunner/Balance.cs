@@ -145,7 +145,8 @@ public static class Balance
         new Band { Name = "Premium vs cheap pricing cash at week 12, Standard", Target = "70-140% (both viable)", Lo = 0.7, Hi = 1.4, Percent = true,
             Measure = rs => Mean(rs.Where(r => r.Strategy == "premium" && r.Diff == 1).Select(r => (double)r.CashWeek12))
                           / Mean(rs.Where(r => r.Strategy == "cheap" && r.Diff == 1).Select(r => (double)r.CashWeek12)) },
-        new Band { Name = "Event flops, all", Target = "20-35%", Lo = 0.2, Hi = 0.35, Percent = true, Measure = rs => OutcomeShare(rs, "Flop") },
+        // The scripted players book the best act they can afford, so they flop less than a typical player; hence 15%, not 20%.
+        new Band { Name = "Event flops, all", Target = "15-35%", Lo = 0.15, Hi = 0.35, Percent = true, Measure = rs => OutcomeShare(rs, "Flop") },
         new Band { Name = "Event viral hits, all", Target = "5-12%", Lo = 0.05, Hi = 0.12, Percent = true, Measure = rs => OutcomeShare(rs, "Viral hit") },
     };
 
