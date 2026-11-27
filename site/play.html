@@ -16,7 +16,10 @@
       <img src="assets/favicon.svg" alt="" width="36" height="36">
       <span>Orion <strong>Arcade</strong></span>
     </a>
-    <a class="back" href="./">&larr; All games</a>
+    <nav class="header-nav">
+      <a class="back" href="./">&larr; All games</a>
+      <div id="account" class="account" hidden></div>
+    </nav>
   </header>
 
   <main class="wrap player-wrap">
@@ -38,6 +41,7 @@
       <p id="description"></p>
       <p id="controls" class="controls" hidden></p>
       <div id="warning" class="warning" hidden></div>
+      <p id="sync-status" class="sync-status" role="status" hidden></p>
     </div>
   </main>
 
