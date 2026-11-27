@@ -21,6 +21,9 @@ namespace Loab.Sim
         public bool onMenu;
         public float price;
         public int stock;
+        // Demand tracking for restocking (task T4): served + wanted-but-out tonight, and a running average.
+        public int soldTonight, missedTonight;
+        public float demandAvg;
     }
 
     [Serializable]

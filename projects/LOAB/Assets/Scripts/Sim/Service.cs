@@ -103,6 +103,7 @@ namespace Loab.Sim
                 if (c.y >= 2 && L.ItemAt(c) == 0) _standSpots.Add(c);
             Capacity = Math.Max(20, (int)(reach.Count * 1.2f));
             CleanGlasses = s.GetFlag("glasswasher") == s.day + 1 ? 30 : 90;
+            foreach (var m in s.menu) { m.soldTonight = 0; m.missedTonight = 0; }
             if (s.GetFlag("hen_day") == s.day + 1) _henAt = 120;
             _busker = s.GetFlag("busker") == s.day + 1;
             if (_busker) Say("A busker is playing in the corner. Lovely.", 1);
@@ -912,7 +913,7 @@ namespace Loab.Sim
             if (first >= 0)
             {
                 var fm = S.Menu(options[first].Id);
-                if (fm.stock <= 0) wantedButOut = true;
+                if (fm.stock <= 0) { wantedButOut = true; fm.missedTonight++; }
                 else if (Price(fm) > left) wantedButPricey = true;
             }
             for (int i = options.Count - 1; i >= 0; i--)
@@ -1058,6 +1059,7 @@ namespace Loab.Sim
             }
             float price = Price(m);
             m.stock--;
+            m.soldTonight++;
             if (m.stock == 0 && !_warnedOut.Contains(m.id))
             {
                 _warnedOut.Add(m.id);

@@ -356,7 +356,12 @@ namespace Loab.Sim
                 tot += seg.Share;
             }
             share /= tot;
-            return (int)Math.Ceiling(expected * 2.6f * share * 1.4f);
+            int model = (int)Math.Ceiling(expected * 2.6f * share * 1.4f);
+            // Once there's history, trust what actually sold (plus lost sales), with headroom for busy nights.
+            var entry = S.Menu(id);
+            float busy = S.DayOfWeek >= 4 ? 1.3f : 1f;
+            int learned = entry != null && entry.demandAvg > 0 ? (int)Math.Ceiling(entry.demandAvg * 1.35f * busy) : 0;
+            return Math.Max(model, learned);
         }
 
         public float RestockCost()
@@ -794,6 +799,15 @@ namespace Loab.Sim
                 if (S.GetFlag("dog") == 1) AddTag("Dog-Friendly");
                 if (svc.NoteCounts[(int)Note.Bargain] / a > 0.3f) AddTag("Great Value");
             }
+
+            // Learn each drink's demand (what sold plus what people wanted but couldn't get), for restocking.
+            if (svc != null)
+                foreach (var m in S.menu)
+                {
+                    if (!m.onMenu) continue;
+                    float tonight = m.soldTonight + m.missedTonight;
+                    m.demandAvg = m.demandAvg <= 0 ? tonight : m.demandAvg * 0.6f + tonight * 0.4f;
+                }
 
             // Wear & upkeep
             foreach (var it in S.items) it.wear = Math.Min(100, it.wear + (Content.Item(it.id).Fn == ItemFn.Games ? 0.8f : 0.35f));
