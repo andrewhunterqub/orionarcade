@@ -44,6 +44,8 @@ namespace Loab.Sim
         public float queueStart;
         public bool rowdy, watching, paidTicket, refused;
         public float grime;                // how much dirt they've put up with this visit (see Service.MinuteTick)
+        public float slowWait;             // minutes of waiting beyond what they'd call reasonable, this visit
+        public float crushed;              // minutes spent in a packed room this visit
         public float rowdyFor;
 
         public readonly bool[] notes = new bool[(int)Note.Count];

@@ -780,7 +780,7 @@ namespace Loab.Sim
             float occ = Inside / (float)Capacity;
             float crowdPref = (d.VibePref[Axis.Energy] - 50f) / 50f;
             target += (occ - 0.35f) * 18f * crowdPref - Math.Max(0, occ - 0.85f) * 30f;
-            if (occ > 0.9f) c.Mark(Note.Crowded);
+            if (occ > 0.9f && (c.crushed += 1f) >= 15f) c.Mark(Note.Crowded); // a sustained crush, not one busy moment
 
             if (c.watching && EventPhase >= 1 && EventPhase <= 3)
             {
@@ -1080,7 +1080,11 @@ namespace Loab.Sim
 
             // Reactions
             float wait = T - c.queueStart;
-            if (wait > c.patience * 0.9f) { c.Mark(Note.WaitedLong); c.mood -= Math.Min(15, wait * 0.8f); Think(c, $"Waited {wait:0} minutes for that."); }
+            // Every slow drink hurts their mood, but they only call the service "slow" after one really long wait
+            // or several slowish ones, so a single unlucky round doesn't define the night (like grime, task T5b).
+            if (wait > c.patience * 0.9f) { c.mood -= Math.Min(15, wait * 0.8f); Think(c, $"Waited {wait:0} minutes for that."); }
+            c.slowWait += Math.Max(0, wait - c.patience * 0.6f);
+            if (wait > c.patience * 1.25f || c.slowWait > c.patience * 0.9f) c.Mark(Note.WaitedLong);
             float ratio = m.price / c.drink.DefaultPrice;
             if (HappyHour) ratio *= 1f - S.happyHourDiscount / 100f;
             if (ratio > 1.15f)

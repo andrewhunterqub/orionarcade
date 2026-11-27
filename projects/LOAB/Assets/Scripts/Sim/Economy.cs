@@ -26,8 +26,8 @@ namespace Loab.Sim
         /// The landlord reviews the rent as the bar's reputation grows, and a bigger unit costs more.
         public static float WeeklyRent(GameState s)
         {
-            float diff = s.difficulty == 0 ? 0.8f : s.difficulty == 2 ? 1.3f : 1f;
-            float rent = RentPerWeek * diff * (1f + s.reputation / 100f * 0.9f) * (s.gridW / 16f);
+            float diff = s.difficulty == 0 ? 0.8f : s.difficulty == 2 ? 1.2f : 1f;
+            float rent = RentPerWeek * diff * (1f + s.reputation / 100f * 0.75f) * (float)Math.Pow(s.gridW / 16f, 0.7);
             return (float)Math.Round(rent / 10f) * 10f;
         }
 

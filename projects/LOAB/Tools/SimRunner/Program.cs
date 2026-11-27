@@ -77,7 +77,8 @@ public static class Program
         g.SocialPost();
         var last = g.LastNight;
         int bartenders = s.staff.Count(m => m.role == 0);
-        if (last != null && last.thoughts.Any(t => t.Contains("slow") || t.Contains("gave up")) && bartenders < 4 && s.cash > 2500)
+        bool queues = last != null && (last.thoughts.Any(t => t.Contains("slow") || t.Contains("gave up")) || last.walkouts > last.customers * 0.04f);
+        if (queues && bartenders < 4 && s.cash > 2500)
         {
             var a = s.applicants.Where(x => x.role == 0).OrderByDescending(x => x.speed).FirstOrDefault();
             if (a != null) g.Hire(a.uid);
