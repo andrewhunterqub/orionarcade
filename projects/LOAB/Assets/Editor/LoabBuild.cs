@@ -73,7 +73,7 @@ public static class LoabBuild
         EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
 
         PlayerSettings.companyName = "Orion Design";
-        PlayerSettings.productName = "Let's Own A Bar!";
+        PlayerSettings.productName = "Let's Open A Bar!";
         PlayerSettings.bundleVersion = "0.1.0";
         PlayerSettings.colorSpace = ColorSpace.Linear;
         PlayerSettings.runInBackground = true;

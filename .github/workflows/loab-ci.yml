@@ -1,6 +1,6 @@
 name: LOAB checks
 
-# Headless checks for Let's Own A Bar! (see projects/LOAB/DEVELOPMENT_PLAN.md, tasks E2 and E3):
+# Headless checks for Let's Open A Bar! (see projects/LOAB/DEVELOPMENT_PLAN.md, tasks E2 and E3):
 # simulation tests with dotnet, and a compile check of every runtime script against Unity reference assemblies.
 on:
   push:

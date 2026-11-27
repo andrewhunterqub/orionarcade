@@ -1,4 +1,4 @@
-# Let's Own A Bar! — Visual Brief: Diorama / Miniature
+# Let's Open A Bar! — Visual Brief: Diorama / Miniature
 
 |  |  |
 | --- | --- |

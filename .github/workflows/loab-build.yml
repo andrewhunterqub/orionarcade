@@ -1,6 +1,6 @@
 name: LOAB WebGL build
 
-# Builds Let's Own A Bar! for WebGL with Unity in CI (GameCI) and commits the build to site/games/loab,
+# Builds Let's Open A Bar! for WebGL with Unity in CI (GameCI) and commits the build to site/games/loab,
 # then starts the Pages deploy so the arcade serves it. See projects/LOAB/DEVELOPMENT_PLAN.md task E4.
 #
 # Needs these repository secrets (Settings > Secrets and variables > Actions):

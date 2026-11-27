@@ -1,4 +1,4 @@
-# Let's Own A Bar! (LOAB)
+# Let's Open A Bar! (LOAB)
 
 A cosy bar-management sim for Orion Arcade, built in Unity 6 for WebGL. The design brief is
 [`LOAB_Synopsis_and_Build_Brief.md`](../../LOAB_Synopsis_and_Build_Brief.md) in the repo root. This project is the

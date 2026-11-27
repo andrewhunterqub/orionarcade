@@ -1,4 +1,4 @@
-/* Let's Own A Bar! - warm pub palette */
+/* Let's Open A Bar! - warm pub palette */
 .root {
     flex-grow: 1;
     color: rgb(250, 240, 225);

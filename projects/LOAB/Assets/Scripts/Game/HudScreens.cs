@@ -46,7 +46,7 @@ namespace Loab.Game
             SetMode();
             var col = El("col");
             col.style.alignItems = Align.Center;
-            col.Add(Lbl("Let's Own A Bar!", "title-logo"));
+            col.Add(Lbl("Let's Open A Bar!", "title-logo"));
             col.Add(Lbl("Build the bar you've always talked about,\nand find out if you'd actually be any good at running it.", "title-tag"));
             if (_run.HasSave)
             {

@@ -1,4 +1,4 @@
-# Let's Own A Bar! (LOAB)
+# Let's Open A Bar! (LOAB)
 ## Game Synopsis & Build Brief
 
 | | |
@@ -41,7 +41,7 @@
 
 ## 1. Executive Summary
 
-Lots of people dream of one day owning their own bar. *Let's Own A Bar!* lets them live that fantasy without the overdraft.
+Lots of people dream of one day owning their own bar. *Let's Open A Bar!* lets them live that fantasy without the overdraft.
 
 Players start with a tired, empty unit and some savings. They choose the location, knock through walls, pick the vibe, build a drinks menu, hire staff, book a comedian, and open the doors. Then they find out whether anyone turns up.
 

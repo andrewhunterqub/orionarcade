@@ -26,7 +26,7 @@ firestore.rules          security rules for account saves
 
 | Game | Type | Source |
 |---|---|---|
-| Let's Own A Bar! | Unity 6 WebGL | [`projects/LOAB`](projects/LOAB) (see its README) |
+| Let's Open A Bar! | Unity 6 WebGL | [`projects/LOAB`](projects/LOAB) (see its README) |
 | Pythle | Plain web app | Copied from the Pythle project; rebuild its data there and copy the 5 runtime files |
 
 ## Adding a game
