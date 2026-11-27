@@ -233,8 +233,16 @@ namespace Loab.Game
 
         Vector3 RandomRainPos(bool anyHeight)
         {
+            // Only outside the building: the model has no roof, but the rain shouldn't fall on the customers.
             var b = _rainBox;
-            return new Vector3(Random.Range(b.min.x, b.max.x), anyHeight ? Random.Range(0.1f, b.max.y) : b.max.y, Random.Range(b.min.z, b.max.z));
+            float w = _g.S.gridW, h = _g.S.gridH;
+            for (int tries = 0; tries < 20; tries++)
+            {
+                float x = Random.Range(b.min.x, b.max.x), z = Random.Range(b.min.z, b.max.z);
+                bool inside = x > -0.9f && x < w - 0.1f && z > -0.9f && z < h - 0.1f;
+                if (!inside) return new Vector3(x, anyHeight ? Random.Range(0.1f, b.max.y) : b.max.y, z);
+            }
+            return new Vector3(b.min.x + 0.3f, b.max.y, b.min.z + 0.3f);
         }
 
         void Massing(Vector3 centre, Vector3 size, float doorX)
