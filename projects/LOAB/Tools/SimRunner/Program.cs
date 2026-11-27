@@ -83,6 +83,13 @@ public static class Program
             var a = s.applicants.Where(x => x.role == 0).OrderByDescending(x => x.speed).FirstOrDefault();
             if (a != null) g.Hire(a.uid);
         }
+        // Rota: once there's cover, everyone gets a quiet night off (Monday or Tuesday, alternating).
+        for (int i = 0; i < s.staff.Count; i++)
+        {
+            var st = s.staff[i];
+            if (st.daysOff != 0 || s.staff.Count(m => m.role == st.role) < 2) continue;
+            st.daysOff = 1 << (i % 2);
+        }
         int floor = s.staff.Count(m => m.role == 1);
         if (last != null && last.thoughts.Any(t => t.Contains("dirty")) && s.cleanliness < 80 && s.cash > 4000) g.DeepClean();
         bool dirtyComplaints = last != null && last.thoughts.Any(t => t.Contains("dirty"));

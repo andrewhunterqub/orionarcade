@@ -114,7 +114,7 @@ namespace Loab.Sim
             // Staff
             foreach (var m in s.staff)
             {
-                if (!Roles.WorksService(m.role)) continue;
+                if (!Roles.WorksService(m.role) || m.OffOn(s.DayOfWeek)) continue;
                 var a = new StaffAgent { m = m, x = L.Door.x, y = L.Door.y, arriveAt = 0 };
                 if (m.HasTrait("always_late") && R.Chance(0.3)) a.arriveAt = 45;
                 Staff.Add(a);
@@ -962,7 +962,8 @@ namespace Loab.Sim
             if (m.HasTrait("gossip")) f *= 1.1f;
             int q = 0; foreach (var bp in BarPoints) q += bp.queue.Count;
             if (q > 6 && !m.HasTrait("calm")) f *= 1.15f;
-            float fatigue = T / 360f * (1.2f - m.stamina * 0.04f) * (Economy.Heatwave(S) ? 1.4f : 1f);
+            float fatigue = T / 360f * (1.2f - m.stamina * 0.04f) * (Economy.Heatwave(S) ? 1.4f : 1f)
+                            * (1f + Math.Max(0, m.streak - 5) * 0.12f); // worn out after too many nights in a row
             f *= 1f + Math.Max(0, fatigue) * 0.25f;
             f *= 1.15f - m.morale / 100f * 0.25f;
             return Math.Max(0.4f, f);

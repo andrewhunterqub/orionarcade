@@ -511,6 +511,17 @@ namespace Loab.Sim
             return null;
         }
 
+        /// Turn a night on or off on someone's rota (task S3).
+        public string ToggleDayOff(int uid, int dayOfWeek)
+        {
+            var m = S.Staff(uid);
+            if (m == null || dayOfWeek < 0 || dayOfWeek > 6) return Fail("Who?");
+            m.daysOff ^= 1 << dayOfWeek;
+            if ((m.daysOff & 0x7f) == 0x7f) { m.daysOff ^= 1 << dayOfWeek; return Fail("Everyone works at least one night"); }
+            Changed?.Invoke();
+            return null;
+        }
+
         public string SetWage(int uid, int wage)
         {
             var m = S.Staff(uid);
@@ -649,7 +660,15 @@ namespace Loab.Sim
             _r = new Rng(S.seed + (ulong)S.day * 31UL + 19UL);
             var rec = new NightRecord { day = S.day, weather = S.weather };
             float wages = 0, fines = 0;
-            foreach (var m in S.staff) wages += m.wage;
+            foreach (var m in S.staff) if (!m.OffOn(S.DayOfWeek)) wages += m.wage; // only paid for nights on the rota
+            // Rest and fatigue (task S3)
+            foreach (var m in S.staff)
+            {
+                if (m.OffOn(S.DayOfWeek)) { m.streak = 0; m.morale = Math.Min(100, m.morale + 4); continue; }
+                m.streak++;
+                if (m.streak > 5) m.morale = Math.Max(0, m.morale - (m.streak - 5) * 2.5f);
+                if (m.streak == 7) rec.moments.Add($"{m.name} has worked seven nights straight and is flagging. Give them a night off on the Staff tab.");
+            }
             if (svc != null)
             {
                 rec.customers = svc.Arrivals;

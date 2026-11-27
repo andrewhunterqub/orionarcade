@@ -32,6 +32,7 @@ public static class Tests
         Test("calendar: no overlapping nights, and St Patrick's Day draws a crowd", CalendarNights);
         Test("door security: fewer rowdy customers, and Hardcore weekends without it get fined", DoorSecurity);
         Test("cleaner: works after close and raises tomorrow's cleanliness", Cleaner);
+        Test("rota: staff off tonight aren't there or paid; long streaks wear them down", Rota);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -276,6 +277,29 @@ public static class Tests
         }
         float without = Morning(false), with = Morning(true);
         Assert(with > without + 5, $"tomorrow's cleanliness: with cleaner {with:0}, without {without:0}");
+    }
+
+    static void Rota()
+    {
+        var g = Game.NewCareer(81, 1);
+        var sam = g.S.staff[0];
+        Assert(g.ToggleDayOff(sam.uid, 0) == null, "couldn't give Monday off");
+        Assert(sam.OffOn(0) && !sam.OffOn(1), "rota bits wrong");
+        // Monday (day 0): Sam is off, so not in service and not paid.
+        g.OpenDoors();
+        Assert(!g.Svc.Staff.Exists(a => a.m == sam), "staff member off tonight turned up");
+        int t = 0; while (g.Phase == Phase.Service && t++ < 20000) { g.Svc.Step(); g.EndServiceIfDone(); }
+        Assert(g.LastNight.wages == 0, $"paid £{g.LastNight.wages} for a night off");
+        Assert(sam.streak == 0, "streak not reset on a night off");
+        // Can't take every night off.
+        for (int d = 1; d < 6; d++) g.ToggleDayOff(sam.uid, d);
+        Assert(g.ToggleDayOff(sam.uid, 6) != null, "allowed a rota with no nights at all");
+        // Seven straight nights: morale falls and the report says so.
+        var h = Game.NewCareer(82, 1);
+        float before = h.S.staff[0].morale; bool warned = false;
+        for (int d = 0; d < 8; d++) { PlayDay(h, false); warned |= h.S.history[h.S.history.Count - 1].moments.Exists(m => m.Contains("seven nights straight")); }
+        Assert(warned, "no warning after seven straight nights");
+        Assert(h.S.staff[0].streak >= 7, "streak not counted");
     }
 
     static void CashCrisisArc()

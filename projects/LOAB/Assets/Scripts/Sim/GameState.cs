@@ -39,7 +39,10 @@ namespace Loab.Sim
         public int xp, level;
         public int nightsWorked;
         public uint shirt, skin, hair;
+        // Rota (task S3): bit n set = not working on day-of-week n (0 = Monday). streak = nights worked in a row.
+        public int daysOff, streak;
         public bool HasTrait(string t) => traits.Contains(t);
+        public bool OffOn(int dayOfWeek) => (daysOff & (1 << dayOfWeek)) != 0;
     }
 
     [Serializable]

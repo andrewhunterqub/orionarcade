@@ -334,6 +334,18 @@ namespace Loab.Game
             {
                 c.Add(Row(Lbl("Morale", "slider-label"), Bar(m.morale / 100f, m.morale < 30 ? Col(0xff6e64) : Col(0x78dc8c)), Lbl($"  Lv {m.level}", "card-sub")));
                 var me = m;
+                // Rota (task S3): which nights they work. Highlighted = working.
+                var rota = Row(Lbl("Works", "slider-label"));
+                rota.AddToClassList("wrap");
+                for (int dow = 0; dow < 7; dow++)
+                {
+                    int d = dow;
+                    var day = Toggle(Content.DayShort[d], !me.OffOn(d), () => { var e = G.ToggleDayOff(me.uid, d); if (e != null) Flash(e); MarkDirty(); });
+                    day.tooltip = me.OffOn(d) ? $"Off on {Content.DayNames[d]}s" : $"Working {Content.DayNames[d]}s";
+                    rota.Add(day);
+                }
+                if (m.streak >= 6) rota.Add(Lbl($"  {m.streak} nights straight!", "chip", "chip-bad"));
+                c.Add(rota);
                 bool trained = G.S.GetFlag("trained_" + m.uid) >= G.S.Week;
                 var course = Btn(trained ? "On a course this week" : $"Training (£{Sim.Game.TrainingCost})", () => { var e = G.Train(me.uid); if (e != null) Flash(e); else _run.Audio.Play("coin"); }, "btn-small");
                 course.SetEnabled(!trained);
