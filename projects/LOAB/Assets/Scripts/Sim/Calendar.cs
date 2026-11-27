@@ -25,7 +25,8 @@ namespace Loab.Sim
     {
         public const int YearDays = 112;
 
-        static float[] Segs(float students, float youngPros, float locals, float sports, float creatives) => new[] { students, youngPros, locals, sports, creatives };
+        static float[] Segs(float students, float youngPros, float locals, float sports, float creatives, float afterWork = 1f, float tourists = 1f, float couples = 1f)
+            => new[] { students, youngPros, locals, sports, creatives, afterWork, tourists, couples };
 
         public static readonly List<CalendarDef> All = new List<CalendarDef>
         {
@@ -37,7 +38,7 @@ namespace Loab.Sim
             new CalendarDef { Id = "bonfire", Name = "Bonfire Night", Season = 0, From = 25, To = 25, Footfall = 1.1f, SegBoost = Segs(1, 1, 1.25f, 1, 1), Drink = DrinkCat.Hot, DrinkBoost = 1.8f,
                 Blurb = "Bonfire Night: locals drop in after the fireworks for something warm." },
             // Winter
-            new CalendarDef { Id = "xmas_parties", Name = "Christmas party season", Season = 1, From = 14, To = 19, Footfall = 1.12f, SegBoost = Segs(1, 1.3f, 1.05f, 1, 1), Drink = DrinkCat.Wine, DrinkBoost = 1.3f,
+            new CalendarDef { Id = "xmas_parties", Name = "Christmas party season", Season = 1, From = 14, To = 19, Footfall = 1.12f, SegBoost = Segs(1, 1.3f, 1.05f, 1, 1, 1.6f, 1.1f, 1f), Drink = DrinkCat.Wine, DrinkBoost = 1.3f,
                 Blurb = "Christmas party season: office parties book out tables. Expect big crowds." },
             new CalendarDef { Id = "xmas_eve", Name = "Christmas Eve", Season = 1, From = 20, To = 20, Footfall = 1.2f, SegBoost = Segs(0.8f, 1.05f, 1.35f, 1, 1), Drink = DrinkCat.Hot, DrinkBoost = 1.6f,
                 Blurb = "Christmas Eve: everyone's home, everyone's out. The busiest night of the year." },
@@ -46,7 +47,7 @@ namespace Loab.Sim
             new CalendarDef { Id = "dry_january", Name = "Dry January", Season = 1, From = 22, To = 27, Footfall = 0.75f, Drink = DrinkCat.AlcoholFree, DrinkBoost = 2.5f,
                 Blurb = "Dry January: quiet nights, and alcohol-free drinks are in demand." },
             // Spring
-            new CalendarDef { Id = "valentines", Name = "Valentine's Day", Season = 2, From = 3, To = 3, Footfall = 1.1f, SegBoost = Segs(1, 1.4f, 0.9f, 0.8f, 1.1f), Drink = DrinkCat.Wine, DrinkBoost = 1.5f,
+            new CalendarDef { Id = "valentines", Name = "Valentine's Day", Season = 2, From = 3, To = 3, Footfall = 1.1f, SegBoost = Segs(1, 1.4f, 0.9f, 0.8f, 1.1f, 0.8f, 1f, 2.5f), Drink = DrinkCat.Wine, DrinkBoost = 1.5f,
                 Blurb = "Valentine's: couples want somewhere intimate. Booths and candles pay off." },
             new CalendarDef { Id = "st_patricks", Name = "St Patrick's Day", Season = 2, From = 9, To = 9, Footfall = 1.3f, SegBoost = Segs(1.1f, 1.05f, 1.2f, 1.05f, 1.05f), Drink = DrinkCat.Stout, DrinkBoost = 2.5f, SuggestEvent = 2,
                 Blurb = "St Patrick's Day: the stout will flow. Make sure you've plenty in." },

@@ -160,7 +160,7 @@ namespace Loab.Game
                 var row = El("axis-row");
                 row.Add(Lbl(Axis.Low[a], "axis-lo"));
                 var track = El("axis-track");
-                for (int sgi = 0; sgi < 5; sgi++)
+                for (int sgi = 0; sgi < Content.Segments.Count; sgi++)
                 {
                     var seg = Content.Segments[sgi];
                     var pref = El("axis-pref");
@@ -176,7 +176,7 @@ namespace Loab.Game
                 p.Add(row);
             }
             p.Add(Lbl("WHO WILL LOVE IT", "section"));
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < Content.Segments.Count; i++)
             {
                 var seg = Content.Segments[i];
                 var r = Row(Lbl(seg.Plural, "slider-label"), Bar(v.SegMatch[i], Col(seg.Color)), Lbl($" {v.SegMatch[i] * 100:0}%", "card-sub"));
@@ -488,7 +488,7 @@ namespace Loab.Game
         void BuildPromote(VisualElement p)
         {
             Title(p, "Promote", "Awareness is how many people in each crowd know you exist. Word of mouth from happy customers is the best advert of all.");
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < Content.Segments.Count && i < G.S.awareness.Length; i++)
             {
                 var seg = Content.Segments[i];
                 p.Add(Row(Lbl(seg.Plural, "slider-label"), Bar(G.S.awareness[i], Col(seg.Color)), Lbl($" {G.S.awareness[i] * 100:0}%", "card-sub")));

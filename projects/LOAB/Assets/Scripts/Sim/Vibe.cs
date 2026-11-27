@@ -18,7 +18,7 @@ namespace Loab.Sim
         public float Coherence;           // 0..100
         public List<ThemeStatus> Themes = new List<ThemeStatus>();
         public ThemeStatus ActiveTheme;   // strongest recognised theme or null
-        public float[] SegMatch = new float[5]; // 0..1 vibe match per segment
+        public float[] SegMatch = new float[Content.Segments.Count]; // 0..1 vibe match per segment
         public int Seats, Toilets, BarPoints, Games, Screens;
         public bool HasStage, HasSpeakers;
         public float Comfort;             // average seat comfort

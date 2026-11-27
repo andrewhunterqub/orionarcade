@@ -37,7 +37,7 @@ namespace Loab.Sim
         public readonly List<Incident> Incidents = new List<Incident>();
         public readonly List<ServiceMessage> Messages = new List<ServiceMessage>();
         public readonly int[] NoteCounts = new int[(int)Note.Count];
-        public readonly int[] SegCounts = new int[5];
+        public readonly int[] SegCounts = new int[Content.Segments.Count];
         public readonly List<Review> NewReviews = new List<Review>();
         public readonly List<string> Moments = new List<string>();
         public readonly List<string> StockOuts = new List<string>();
@@ -66,7 +66,7 @@ namespace Loab.Sim
         public bool OwnerBehindBar;
         public float Speed = 1f;        // UI speed multiplier (the Unity layer reads this)
 
-        readonly float[] _expected = new float[5];
+        readonly float[] _expected = new float[Content.Segments.Count];
         float _eventExpected;
         readonly Dictionary<int, Customer[]> _seats = new Dictionary<int, Customer[]>();
         readonly Dictionary<int, List<Customer>> _users = new Dictionary<int, List<Customer>>();
@@ -233,6 +233,8 @@ namespace Loab.Sim
             float p = h < 1 ? 0.8f : h < 2 ? 0.9f : h < 3 ? 1.2f : h < 4 ? 1.25f : h < 5 ? 0.9f : h < 5.5f ? 0.35f : 0f;
             if (s == Seg.YoungPros && h < 2) p *= 1.6f; // after-work crowd
             if (s == Seg.Students && h < 1.5f) p *= 0.6f;
+            if (s == Seg.AfterWork) p *= h < 2 ? 2.2f : 0.35f;          // straight from the office, home by nine
+            if (s == Seg.Couples && (h < 1 || h > 4.5f)) p *= 0.5f;    // dinner first, home before the rush
             return p;
         }
 
@@ -253,7 +255,7 @@ namespace Loab.Sim
                 }
             }
             float hh = HappyHour ? 1.25f : 1f;
-            for (int s = 0; s < 5; s++)
+            for (int s = 0; s < Content.Segments.Count; s++)
             {
                 var seg = (Seg)s;
                 float rate = _expected[s] * Profile(T, seg) / (ProfileIntegral * 60f) * Tick;
@@ -271,8 +273,8 @@ namespace Loab.Sim
 
         Seg PickEventSegment()
         {
-            var w = new float[5];
-            for (int i = 0; i < 5; i++)
+            var w = new float[Content.Segments.Count];
+            for (int i = 0; i < Content.Segments.Count; i++)
             {
                 var d = Content.Segments[i];
                 w[i] = Economy.EventAffinity(d, Event.kind) * d.Share * (0.3f + V.SegMatch[i]);

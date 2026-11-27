@@ -273,7 +273,7 @@ namespace Loab.Sim
                 Mentor = "A hundred people through the door! You'll want more bar staff and seats if this keeps up." },
             new GoalDef { Text = "Earn the loyalty of 6 regulars", Reward = 600, Done = g => g.S.regulars.Count >= 6,
                 Mentor = "Regulars are the heart of a bar. Look after them and they'll look after you." },
-            new GoalDef { Text = "Build up £10,000 in the bank", Reward = 1000, Done = g => g.S.cash >= 10000,
+            new GoalDef { Text = "Build up £8,000 in the bank", Reward = 1000, Done = g => g.S.cash >= 8000,
                 Mentor = "Act One complete, my love. You survived the dream. I always knew you would. Keep going, the city's yours." },
             // ---- Act 2: Making a Name (build brief 8.2)
             new GoalDef { Text = "Act 2: land a weekly residency (a hit comedy or open mic night)", Reward = 800, Done = g => g.S.residencyDay >= 0,

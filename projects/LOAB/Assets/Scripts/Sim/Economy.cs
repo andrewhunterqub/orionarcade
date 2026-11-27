@@ -10,7 +10,7 @@ namespace Loab.Sim
         /// <summary>How much a segment wants to come to / join in with this kind of event.</summary>
         public static float EventAffinity(SegmentDef d, int kind) => kind == 0 ? d.Quiz : kind == 1 ? d.Comedy : d.Stage * 0.9f;
 
-        public const float RentPerWeek = 1400f;
+        public const float RentPerWeek = 1500f;
         public const float UtilitiesPerNight = 60f;
         /// How strongly footfall falls as prices rise above normal (times each segment's price sensitivity).
         public const float PriceElasticity = 4.0f;
@@ -108,7 +108,7 @@ namespace Loab.Sim
             float ratio = VibeCalc.PriceRatio(s);
             bool canServe = v.BarPoints > 0;
             eventExtra = 0;
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < Content.Segments.Count; i++)
             {
                 var d = Content.Segments[i];
                 float day = d.DayWeights[s.DayOfWeek] * (s.DayOfWeek >= 4 ? 1.15f : 1f);
@@ -117,6 +117,7 @@ namespace Loab.Sim
                 float theme = 1f;
                 if (v.ActiveTheme != null && d.ThemeAffinity.TryGetValue(v.ActiveTheme.Def.Id, out float aff)) theme += aff * 0.25f;
                 float sports = (s.DayOfWeek == 2 || s.DayOfWeek == 5) && i == (int)Seg.SportsFans && v.Screens > 0 ? 1.5f : 1f; // match days
+                if (i == (int)Seg.Tourists) sports *= s.Season == 3 ? 1.8f : s.Season == 1 ? 0.6f : 1f; // tourist season
                 float appeal = (0.15f + 0.85f * v.SegMatch[i]) * rep * price * ent * theme * sports * Calendar.SegmentMult(s, v, i);
                 float social = 1f + s.socialPostBoost;
                 outExpected[i] = canServe ? foot * d.Share * s.awareness[i] * appeal * day * social : 0;
@@ -133,7 +134,7 @@ namespace Loab.Sim
 
         public static float ExpectedTotal(GameState s, VibeReport v)
         {
-            var e = new float[5];
+            var e = new float[Content.Segments.Count];
             var ev = s.events.Find(x => x.day == s.day);
             ExpectedArrivals(s, v, e, ev, out float extra);
             float t = extra;

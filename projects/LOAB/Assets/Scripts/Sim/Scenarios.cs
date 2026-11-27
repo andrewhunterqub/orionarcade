@@ -28,7 +28,7 @@ namespace Loab.Sim
                     foreach (var it in s.items) it.wear = 85;
                     for (int i = 0; i < 12; i++) s.reviews.Add(new Review { day = -1, stars = i % 3 == 0 ? 3 : 2, author = "Old review", segment = "Local", text = i % 2 == 0 ? "Used to be great. Sticky everything now." : "Flat beer, grumpy vibe." });
                     s.reviewCount = 12;
-                    for (int i = 0; i < 5; i++) s.awareness[i] *= 0.7f;
+                    for (int i = 0; i < s.awareness.Length; i++) s.awareness[i] *= 0.7f;
                     s.barName = "The Crooked Anchor";
                 },
                 Won = g => Streak(g, 4.2f) >= 5,

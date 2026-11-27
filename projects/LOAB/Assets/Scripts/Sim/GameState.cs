@@ -137,7 +137,7 @@ namespace Loab.Sim
         public float reputation;    // 0..100
         public float rating;        // stars 1..5 (rolling)
         public int reviewCount;
-        public float[] awareness = new float[5]; // per segment 0..1
+        public float[] awareness = new float[Content.Segments.Count]; // per segment 0..1
 
         // Layout & style
         public int gridW = 16, gridH = 11;

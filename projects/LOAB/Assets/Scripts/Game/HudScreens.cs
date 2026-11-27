@@ -395,9 +395,9 @@ namespace Loab.Game
             }
 
             right.Add(Lbl("WHO CAME", "section"));
-            if (n.segCounts.Count == 5 && n.customers > 0)
+            if (n.segCounts.Count > 0 && n.customers > 0)
             {
-                for (int i = 0; i < 5; i++)
+                for (int i = 0; i < n.segCounts.Count && i < Content.Segments.Count; i++)
                 {
                     var d = Content.Segments[i];
                     right.Add(Row(Lbl(d.Plural, "slider-label"), Bar(n.segCounts[i] / (float)Mathf.Max(1, n.customers), Col(d.Color)), Lbl($" {n.segCounts[i]}", "card-sub")));

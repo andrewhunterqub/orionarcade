@@ -132,7 +132,7 @@ namespace Loab.Sim
         public static Game NewCareer(ulong seed, int difficulty)
         {
             var s = new GameState { seed = seed, difficulty = difficulty, mode = 0, cash = difficulty == 0 ? 8000 : difficulty == 2 ? 4500 : 6000, reputation = 12, rating = 3f };
-            s.awareness = new[] { 0.2f, 0.16f, 0.34f, 0.18f, 0.16f };
+            s.awareness = new[] { 0.2f, 0.16f, 0.34f, 0.18f, 0.16f, 0.18f, 0.1f, 0.14f };
             var r = new Rng(seed);
             Item(s, "bar_counter", 6, 8, 0);
             Item(s, "toilets", 14, 9, 0);
@@ -349,7 +349,7 @@ namespace Loab.Sim
             float share = 0, tot = 0;
             var catCount = new int[10];
             foreach (var m in S.menu) if (m.onMenu) catCount[(int)Content.Drink(m.id).Cat]++;
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < Content.Segments.Count; i++)
             {
                 var seg = Content.Segments[i];
                 share += seg.DrinkPrefs[(int)d.Cat] / Math.Max(1, catCount[(int)d.Cat]) * seg.Share;
@@ -679,7 +679,7 @@ namespace Loab.Sim
                 rec.cogs = svc.Cogs;
                 rec.spills = svc.Spills;
                 rec.rowdy = svc.RowdyCount;
-                for (int i = 0; i < 5; i++) rec.segCounts.Add(svc.SegCounts[i]);
+                for (int i = 0; i < Content.Segments.Count; i++) rec.segCounts.Add(svc.SegCounts[i]);
                 float satSum = 0; int satN = 0;
                 foreach (var c in svc.Departed) { satSum += c.Satisfaction; satN++; }
                 rec.satisfaction = satN > 0 ? satSum / satN : 50;
@@ -703,7 +703,7 @@ namespace Loab.Sim
                     if (svc.Event.kind == 0) S.SetFlag("quiz_hosted", S.GetFlag("quiz_hosted") + 1);
                     else if (svc.Event.kind == 1) S.SetFlag("comedy_hosted", S.GetFlag("comedy_hosted") + 1);
                     else S.SetFlag("openmic_hosted", S.GetFlag("openmic_hosted") + 1);
-                    if (svc.EventOutcome == "Viral hit") { S.reputation += 6; for (int i = 0; i < 5; i++) S.awareness[i] += 0.04f; AddTag(svc.Event.kind == 0 ? "Best Quiz in Town" : svc.Event.kind == 1 ? "Best Comedy Night" : "Legendary Open Mic"); }
+                    if (svc.EventOutcome == "Viral hit") { S.reputation += 6; for (int i = 0; i < S.awareness.Length; i++) S.awareness[i] += 0.04f; AddTag(svc.Event.kind == 0 ? "Best Quiz in Town" : svc.Event.kind == 1 ? "Best Comedy Night" : "Legendary Open Mic"); }
                     else if (svc.EventOutcome == "Hit") { S.reputation += 2.5f; string hk = svc.Event.kind == 0 ? "quiz_hits" : svc.Event.kind == 1 ? "comedy_hits" : "openmic_hits"; S.SetFlag(hk, S.GetFlag(hk) + 1); }
                     else if (svc.EventOutcome == "Flop") S.reputation -= 2;
                     bool hit = svc.EventOutcome == "Hit" || svc.EventOutcome == "Viral hit";
@@ -860,7 +860,7 @@ namespace Loab.Sim
             S.cleanliness -= mess;
 
             // Awareness decays slowly towards a floor
-            for (int i = 0; i < 5; i++) S.awareness[i] = Math.Max(0.05f, Math.Min(1f, 0.12f + (S.awareness[i] - 0.12f) * 0.985f));
+            for (int i = 0; i < S.awareness.Length; i++) S.awareness[i] = Math.Max(0.05f, Math.Min(1f, 0.12f + (S.awareness[i] - 0.12f) * 0.985f));
             S.socialPostBoost *= 0.5f;
 
             // Staff quitting

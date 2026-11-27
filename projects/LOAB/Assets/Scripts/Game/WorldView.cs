@@ -900,12 +900,13 @@ namespace Loab.Game
 
             public void Dress(uint shirt, uint skin, uint hair, bool tall, bool apron, int seg = -1)
             {
-                _backpack.gameObject.SetActive(seg == (int)Seg.Students);
-                _tie.gameObject.SetActive(seg == (int)Seg.YoungPros);
-                _cap.gameObject.SetActive(seg == (int)Seg.Locals);
-                _scarf.gameObject.SetActive(seg == (int)Seg.SportsFans);
+                // Segment silhouettes: the newer crowds reuse the same props in new combinations (task K5).
+                _backpack.gameObject.SetActive(seg == (int)Seg.Students || seg == (int)Seg.Tourists);
+                _tie.gameObject.SetActive(seg == (int)Seg.YoungPros || seg == (int)Seg.AfterWork);
+                _cap.gameObject.SetActive(seg == (int)Seg.Locals || seg == (int)Seg.Tourists);
+                _scarf.gameObject.SetActive(seg == (int)Seg.SportsFans || seg == (int)Seg.Couples);
                 _beanie.gameObject.SetActive(seg == (int)Seg.Creatives);
-                _hair.gameObject.SetActive(seg != (int)Seg.Locals && seg != (int)Seg.Creatives);
+                _hair.gameObject.SetActive(seg != (int)Seg.Locals && seg != (int)Seg.Creatives && seg != (int)Seg.Tourists);
                 _shirtR.sharedMaterial = ModelFactory.Mat(shirt);
                 _headR.sharedMaterial = ModelFactory.Mat(skin);
                 _hairR.sharedMaterial = ModelFactory.Mat(hair);

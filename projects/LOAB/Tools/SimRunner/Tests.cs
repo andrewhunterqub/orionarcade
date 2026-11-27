@@ -243,7 +243,8 @@ public static class Tests
         (int rowdy, int fines) Weekends(bool door)
         {
             int rowdy = 0, fines = 0;
-            for (ulong seed = 1; seed <= 12; seed++)
+            for (ulong seed = 1; seed <= 16; seed++)
+            for (int dow = 4; dow <= 5; dow++)
             {
                 var g = Game.NewCareer(seed, 2);
                 g.S.cash = 50000; g.S.responsibleService = false; g.S.reputation = 60;
@@ -253,7 +254,7 @@ public static class Tests
                     var d = Economy.MakeApplicant(g.S, new Rng(seed), Roles.Door, 12);
                     g.S.staff.Add(d);
                 }
-                g.S.day = 5; // a Saturday
+                g.S.day = dow; // Friday or Saturday
                 g.Recompute();
                 g.OpenDoors(); int t = 0;
                 while (g.Phase == Phase.Service && t++ < 20000) { g.Svc.Step(); g.EndServiceIfDone(); }

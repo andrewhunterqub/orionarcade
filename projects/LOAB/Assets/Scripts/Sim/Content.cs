@@ -16,7 +16,7 @@ namespace Loab.Sim
 
     public enum DrinkCat { Lager, Ale, Stout, Craft, Cider, Wine, Spirit, Cocktail, AlcoholFree, Hot }
 
-    public enum Seg { Students, YoungPros, Locals, SportsFans, Creatives }
+    public enum Seg { Students, YoungPros, Locals, SportsFans, Creatives, AfterWork, Tourists, Couples }
 
     /// Staff roles (StaffMember.role). Door security added in task S1.
     public static class Roles
@@ -333,15 +333,15 @@ namespace Loab.Sim
 
             // ---- Music ------------------------------------------------------------------------------
             //                                                                          Stu   YP    Loc   Spt   Cre
-            Music.Add(new MusicDef { Id = "radio", Name = "Telly & Radio", Vibe = V(0, -1, 0, 0, -2), Themes = T("sports"), SegLikes = new[] { -0.3f, -0.3f, 0.2f, 0.4f, -0.4f } });
-            Music.Add(new MusicDef { Id = "jazz", Name = "Jazz", Vibe = V(-3, 6, -5, 5, 2), Themes = T("speakeasy", "lounge"), SegLikes = new[] { -0.3f, 0.5f, 0.1f, -0.4f, 0.4f } });
-            Music.Add(new MusicDef { Id = "indie", Name = "Indie", Vibe = V(3, 0, 3, 0, 3), Themes = T("craft"), SegLikes = new[] { 0.6f, 0.2f, -0.2f, 0.0f, 0.6f } });
-            Music.Add(new MusicDef { Id = "rock", Name = "Classic Rock", Vibe = V(5, -3, -3, -1, 1), Themes = T("dive", "sports"), SegLikes = new[] { 0.3f, -0.1f, 0.3f, 0.5f, 0.0f } });
-            Music.Add(new MusicDef { Id = "pop", Name = "Pop Hits", Vibe = V(6, 0, 4, -3, -2), Themes = T(), SegLikes = new[] { 0.6f, 0.3f, -0.3f, 0.2f, -0.4f } });
-            Music.Add(new MusicDef { Id = "electronic", Name = "Electronic", Vibe = V(7, 2, 7, -3, 3), Themes = T("arcade"), SegLikes = new[] { 0.5f, 0.4f, -0.6f, -0.2f, 0.4f } });
-            Music.Add(new MusicDef { Id = "folk", Name = "Folk & Trad", Vibe = V(-2, 0, -7, 4, 2), Themes = T("pub"), SegLikes = new[] { -0.4f, -0.2f, 0.6f, 0.0f, 0.3f } });
-            Music.Add(new MusicDef { Id = "soul", Name = "Soul & Funk", Vibe = V(4, 3, -3, 1, 2), Themes = T("lounge"), SegLikes = new[] { 0.2f, 0.5f, 0.3f, 0.1f, 0.4f } });
-            Music.Add(new MusicDef { Id = "chiptune", Name = "Retro Chiptunes", Vibe = V(3, -1, 1, 0, 8), Themes = T("arcade"), SegLikes = new[] { 0.3f, -0.2f, -0.3f, -0.2f, 0.6f } });
+            Music.Add(new MusicDef { Id = "radio", Name = "Telly & Radio", Vibe = V(0, -1, 0, 0, -2), Themes = T("sports"), SegLikes = new[] { -0.3f, -0.3f, 0.2f, 0.4f, -0.4f , 0.4f, 0.0f, -0.3f } });
+            Music.Add(new MusicDef { Id = "jazz", Name = "Jazz", Vibe = V(-3, 6, -5, 5, 2), Themes = T("speakeasy", "lounge"), SegLikes = new[] { -0.3f, 0.5f, 0.1f, -0.4f, 0.4f , 0.6f, 0.3f, 0.7f } });
+            Music.Add(new MusicDef { Id = "indie", Name = "Indie", Vibe = V(3, 0, 3, 0, 3), Themes = T("craft"), SegLikes = new[] { 0.6f, 0.2f, -0.2f, 0.0f, 0.6f , -0.1f, 0.1f, 0.3f } });
+            Music.Add(new MusicDef { Id = "rock", Name = "Classic Rock", Vibe = V(5, -3, -3, -1, 1), Themes = T("dive", "sports"), SegLikes = new[] { 0.3f, -0.1f, 0.3f, 0.5f, 0.0f , 0.1f, 0.3f, -0.3f } });
+            Music.Add(new MusicDef { Id = "pop", Name = "Pop Hits", Vibe = V(6, 0, 4, -3, -2), Themes = T(), SegLikes = new[] { 0.6f, 0.3f, -0.3f, 0.2f, -0.4f , 0.0f, 0.2f, 0.1f } });
+            Music.Add(new MusicDef { Id = "electronic", Name = "Electronic", Vibe = V(7, 2, 7, -3, 3), Themes = T("arcade"), SegLikes = new[] { 0.5f, 0.4f, -0.6f, -0.2f, 0.4f , -0.5f, -0.2f, -0.4f } });
+            Music.Add(new MusicDef { Id = "folk", Name = "Folk & Trad", Vibe = V(-2, 0, -7, 4, 2), Themes = T("pub"), SegLikes = new[] { -0.4f, -0.2f, 0.6f, 0.0f, 0.3f , 0.1f, 0.8f, 0.2f } });
+            Music.Add(new MusicDef { Id = "soul", Name = "Soul & Funk", Vibe = V(4, 3, -3, 1, 2), Themes = T("lounge"), SegLikes = new[] { 0.2f, 0.5f, 0.3f, 0.1f, 0.4f , 0.5f, 0.3f, 0.6f } });
+            Music.Add(new MusicDef { Id = "chiptune", Name = "Retro Chiptunes", Vibe = V(3, -1, 1, 0, 8), Themes = T("arcade"), SegLikes = new[] { 0.3f, -0.2f, -0.3f, -0.2f, 0.6f , -0.5f, -0.2f, -0.3f } });
 
             // ---- Suppliers & drinks -----------------------------------------------------------------
             Suppliers.Add(new SupplierDef { Id = "barrel", Name = "Big Barrel Wholesale", Quality = 52, Reliability = 0.97f, Blurb = "Cheap, cheerful, always turns up." });
@@ -449,6 +449,36 @@ namespace Loab.Sim
                 DayWeights = new[] { .6f, .7f, .9f, 1.3f, 1.3f, 1.1f, .8f }, Share = .16f,
                 Games = 0.6f, Screens = 0.0f, Stage = 1.0f, Jukebox = 0.5f, Quiz = 0.6f, Comedy = 0.9f, RowdyBase = 0.6f,
                 ThemeAffinity = new Dictionary<string, float> { { "arcade", .6f }, { "speakeasy", .4f }, { "dive", .4f }, { "craft", .7f }, { "lounge", .3f } }, Color = 0x9b5de5,
+            });
+
+            // ---- More customer segments (task K5) ----------------------------------------------------
+            // Added on top of the original five (shares above sum to 1): extra trade for bars that suit them.
+            Segments.Add(new SegmentDef
+            {
+                Id = Seg.AfterWork, Name = "After-Work Drinker", Plural = "After-Work Crowd", Blurb = "One quick one after the office. Fast service and somewhere to put a laptop bag.",
+                VibePref = V(50, 68, 55, 45, 30), VibeTolerance = 32, BudgetMin = 20, BudgetMax = 40, PriceSensitivity = 0.4f, Patience = 6,
+                DrinkPrefs = new[] { .26f, .10f, .03f, .10f, .05f, .22f, .14f, .06f, .03f, .01f },
+                DayWeights = new[] { 1.1f, 1.2f, 1.2f, 1.4f, 1.3f, .3f, .2f }, Share = .09f,
+                Games = 0.2f, Screens = 0.5f, Stage = 0.2f, Jukebox = 0.2f, Quiz = 0.3f, Comedy = 0.4f, RowdyBase = 0.5f,
+                ThemeAffinity = new Dictionary<string, float> { { "lounge", .6f }, { "pub", .4f }, { "sports", .4f }, { "craft", .4f } }, Color = 0x4a6670,
+            });
+            Segments.Add(new SegmentDef
+            {
+                Id = Seg.Tourists, Name = "Tourist", Plural = "Tourists", Blurb = "Here for local character and a story to tell. Not fussed about prices.",
+                VibePref = V(55, 45, 30, 60, 55), VibeTolerance = 38, BudgetMin = 25, BudgetMax = 55, PriceSensitivity = 0.2f, Patience = 10,
+                DrinkPrefs = new[] { .16f, .22f, .14f, .12f, .10f, .07f, .08f, .06f, .04f, .01f },
+                DayWeights = new[] { .8f, .8f, .9f, 1.0f, 1.2f, 1.4f, 1.3f }, Share = .06f,
+                Games = 0.4f, Screens = 0.3f, Stage = 0.8f, Jukebox = 0.5f, Quiz = 0.3f, Comedy = 0.5f, RowdyBase = 0.6f,
+                ThemeAffinity = new Dictionary<string, float> { { "pub", 1.2f }, { "speakeasy", .5f }, { "craft", .5f } }, Color = 0xf4a259,
+            });
+            Segments.Add(new SegmentDef
+            {
+                Id = Seg.Couples, Name = "Couple", Plural = "Couples", Blurb = "Date night: somewhere intimate, a good bottle and a quiet corner.",
+                VibePref = V(35, 70, 45, 80, 45), VibeTolerance = 28, BudgetMin = 30, BudgetMax = 65, PriceSensitivity = 0.35f, Patience = 9,
+                DrinkPrefs = new[] { .05f, .03f, .02f, .06f, .05f, .38f, .10f, .25f, .05f, .01f },
+                DayWeights = new[] { .5f, .6f, .8f, 1.1f, 1.4f, 1.5f, 1.0f }, Share = .07f,
+                Games = 0.2f, Screens = 0.0f, Stage = 0.5f, Jukebox = 0.3f, Quiz = 0.2f, Comedy = 0.7f, RowdyBase = 0.3f,
+                ThemeAffinity = new Dictionary<string, float> { { "lounge", 1.0f }, { "speakeasy", .8f }, { "pub", .2f } }, Color = 0xe5989b,
             });
 
             // ---- Staff traits -------------------------------------------------------------------------
