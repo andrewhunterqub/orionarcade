@@ -116,7 +116,9 @@ namespace Loab.Sim
     public class GameState
     {
         public int version = 1;
-        public int mode;            // 0 career, 1 sandbox
+        public int mode;            // 0 career, 1 sandbox, 2 scenario
+        public string scenario;     // scenario id when mode == 2
+        public int scenarioResult;  // 0 running, 1 won, 2 out of time
         public int difficulty = 1;  // 0 relaxed, 1 standard, 2 hardcore
         public ulong seed;
         public string barName = "The Crooked Anchor";
@@ -155,6 +157,11 @@ namespace Loab.Sim
         public List<Act> agency = new List<Act>();
         public List<BookedEvent> events = new List<BookedEvent>();
         public int happyHourStart = -1; // hour (17..22), -1 = none
+        // Residencies (brief 7.4): a hit act can become a weekly fixture.
+        public Act residencyAct = new Act();
+        public int residencyDay = -1;   // day of week, -1 = none
+        public Act residencyOffer = new Act();
+        public int residencyOfferDay = -1;
         public int happyHourDiscount = 30;
 
         // Reputation

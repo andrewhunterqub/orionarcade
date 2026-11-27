@@ -18,6 +18,7 @@ namespace Loab.Game
         VisualElement _top, _tabs, _side, _sideBody, _feed, _goal, _mentor, _actions, _inspector, _overlay;
         Label _tooltip, _thought, _sign, _plaque;
         ScrollView _sideScroll;
+        Label _goalLabel;
         Label _barName, _dayText, _cash, _rating, _rep, _custLabel, _custVal, _clock, _goalText, _hint;
         Button _openBtn;
         VisualElement _speedBox, _stats, _camBox;
@@ -178,7 +179,8 @@ namespace Loab.Game
             _root.Add(_side);
 
             _goal = El("panel", "goal");
-            _goal.Add(Lbl("CURRENT GOAL", "goal-label"));
+            _goalLabel = Lbl("CURRENT GOAL", "goal-label");
+            _goal.Add(_goalLabel);
             _goalText = Lbl("", "goal-text");
             _goal.Add(_goalText);
             _root.Add(_goal);
@@ -260,7 +262,8 @@ namespace Loab.Game
             _camBox.style.display = prep || service ? DisplayStyle.Flex : DisplayStyle.None;
             _speedBox.style.display = service ? DisplayStyle.Flex : DisplayStyle.None;
             bool sideOpen = prep && (_tab != null || _run.Selected != null);
-            _goal.style.display = (prep || service) && G.CurrentGoal != null && !sideOpen ? DisplayStyle.Flex : DisplayStyle.None;
+            bool hasGoal = G.CurrentGoal != null || (G.Scenario != null && G.S.scenarioResult == 0);
+            _goal.style.display = (prep || service) && hasGoal && !sideOpen ? DisplayStyle.Flex : DisplayStyle.None;
             if (!prep) { _side.style.display = DisplayStyle.None; _tab = null; UpdateTabButtons(); }
             if (!service) { _inspector.style.display = DisplayStyle.None; _thought.style.display = DisplayStyle.None; }
             _feed.style.display = service ? DisplayStyle.Flex : DisplayStyle.None;
@@ -282,8 +285,8 @@ namespace Loab.Game
             CloseOverlay();
             SetMode();
             MarkDirty();
-            if (G.S.pendingCard != null) ShowCard();
-            else if (G.Phase == Phase.GameOver) ShowGameOver();
+            if (G.Phase == Phase.GameOver || G.S.bankrupt) { G.Phase = Phase.GameOver; ShowGameOver(); }
+            else if (G.S.pendingCard != null) ShowCard();
             if (G.S.day == 0) Tip("prep");
             else if (G.S.day == 1) Tip("vibe");
             else if (G.S.day == 2) Tip("stock");
@@ -318,6 +321,8 @@ namespace Loab.Game
         }
 
         public void MarkDirty() => _dirty = true;
+        public bool ModalOpen => _overlayKind != null;
+        public bool TitleOpen => _overlayKind == "title";
 
         bool _photo;
         bool _photoHidden => false;
@@ -343,7 +348,17 @@ namespace Loab.Game
             _rating.text = $"{Stars(s.rating)} {s.rating:0.0}";
             _rep.text = $"{s.reputation:0}";
             var gl = G.CurrentGoal;
-            if (gl != null) _goalText.text = gl.Reward > 0 ? $"{gl.Text}  (+£{gl.Reward})" : gl.Text;
+            var sc = G.Scenario;
+            if (sc != null)
+            {
+                _goalLabel.text = $"SCENARIO: {sc.Name.ToUpperInvariant()}  -  {G.ScenarioDaysLeft} DAYS LEFT";
+                _goalText.text = $"{sc.GoalText}\n{sc.Progress(G)}";
+            }
+            else
+            {
+                _goalLabel.text = "CURRENT GOAL";
+                if (gl != null) _goalText.text = gl.Reward > 0 ? $"{gl.Text}  (+£{gl.Reward})" : gl.Text;
+            }
             if (G.Phase == Phase.Service && G.Svc != null)
             {
                 var svc = G.Svc;
@@ -361,9 +376,11 @@ namespace Loab.Game
                 _behindBtn.text = svc.OwnerBehindBar ? "Behind the bar\n(you're serving)" : "Help behind\nthe bar";
                 _behindBtn.EnableInClassList("btn-on", svc.OwnerBehindBar);
                 UpdateInspector(svc);
+                UpdateBadges(svc);
             }
             else
             {
+                if (_badges.Count > 0) UpdateBadges(null);
                 float exp = Economy.ExpectedTotal(s, G.V);
                 _custVal.text = $"~{exp:0}";
                 _custLabel.text = "expected tonight";
@@ -592,6 +609,62 @@ namespace Loab.Game
         // =====================================================================================
 
         Customer _inspectedShown;
+        readonly List<Label> _badges = new List<Label>();
+
+        Label Badge(int i)
+        {
+            while (_badges.Count <= i)
+            {
+                var b = Lbl("", "badge");
+                b.pickingMode = PickingMode.Ignore;
+                _root.Insert(2, b); // under the panels, over the world
+                _badges.Add(b);
+            }
+            return _badges[i];
+        }
+
+        /// <summary>Crisp UI badges for moods and problems, pinned over the 3D scene.</summary>
+        void UpdateBadges(Service svc)
+        {
+            int n = 0;
+            if (svc != null && !_photo)
+            {
+                foreach (var c in svc.Customers)
+                {
+                    if (n >= 60) break;
+                    string text = null, cls = null;
+                    if (c.rowdy) { text = "!"; cls = "badge-bad"; }
+                    else if (c.mood < 32 && c.state != CState.Leaving) { text = "?"; cls = "badge-warn"; }
+                    else if (c.mood > 80) { text = "+"; cls = "badge-good"; }
+                    if (text == null || !_run.World.TryHeadPos(c, out var head)) continue;
+                    var p = WorldToPanel(head);
+                    var b = Badge(n++);
+                    b.text = text;
+                    b.EnableInClassList("badge-bad", cls == "badge-bad");
+                    b.EnableInClassList("badge-warn", cls == "badge-warn");
+                    b.EnableInClassList("badge-good", cls == "badge-good");
+                    b.EnableInClassList("badge-wide", false);
+                    b.style.left = p.x; b.style.top = p.y;
+                    b.style.display = DisplayStyle.Flex;
+                }
+                foreach (var inc in svc.Incidents)
+                {
+                    if (n >= 70 || inc.resolved || inc.kind != IncidentKind.Toilet) continue;
+                    var it = G.S.Item(inc.itemUid);
+                    if (it == null) continue;
+                    var p = WorldToPanel(WorldView.ItemCentre(it) + Vector3.up * 2.4f);
+                    var b = Badge(n++);
+                    b.text = "WC";
+                    b.EnableInClassList("badge-bad", true);
+                    b.EnableInClassList("badge-warn", false);
+                    b.EnableInClassList("badge-good", false);
+                    b.EnableInClassList("badge-wide", true);
+                    b.style.left = p.x; b.style.top = p.y;
+                    b.style.display = DisplayStyle.Flex;
+                }
+            }
+            for (int i = n; i < _badges.Count; i++) _badges[i].style.display = DisplayStyle.None;
+        }
 
         void UpdateInspector(Service svc)
         {

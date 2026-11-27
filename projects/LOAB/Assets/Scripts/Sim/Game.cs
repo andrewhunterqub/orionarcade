@@ -103,7 +103,7 @@ namespace Loab.Sim
         public event Action Changed;
 
         // Undo/redo of build commands: snapshot-based, within one Prep phase.
-        sealed class Snapshot { public List<PlacedItem> items; public string floor, wall; public float cash; public int nextUid; public float spent; }
+        sealed class Snapshot { public List<PlacedItem> items; public string floor, wall; public int nextUid; public float cashDelta; }
         readonly Stack<Snapshot> _undo = new Stack<Snapshot>();
         readonly Stack<Snapshot> _redo = new Stack<Snapshot>();
         Rng _r;
@@ -111,6 +111,11 @@ namespace Loab.Sim
         public Game(GameState s)
         {
             S = s;
+            if (string.IsNullOrEmpty(s.pendingCard)) s.pendingCard = null; // JsonUtility saves null strings as ""
+            if (string.IsNullOrEmpty(s.scenario)) s.scenario = null;
+            s.agency ??= new List<Act>();
+            if (!s.agency.Exists(a => a.kind == 2)) Economy.AddOpenMicActs(s, new Rng(s.seed + 99)); // saves from before Open Mic
+            s.menu ??= new List<MenuEntry>(); s.staff ??= new List<StaffMember>(); s.events ??= new List<BookedEvent>();
             L = new Layout(s);
             _r = new Rng(s.seed + (ulong)s.day * 31UL + 7UL);
             Recompute();
@@ -149,6 +154,21 @@ namespace Loab.Sim
             s.weather = "Mild";
             return new Game(s);
         }
+
+        public static Game NewScenario(string id, ulong seed)
+        {
+            var def = Scenarios.Get(id);
+            var g = NewCareer(seed, 1);
+            g.S.mode = 2;
+            g.S.scenario = id;
+            def?.Setup(g.S);
+            g.Recompute();
+            return g;
+        }
+
+        public ScenarioDef Scenario => S.mode == 2 ? Scenarios.Get(S.scenario) : null;
+        public int ScenarioDaysLeft => Scenario == null ? 0 : Math.Max(0, Scenario.Days - S.day);
+        public bool ScenarioJustEnded;
 
         public static Game NewSandbox(ulong seed)
         {
@@ -229,29 +249,50 @@ namespace Loab.Sim
             if (Phase != Phase.Prep) return Fail("You can only build during Prep");
             var err = cmd.Validate(this);
             if (err != null) return Fail(err);
-            _undo.Push(Snap());
+            var snap = Snap();
+            float before = S.cash;
             _redo.Clear();
             cmd.Apply(this);
+            snap.cashDelta = S.cash - before; // only this command's money moves on undo/redo
+            _undo.Push(snap);
             Recompute();
             return null;
         }
 
         public bool CanUndo => _undo.Count > 0;
         public bool CanRedo => _redo.Count > 0;
-        public void Undo() { if (_undo.Count == 0) return; _redo.Push(Snap()); Restore(_undo.Pop()); }
-        public void Redo() { if (_redo.Count == 0) return; _undo.Push(Snap()); Restore(_redo.Pop()); }
+        public void Undo()
+        {
+            if (_undo.Count == 0) return;
+            var snap = _undo.Pop();
+            var cur = Snap(); cur.cashDelta = snap.cashDelta;
+            _redo.Push(cur);
+            Restore(snap);
+            S.cash -= snap.cashDelta; SpentToday += snap.cashDelta;
+            Recompute();
+        }
+
+        public void Redo()
+        {
+            if (_redo.Count == 0) return;
+            var snap = _redo.Pop();
+            var cur = Snap(); cur.cashDelta = snap.cashDelta;
+            _undo.Push(cur);
+            Restore(snap);
+            S.cash += snap.cashDelta; SpentToday -= snap.cashDelta;
+            Recompute();
+        }
 
         Snapshot Snap()
         {
             var list = new List<PlacedItem>();
             foreach (var i in S.items) list.Add(new PlacedItem { uid = i.uid, id = i.id, x = i.x, y = i.y, rot = i.rot, wear = i.wear });
-            return new Snapshot { items = list, floor = S.floor, wall = S.wall, cash = S.cash, nextUid = S.nextUid, spent = SpentToday };
+            return new Snapshot { items = list, floor = S.floor, wall = S.wall, nextUid = S.nextUid };
         }
 
         void Restore(Snapshot s)
         {
-            S.items = s.items; S.floor = s.floor; S.wall = s.wall; S.cash = s.cash; S.nextUid = s.nextUid; SpentToday = s.spent;
-            Recompute();
+            S.items = s.items; S.floor = s.floor; S.wall = s.wall; S.nextUid = s.nextUid;
         }
 
         // =====================================================================================
@@ -382,6 +423,42 @@ namespace Loab.Sim
             return null;
         }
 
+        public const int ExpandCost = 15000, ExpandRep = 35, ExpandCols = 6, MaxWidth = 22;
+        public bool CanExpand => S.gridW + ExpandCols <= MaxWidth;
+
+        /// <summary>Knock through into the unit next door (brief 5.4): the bar grows by a few columns.</summary>
+        public string Expand()
+        {
+            if (Phase != Phase.Prep) return Fail("Only during Prep");
+            if (!CanExpand) return Fail("There's nowhere left to expand into");
+            if (S.reputation < ExpandRep && S.mode != 1) return Fail($"The landlord wants to see reputation {ExpandRep} first");
+            if (S.cash < ExpandCost && S.difficulty > 0) return Fail($"Expanding costs £{ExpandCost:#,0}");
+            Spend(ExpandCost, "Expansion");
+            S.gridW += ExpandCols;
+            L = new Layout(S);
+            _undo.Clear(); _redo.Clear();
+            Recompute();
+            return null;
+        }
+
+        /// <summary>Book the residency act on its next weekday, if that night is free.</summary>
+        public void BookResidency()
+        {
+            if (S.residencyDay < 0) return;
+            for (int off = 0; off < 7; off++)
+            {
+                int day = S.day + off;
+                if (day % 7 != S.residencyDay) continue;
+                if (S.events.Exists(e => e.day == day)) return;
+                var a = S.residencyAct;
+                Spend(a.fee, "Residency");
+                S.events.Add(new BookedEvent { uid = S.nextUid++, day = day, kind = a.kind, act = a, promo = 0, ticket = a.kind == 1 ? 5 : 0 });
+                return;
+            }
+        }
+
+        public void EndResidency() { S.residencyDay = -1; S.events.RemoveAll(e => e.act != null && e.act.name == S.residencyAct.name && e.day >= S.day); Changed?.Invoke(); }
+
         public string CleanLines()
         {
             if (S.lineQuality >= 95) return Fail("Lines are already clean");
@@ -438,7 +515,7 @@ namespace Loab.Sim
             if (act == null) return Fail("Act not available");
             int day = S.day + dayOffset;
             if (S.events.Exists(e => e.day == day)) return Fail("You've already got an event that night");
-            if (act.kind == 1 && !V.HasStage) return Fail("Comedy Night needs a Small Stage. Build one first");
+            if (act.kind >= 1 && !V.HasStage) return Fail($"{Economy.EventName(act.kind)} needs a Small Stage. Build one first");
             float cost = act.fee + promo;
             if (S.cash < cost && S.difficulty > 0) return Fail("Not enough cash");
             Spend(cost, "Event booking");
@@ -557,7 +634,7 @@ namespace Loab.Sim
         void FinishNight(Service svc)
         {
             var rec = new NightRecord { day = S.day, weather = S.weather };
-            float wages = 0;
+            float wages = 0, fines = 0;
             foreach (var m in S.staff) wages += m.wage;
             if (svc != null)
             {
@@ -588,13 +665,28 @@ namespace Loab.Sim
                 }
                 if (svc.Event != null)
                 {
-                    rec.eventName = (svc.Event.kind == 0 ? "Pub Quiz" : "Comedy Night") + " with " + svc.Event.act.name;
+                    rec.eventName = Economy.EventName(svc.Event.kind) + " with " + svc.Event.act.name;
                     rec.eventOutcome = svc.EventOutcome ?? "Didn't happen";
                     if (svc.Event.kind == 0) S.SetFlag("quiz_hosted", S.GetFlag("quiz_hosted") + 1);
-                    else S.SetFlag("comedy_hosted", S.GetFlag("comedy_hosted") + 1);
-                    if (svc.EventOutcome == "Viral hit") { S.reputation += 6; for (int i = 0; i < 5; i++) S.awareness[i] += 0.04f; AddTag(svc.Event.kind == 0 ? "Best Quiz in Town" : "Best Comedy Night"); }
-                    else if (svc.EventOutcome == "Hit") { S.reputation += 2.5f; S.SetFlag(svc.Event.kind == 0 ? "quiz_hits" : "comedy_hits", S.GetFlag(svc.Event.kind == 0 ? "quiz_hits" : "comedy_hits") + 1); }
+                    else if (svc.Event.kind == 1) S.SetFlag("comedy_hosted", S.GetFlag("comedy_hosted") + 1);
+                    else S.SetFlag("openmic_hosted", S.GetFlag("openmic_hosted") + 1);
+                    if (svc.EventOutcome == "Viral hit") { S.reputation += 6; for (int i = 0; i < 5; i++) S.awareness[i] += 0.04f; AddTag(svc.Event.kind == 0 ? "Best Quiz in Town" : svc.Event.kind == 1 ? "Best Comedy Night" : "Legendary Open Mic"); }
+                    else if (svc.EventOutcome == "Hit") { S.reputation += 2.5f; string hk = svc.Event.kind == 0 ? "quiz_hits" : svc.Event.kind == 1 ? "comedy_hits" : "openmic_hits"; S.SetFlag(hk, S.GetFlag(hk) + 1); }
                     else if (svc.EventOutcome == "Flop") S.reputation -= 2;
+                    bool hit = svc.EventOutcome == "Hit" || svc.EventOutcome == "Viral hit";
+                    bool isResidency = S.residencyDay >= 0 && svc.Event.act.name == S.residencyAct.name;
+                    if (hit && isResidency)
+                    {
+                        S.residencyAct.following = Math.Min(100, S.residencyAct.following + 6);
+                        rec.moments.Add($"Residency night with {S.residencyAct.name} is building a real following.");
+                    }
+                    else if (hit && svc.Event.kind >= 1 && S.residencyDay < 0 && S.pendingCard == null)
+                    {
+                        var a = svc.Event.act;
+                        S.residencyOffer = new Act { kind = a.kind, name = a.name, style = a.style, fee = a.fee, quality = a.quality, reliability = a.reliability, following = a.following, volatility = a.volatility };
+                        S.residencyOfferDay = S.DayOfWeek;
+                        S.pendingCard = "residency";
+                    }
                     if (S.GetFlag("quiz_hits") >= 3) AddTag("Best Quiz in Town");
                 }
                 // Staff
@@ -619,7 +711,7 @@ namespace Loab.Sim
                 // Inspections & critic
                 if (S.GetFlag("inspector") == S.day + 1)
                 {
-                    if (svc.CleanlinessNow < 55 || svc.RowdyCount >= 3) { S.cash -= 300; rec.moments.Add("The licensing inspector was NOT impressed. £300 fine."); S.reputation -= 3; }
+                    if (svc.CleanlinessNow < 55 || svc.RowdyCount >= 3) { S.cash -= 300; fines += 300; rec.moments.Add("The licensing inspector was NOT impressed. £300 fine."); S.reputation -= 3; }
                     else { rec.moments.Add("The inspector left happy. Clean bill of health."); S.reputation += 1.5f; }
                 }
                 if (S.GetFlag("critic") == S.day + 1)
@@ -647,7 +739,8 @@ namespace Loab.Sim
             float dog = S.GetFlag("dog") == 1 ? 5 : 0;
             float loan = 0;
             if (S.loanBalance > 0) { loan = Math.Min(S.loanDaily, S.loanBalance); S.loanBalance -= loan; }
-            rec.costs = wages + utilities + rent + dog + loan + rec.cogs;
+            float extra = fines + (svc != null ? svc.EmergencySpend : 0); // already paid during the night
+            rec.costs = wages + utilities + rent + dog + loan + rec.cogs + extra;
             rec.profit = rec.takings - rec.costs;
             S.cash += rec.takings - (wages + utilities + rent + dog + loan);
             if (rent > 0)
@@ -732,6 +825,13 @@ namespace Loab.Sim
             GoalsDoneLastNight.Clear();
             Recompute();
             CheckGoals();
+            ScenarioJustEnded = false;
+            var sc = Scenario;
+            if (sc != null && S.scenarioResult == 0)
+            {
+                if (sc.Won(this)) { S.scenarioResult = 1; ScenarioJustEnded = true; }
+                else if (S.day >= sc.Days - 1) { S.scenarioResult = 2; ScenarioJustEnded = true; }
+            }
             LastNight = rec;
             Svc = svc;
             Phase = Phase.Report;
@@ -823,7 +923,8 @@ namespace Loab.Sim
                 Economy.RefreshApplicants(S, _r);
                 Economy.RefreshAgency(S, _r);
             }
-            if (S.pendingCard == "loan") { /* keep */ }
+            if (S.residencyDay >= 0 && V != null && V.HasStage) BookResidency();
+            if (S.pendingCard != null) { /* keep the loan or residency decision */ }
             else Director.Roll(this, _r);
             Svc = null;
             Phase = Phase.Prep;

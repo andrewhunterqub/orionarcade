@@ -45,7 +45,8 @@ namespace Loab.Game
         {
             Application.targetFrameRate = 60;
             QualitySettings.shadowDistance = 100;
-            QualitySettings.pixelLightCount = 10;
+            QualitySettings.pixelLightCount = 8;
+            QualitySettings.shadows = ShadowQuality.All;
             ModelFactory.Init(Resources.Load<Material>("Materials/Lit"), Resources.Load<Material>("Materials/Glow"));
             Audio = gameObject.AddComponent<Sfx>();
             // Start with a fresh career in the background of the title screen so there's something to look at.
@@ -71,7 +72,11 @@ namespace Loab.Game
         //  Game lifecycle
         // =====================================================================================
 
-        public bool HasSave => PlayerPrefs.HasKey(SaveKey);
+        // Career, scenario and sandbox each get their own save slot, so trying one never wipes another.
+        public static string KeyFor(int mode) => mode == 0 ? SaveKey : mode == 2 ? "loab_save_scenario" : "loab_save_sandbox";
+        public int LastMode => PlayerPrefs.GetInt("loab_last_mode", 0);
+        public bool HasSaveFor(int mode) => PlayerPrefs.HasKey(KeyFor(mode));
+        public bool HasSave => HasSaveFor(LastMode);
 
         public void NewCareer(int difficulty)
         {
@@ -81,13 +86,21 @@ namespace Loab.Game
             Load(g);
         }
 
+        public void NewScenario(string id)
+        {
+            var g = Sim.Game.NewScenario(id, (ulong)DateTime.Now.Ticks);
+            G = g;
+            Load(g);
+        }
+
         public void NewSandbox() => Load(Sim.Game.NewSandbox((ulong)DateTime.Now.Ticks));
 
-        public bool Continue()
+        public bool Continue(int mode = -1)
         {
+            if (mode < 0) mode = LastMode;
             try
             {
-                var json = PlayerPrefs.GetString(SaveKey, null);
+                var json = PlayerPrefs.GetString(KeyFor(mode), null);
                 if (string.IsNullOrEmpty(json)) return false;
                 var s = JsonUtility.FromJson<GameState>(json);
                 if (s == null || s.items == null || s.items.Count == 0) return false;
@@ -106,21 +119,61 @@ namespace Loab.Game
             G = g;
             G.Changed += () => Ui?.MarkDirty();
             World.Bind(G);
+            Rig.Target = new Vector3((g.S.gridW - 1) / 2f, 0, (g.S.gridH - 1) / 2f - 1.6f);
+            Rig.SetBounds(new Vector3(-2, 0, -4), new Vector3(g.S.gridW + 1, 0, g.S.gridH + 1));
             ClearInteraction();
             Paused = false; SpeedMult = 1;
             Ui.OnGameLoaded();
             Save();
+            Resources.UnloadUnusedAssets(); // frees the previous model's combined meshes
         }
 
         public void Save()
         {
-            if (G == null || G.Phase == Phase.Service) return;
+            // Only save at a day boundary (Prep) or game over. Saving on the report would replay that night on load.
+            if (G == null || (G.Phase != Phase.Prep && G.Phase != Phase.GameOver)) return;
             try
             {
-                PlayerPrefs.SetString(SaveKey, JsonUtility.ToJson(G.S));
+                PlayerPrefs.SetString(KeyFor(G.S.mode), JsonUtility.ToJson(G.S));
+                PlayerPrefs.SetInt("loab_last_mode", G.S.mode);
                 PlayerPrefs.Save();
             }
             catch (Exception e) { Debug.LogWarning("Save failed: " + e.Message); }
+        }
+
+        /// <summary>The room got bigger: rebuild the model and re-centre the camera.</summary>
+        public void OnExpanded()
+        {
+            ClearInteraction();
+            World.Bind(G);
+            var s = G.S;
+            Rig.Target = new Vector3((s.gridW - 1) / 2f, 0, (s.gridH - 1) / 2f - 1.6f);
+            Rig.SetBounds(new Vector3(-2, 0, -4), new Vector3(s.gridW + 1, 0, s.gridH + 1));
+            Rig.Zoom = Mathf.Min(CameraRig.MaxDist, Rig.Zoom * (s.gridW / 16f));
+            Audio.Play("fanfare", 0.5f);
+            Ui.Flash("The wall's down! You've got room to grow.");
+            Save();
+            Resources.UnloadUnusedAssets();
+        }
+
+        // ---- Device tiers (visual brief 16.2): step quality down if the frame rate can't keep up.
+        int _tier = 2;
+        float _dtAvg = 1f / 60f, _tierTimer;
+
+        void AutoQuality()
+        {
+            float dt = Mathf.Min(Time.unscaledDeltaTime, 0.25f);
+            _dtAvg = Mathf.Lerp(_dtAvg, dt, 0.02f);
+            _tierTimer += dt;
+            if (_tierTimer < 6f || _tier == 0 || Time.realtimeSinceStartup < 20f) return;
+            _tierTimer = 0;
+            if (_dtAvg > 1f / 28f)
+            {
+                _tier--;
+                if (_tier == 1) { QualitySettings.pixelLightCount = 4; QualitySettings.shadows = ShadowQuality.HardOnly; QualitySettings.shadowDistance = 60; }
+                else { QualitySettings.pixelLightCount = 2; QualitySettings.shadows = ShadowQuality.Disable; Blur.Enabled = false; }
+                Debug.Log($"LOAB: lowered quality to tier {_tier} (avg {1f / _dtAvg:0} fps)");
+            }
         }
 
         public void SetBlur(bool on)
@@ -155,11 +208,12 @@ namespace Loab.Game
             Blur.Focus = Mathf.Lerp(Blur.Focus, focus, 1f - Mathf.Exp(-Time.unscaledDeltaTime / 0.3f * 3f));
         }
 
-        public void DeleteSave() { PlayerPrefs.DeleteKey(SaveKey); PlayerPrefs.Save(); }
+        public void DeleteSave() { if (G != null) PlayerPrefs.DeleteKey(KeyFor(G.S.mode)); PlayerPrefs.Save(); }
 
         public void OpenDoors()
         {
             ClearInteraction();
+            Save(); // keep tonight's Prep decisions
             var err = G.OpenDoors();
             if (err != null) { Ui.Flash(err); return; }
             Paused = false; SpeedMult = 1;
@@ -173,7 +227,20 @@ namespace Loab.Game
             if (G.Phase != Phase.Service) return;
             G.Svc.RunToEnd();
             G.EndServiceIfDone();
-            if (G.Phase == Phase.Report) { Audio.Play("till"); Ui.OnReport(); Save(); }
+            if (G.Phase == Phase.Report) { ClearInteraction(); Audio.Play("till"); Ui.OnReport(); }
+        }
+
+        /// <summary>Leave to the title. Mid-service, the night is abandoned and the game reloads from the last save.</summary>
+        public void QuitToTitle()
+        {
+            Paused = false;
+            if (G.Phase == Phase.Service)
+            {
+                Audio.Ambience(0);
+                if (!Continue(G.S.mode)) Load(Sim.Game.NewCareer((ulong)DateTime.Now.Ticks, 1));
+            }
+            else Save();
+            Ui.ShowTitle();
         }
 
         public void NextDay()
@@ -232,9 +299,10 @@ namespace Loab.Game
             if (G == null) return;
             HandleKeys();
             HandlePointer();
-            if (G.Phase == Phase.Service) TickService();
+            if (G.Phase == Phase.Service && !Ui.TitleOpen) TickService();
             UpdateGhost();
             UpdateBlur();
+            AutoQuality();
             Ui.Update();
         }
 
@@ -258,7 +326,7 @@ namespace Loab.Game
             }
             Audio.Ambience(svc.Inside / (float)Mathf.Max(1, svc.Capacity));
             G.EndServiceIfDone();
-            if (G.Phase == Phase.Report) { Audio.Ambience(0); Audio.Play("till"); Ui.OnReport(); Save(); }
+            if (G.Phase == Phase.Report) { Audio.Ambience(0); Audio.Play("till"); ClearInteraction(); Ui.OnReport(); }
         }
 
         void HandleKeys()
@@ -267,13 +335,13 @@ namespace Loab.Game
             if (Input.GetKeyDown(KeyCode.Escape)) { if (PlaceId != null || Moving || Selected != null || Inspected != null) ClearInteraction(); else Ui.CloseSide(); }
             if (Input.GetKeyDown(KeyCode.R)) RotateSelectedOrGhost();
             if (Input.GetKeyDown(KeyCode.H)) Ui.TogglePhotoMode();
-            if (G.Phase == Phase.Report && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) && G.S.pendingCard == null && !G.S.bankrupt) NextDay();
+            if (G.Phase == Phase.Report && !Ui.TitleOpen && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) && G.S.pendingCard == null && !G.S.bankrupt) NextDay();
             if (Input.GetKeyDown(KeyCode.Q)) Rig.Rotate(-1);
             if (Input.GetKeyDown(KeyCode.E)) Rig.Rotate(1);
             if (Input.GetKeyDown(KeyCode.Delete) || Input.GetKeyDown(KeyCode.Backspace)) SellSelected();
             if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.LeftCommand)) && Input.GetKeyDown(KeyCode.Z)) { G.Undo(); ClearInteraction(); }
             if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.LeftCommand)) && Input.GetKeyDown(KeyCode.Y)) { G.Redo(); ClearInteraction(); }
-            if (G.Phase == Phase.Service)
+            if (G.Phase == Phase.Service && !Ui.ModalOpen)
             {
                 if (Input.GetKeyDown(KeyCode.Space)) Paused = !Paused;
                 if (Input.GetKeyDown(KeyCode.Alpha1)) { SpeedMult = 1; Paused = false; }

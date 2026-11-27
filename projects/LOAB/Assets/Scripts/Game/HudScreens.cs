@@ -49,8 +49,14 @@ namespace Loab.Game
             col.Add(Lbl("Let's Own A Bar!", "title-logo"));
             col.Add(Lbl("Build the bar you've always talked about,\nand find out if you'd actually be any good at running it.", "title-tag"));
             if (_run.HasSave)
-                col.Add(Btn("Continue", () => { if (!_run.Continue()) Flash("Couldn't load your save"); }, "btn-primary", "title-btn"));
+            {
+                string what = _run.LastMode == 2 ? "Continue scenario" : _run.LastMode == 1 ? "Continue sandbox" : "Continue";
+                col.Add(Btn(what, () => { if (!_run.Continue()) Flash("Couldn't load your save"); }, "btn-primary", "title-btn"));
+            }
+            if (_run.LastMode != 0 && _run.HasSaveFor(0))
+                col.Add(Btn("Continue career", () => { if (!_run.Continue(0)) Flash("Couldn't load your career"); }, "title-btn"));
             col.Add(Btn("New career", () => ShowNewCareer(), _run.HasSave ? "btn" : "btn-primary", "title-btn"));
+            col.Add(Btn("Scenarios", () => ShowScenarios(), "title-btn"));
             col.Add(Btn("Sandbox (unlimited cash)", () => _run.NewSandbox(), "title-btn"));
             col.Add(Btn("How to play", () => ShowHelp(true), "title-btn"));
             var foot = Lbl("An Orion Arcade original. Progress saves automatically in your browser.", "hint");
@@ -85,6 +91,23 @@ namespace Loab.Game
             m.Add(Btn("Back", () => ShowTitle(), "option"));
         }
 
+        void ShowScenarios()
+        {
+            var m = Modal("Scenarios", "Short challenges with a deadline. Each one starts a fresh bar.");
+            foreach (var sc in Scenarios.All)
+            {
+                var id = sc.Id;
+                var b = Btn("", () => _run.NewScenario(id), "option");
+                b.Add(Lbl($"{sc.Name}  ({sc.Days} days)", "option-label"));
+                b.Add(Lbl(sc.Blurb, "option-detail"));
+                var goal = Lbl("Goal: " + sc.GoalText, "option-detail");
+                goal.style.color = new Color(1f, 0.82f, 0.4f);
+                b.Add(goal);
+                m.Add(b);
+            }
+            m.Add(Btn("Back", () => ShowTitle(), "option"));
+        }
+
         void ShowHelp(bool fromTitle)
         {
             var m = Modal("How to play", null, true);
@@ -92,8 +115,9 @@ namespace Loab.Game
             H("THE DAY", "Each day has a PREP phase (time stands still: build, set prices, hire, book events) and a SERVICE phase (6pm to midnight, in real time). Then you read the nightly report and do it all again.");
             H("BUILDING", "Open the Build tab, pick an item and click the floor to place it. R rotates. Click a placed item to move, rotate or sell it. Customers must be able to reach the bar, seats, toilets and games.");
             H("VIBE", "Everything you choose (furniture, floor, walls, music, lighting, prices) shapes your bar's Vibe across five axes. Each type of customer has a Vibe they love. Collect enough matching items to get a theme recognised.");
-            H("SERVICE", "Watch people come in, queue, drink and chat. Click spills, blocked toilets and rowdy customers (red !) to deal with them. Click anyone to see what they're thinking. Use Happy Hour, Help behind the bar and Emergency delivery when it gets hectic.");
-            H("GROWING", "Good nights earn good BarHopper reviews, which build reputation and bring bigger crowds and better staff. Book quizzes and comedy nights, keep regulars happy, and work through Maggie's goals.");
+            H("SERVICE", "Watch people come in, queue, drink and chat. Click spills, blocked toilets and rowdy customers (red !) to deal with them. Orange ? means someone is unhappy; green + means they love it. Click anyone to see what they're thinking. Use Happy Hour, Help behind the bar and Emergency delivery when it gets hectic.");
+            H("GROWING", "Good nights earn good BarHopper reviews, which build reputation and bring bigger crowds and better staff. Book quizzes, comedy and open mic nights, keep regulars happy, and work through Maggie's goals.");
+            H("MODES", "Career is the full story from your first night. Scenarios are short challenges with a deadline. Sandbox gives you unlimited cash to build the bar of your dreams.");
             H("THE MODEL", "Your bar is a little scale model on its plinth. In the day it sits in a bright studio; when the doors open the lights go down and the bar glows. The soft blur at the top and bottom of the screen is the miniature lens: turn it off in the menu if you prefer.");
             H("CONTROLS", "Drag or WASD to pan, scroll or pinch to zoom, Q/E to rotate the view. Space pauses service, 1/2/3 change speed. Ctrl+Z undoes building. Enter moves on from the nightly report. H hides the interface for photos.");
             m.Add(Btn("Close", () => { if (fromTitle) ShowTitle(); else CloseOverlay(); }, "btn-primary", "option"));
@@ -115,7 +139,7 @@ namespace Loab.Game
                 PlayerPrefs.SetInt("loab_stopmo", WorldView.CharView.StopMotion ? 1 : 0);
                 ShowPause();
             }, "option"));
-            m.Add(Btn("Save and quit to title", () => { _run.Save(); _run.Paused = false; ShowTitle(); }, "option"));
+            m.Add(Btn(G.Phase == Phase.Service ? "Quit to title (abandons tonight)" : "Save and quit to title", () => _run.QuitToTitle(), "option"));
             if (G.Phase == Phase.Service) m.Add(Lbl("Your progress is saved at the start of each day.", "hint"));
         }
 
@@ -158,7 +182,7 @@ namespace Loab.Game
             var take = Btn("", () => { G.TakeEmergencyLoan(); _run.Save(); CloseOverlay(); MarkDirty(); }, "option", "btn-primary");
             take.Add(Lbl("Take the loan", "option-label")); take.Add(Lbl("A second chance. Don't waste it.", "option-detail"));
             m.Add(take);
-            var no = Btn("", () => { G.S.bankrupt = true; G.Phase = Phase.GameOver; ShowGameOver(); }, "option");
+            var no = Btn("", () => { G.S.bankrupt = true; G.Phase = Phase.GameOver; _run.Save(); ShowGameOver(); }, "option");
             no.Add(Lbl("Hand back the keys", "option-label")); no.Add(Lbl("Close the bar for good.", "option-detail"));
             m.Add(no);
         }
@@ -208,6 +232,22 @@ namespace Loab.Game
             cols.Add(left); cols.Add(right);
             m.Add(cols);
 
+            var sc = G.Scenario;
+            if (sc != null && G.ScenarioJustEnded)
+            {
+                var c = El("card");
+                bool won = s.scenarioResult == 1;
+                var head = Lbl(won ? $"SCENARIO COMPLETE: {sc.Name}!" : $"OUT OF TIME: {sc.Name}", "big-num");
+                head.style.fontSize = 22;
+                head.style.color = won ? new Color(0.47f, 0.86f, 0.55f) : new Color(1f, 0.43f, 0.39f);
+                c.Add(head);
+                c.Add(Lbl(won ? $"Done in {s.day + 1} of {sc.Days} days. You can keep running the bar, or head back to the title for another challenge."
+                              : $"{sc.Progress(G)}. Close, but the deadline has passed. Keep playing for fun, or try again.", "body"));
+                // Move on to the next morning first, so the result is saved.
+                c.Add(Row(Btn("Back to title", () => { _run.NextDay(); ShowTitle(); }, "btn-small"), Btn("Try another scenario", () => { _run.NextDay(); ShowScenarios(); }, "btn-small")));
+                left.Add(c);
+                if (won) _run.Audio.Play("cheer", 0.8f);
+            }
             if (G.GoalsDoneLastNight.Count > 0)
             {
                 left.Add(Lbl("GOALS COMPLETE", "section"));

@@ -116,16 +116,16 @@ namespace Loab.Sim
             }
 
             Event = s.events.Find(e => e.day == s.day);
-            if (Event != null && Event.kind == 1 && !V.HasStage)
+            if (Event != null && Event.kind >= 1 && !V.HasStage)
             {
-                Say("The comedians took one look and left: you need a stage for Comedy Night.", 2);
+                Say($"No stage, no show: the {Economy.EventName(Event.kind)} was called off.", 2);
                 Event = null;
             }
 
             Economy.ExpectedArrivals(s, V, _expected, Event, out _eventExpected);
             if (s.day == 0) Say("Opening night! Word has got round and people are curious.", 1);
             if (Event != null)
-                Say(Event.kind == 0 ? $"Tonight: Pub Quiz with {Event.act.name}, from 8pm." : $"Tonight: Comedy Night headlined by {Event.act.name}, from 8pm.", 3);
+                Say(Event.kind == 0 ? $"Tonight: Pub Quiz with {Event.act.name}, from 8pm." : Event.kind == 1 ? $"Tonight: Comedy Night headlined by {Event.act.name}, from 8pm." : $"Tonight: Open Mic Night ({Event.act.name}), from 8pm. Anything could happen.", 3);
             if (BarPoints.Count == 0) Say("There's no bar counter! Nobody can be served.", 2);
             if (s.staff.Find(m => m.role == 0) == null) Say("No bartenders on the rota. You'll have to serve everyone yourself.", 2);
             if (s.staff.Find(m => m.role == 0) == null) SetOwnerBehindBar(true);
@@ -261,7 +261,7 @@ namespace Loab.Sim
             for (int i = 0; i < 5; i++)
             {
                 var d = Content.Segments[i];
-                w[i] = (Event.kind == 0 ? d.Quiz : d.Comedy) * d.Share * (0.3f + V.SegMatch[i]);
+                w[i] = Economy.EventAffinity(d, Event.kind) * d.Share * (0.3f + V.SegMatch[i]);
             }
             int idx = R.WeightedIndex(w);
             return (Seg)Math.Max(0, idx);
@@ -298,6 +298,7 @@ namespace Loab.Sim
 
             // Regulars
             var pool = S.regulars.FindAll(r => r.seg == (int)seg);
+            int friendsToBring = 0;
             if (pool.Count > 0 && R.Chance(0.12 + 0.03 * Math.Min(pool.Count, 8)))
             {
                 var r = pool[R.Range(0, pool.Count)];
@@ -307,9 +308,8 @@ namespace Loab.Sim
                     r.visits++;
                     if (R.Chance(0.18 * r.loyalty))
                     {
-                        int friends = R.Range(1, 3);
-                        Moments.Add($"{r.name} brought {friends} friend{(friends > 1 ? "s" : "")} along.");
-                        for (int i = 0; i < friends; i++) Spawn(seg, false);
+                        friendsToBring = R.Range(1, 3);
+                        Moments.Add($"{r.name} brought {friendsToBring} friend{(friendsToBring > 1 ? "s" : "")} along.");
                     }
                 }
             }
@@ -326,10 +326,17 @@ namespace Loab.Sim
                 }
             }
 
+            // #11: late arrivals for a running event join in
+            if (forEvent && Event != null && EventPhase >= 1 && EventPhase <= 3)
+            {
+                c.watching = true;
+                if (Event.kind != 1 && Event.ticket > 0) TicketIncome += Event.ticket;
+            }
             Customers.Add(c);
             Arrivals++;
             SegCounts[(int)seg]++;
             Decide(c);
+            for (int i = 0; i < friendsToBring; i++) Spawn(seg, false);
             return c;
         }
 
@@ -429,16 +436,34 @@ namespace Loab.Sim
             if (c.seatSlot >= 0)
             {
                 var it = S.Item(c.seatItem);
-                var app = L.Approaches(it);
-                Cell target = Nearest(app, CellOf(c));
-                c.state = CState.ToSeat;
-                if (!WalkTo(c, target)) { c.state = CState.Seated; }
-                return;
+                var target = ReachableApproach(it, CellOf(c));
+                if (target.HasValue)
+                {
+                    c.state = CState.ToSeat;
+                    if (!WalkTo(c, target.Value)) c.state = CState.Seated;
+                    return;
+                }
+                // Can't get to that seat: give it up and stand instead.
+                if (_seats.TryGetValue(c.seatItem, out var arr) && arr[c.seatSlot] == c) arr[c.seatSlot] = null;
+                c.seatSlot = -1;
             }
             c.state = CState.Standing;
             c.standCell = _standSpots.Count > 0 ? _standSpots[R.Range(0, _standSpots.Count)] : L.Door;
             WalkTo(c, c.standCell);
             if (T - c.arrivedAt > 15) c.Mark(Note.NoSeat);
+        }
+
+        /// <summary>The approach cell with the shortest walk, or null if none can be reached.</summary>
+        Cell? ReachableApproach(PlacedItem it, Cell from)
+        {
+            if (it == null) return null;
+            Cell? best = null; float bd = float.MaxValue;
+            foreach (var c in L.Approaches(it))
+            {
+                float d = L.Distance(from, c);
+                if (d < bd && d < 999) { bd = d; best = c; }
+            }
+            return best;
         }
 
         Cell Nearest(List<Cell> cells, Cell from)
@@ -484,12 +509,12 @@ namespace Loab.Sim
                 var it = S.Item(kv.Key);
                 var d = Content.Item(it.id);
                 if (d.Fn != ItemFn.Games || kv.Value.Count >= d.Capacity) continue;
-                var app = L.Approaches(it);
-                if (app.Count == 0) continue;
+                var spot = ReachableApproach(it, CellOf(c));
+                if (!spot.HasValue) continue;
                 kv.Value.Add(c);
                 c.gameItem = it.uid;
                 c.state = CState.ToGame;
-                WalkTo(c, app[R.Range(0, app.Count)]);
+                WalkTo(c, spot.Value);
                 return true;
             }
             return false;
@@ -512,11 +537,11 @@ namespace Loab.Sim
                 return true;
             }
             var it = S.Item(best);
-            var app = L.Approaches(it);
-            if (app.Count == 0) return false;
+            var spot = ReachableApproach(it, CellOf(c));
+            if (!spot.HasValue) return false;
             c.toiletItem = best;
             c.state = CState.ToToilet;
-            WalkTo(c, Nearest(app, CellOf(c)));
+            WalkTo(c, spot.Value);
             return true;
         }
 
@@ -536,6 +561,15 @@ namespace Loab.Sim
 
         void ReleaseAll(Customer c)
         {
+            foreach (var a in Staff)
+            {
+                if (a.serving != c) continue;
+                a.serving = null;
+                a.workLeft = 0;
+                if (a.barPoint >= 0 && a.barPoint < BarPoints.Count) BarPoints[a.barPoint].bartender = null;
+                _washing.Add((T + 1, 1)); // the glass goes back
+                if (c.state == CState.Ordering) c.drink = null;
+            }
             if (c.barPoint >= 0 && c.barPoint < BarPoints.Count) BarPoints[c.barPoint].queue.Remove(c);
             c.barPoint = -1;
             if (c.seatSlot >= 0 && _seats.TryGetValue(c.seatItem, out var arr) && arr[c.seatSlot] == c) arr[c.seatSlot] = null;
@@ -742,7 +776,7 @@ namespace Loab.Sim
 
             if (c.watching && EventPhase >= 1 && EventPhase <= 3)
             {
-                float affE = Event.kind == 0 ? d.Quiz : d.Comedy;
+                float affE = Economy.EventAffinity(d, Event.kind);
                 target += (EventPerf - 45f) / 3.5f * affE;
             }
 
@@ -806,7 +840,7 @@ namespace Loab.Sim
             if (c.state == CState.Standing) return "Wish I could find a seat.";
             if (c.Has(Note.HatedMusic)) return "Who chose this music?";
             if (c.Has(Note.LovedDrink)) return $"This {c.drink?.Name ?? "drink"} is incredible.";
-            if (c.watching && EventPerf > 65) return Event.kind == 0 ? "We're definitely winning this round." : "I can't breathe, this is so funny.";
+            if (c.watching && EventPerf > 65) return Event.kind == 0 ? "We're definitely winning this round." : Event.kind == 1 ? "I can't breathe, this is so funny." : "That last act gave me chills.";
             if (c.Has(Note.LovedVibe)) return "Love the feel of this place.";
             var complaint = VibeCalc.Complaint(V.Axes, c.def);
             if (complaint != null) return complaint + ".";
@@ -1010,6 +1044,7 @@ namespace Loab.Sim
             if (m == null || m.stock <= 0)
             {
                 c.drink = null;
+                _washing.Add((T, 1)); // unused glass goes back on the shelf
                 Settle(c);
                 return;
             }
@@ -1069,7 +1104,7 @@ namespace Loab.Sim
                 Incident best = null; float bestScore = float.MaxValue;
                 foreach (var i in Incidents)
                 {
-                    if (i.resolved || i.claimed) continue;
+                    if (i.resolved || i.claimed || T < i.retryAt) continue;
                     float pri = i.kind == IncidentKind.Rowdy ? 0 : i.kind == IncidentKind.Spill ? 5 : i.kind == IncidentKind.Toilet ? 8 : (i.count >= 3 ? 10 : 18);
                     Cell at = i.kind == IncidentKind.Rowdy && i.customer != null ? new Cell((int)Math.Round(i.customer.x), (int)Math.Round(i.customer.y)) : i.cell;
                     float score = pri + Math.Abs(at.x - a.x) + Math.Abs(at.y - a.y);
@@ -1082,7 +1117,7 @@ namespace Loab.Sim
                 Cell target = TaskCell(best);
                 a.path = L.Path(new Cell((int)Math.Round(a.x), (int)Math.Round(a.y)), target);
                 a.pathIdx = 0;
-                if (a.path == null) { best.claimed = false; a.task = null; }
+                if (a.path == null) { best.claimed = false; best.retryAt = T + 10; a.task = null; }
                 return;
             }
             var t = a.task;
@@ -1135,7 +1170,7 @@ namespace Loab.Sim
             if (i.itemUid != 0)
             {
                 var it = S.Item(i.itemUid);
-                if (it != null) { var app = L.Approaches(it); if (app.Count > 0) return app[0]; }
+                if (it != null) { var app = L.Approaches(it); if (app.Count > 0) return app[0]; } // UpdateFloor backs off if unreachable
             }
             return L.Walkable(i.cell) ? i.cell : L.Door;
         }
@@ -1143,6 +1178,12 @@ namespace Loab.Sim
         // =====================================================================================
         //  Events
         // =====================================================================================
+
+        static readonly string[] OpenMicActs =
+        {
+            "A nervous poet", "A ukulele duo", "A retired postman with a banjo", "A teenage rapper", "A woman doing bird impressions",
+            "A folk singer", "A stand-up first-timer", "A bartender's cousin", "A beatboxer", "An accordion player",
+        };
 
         public float EventEndTime => EventStart < 0 ? 240 : EventStart + 120;
 
@@ -1170,10 +1211,10 @@ namespace Loab.Sim
                     foreach (var c in Customers)
                     {
                         if (!c.Inside || c.state == CState.Leaving) continue;
-                        float aff = Event.kind == 0 ? c.def.Quiz : c.def.Comedy;
-                        if (R.Chance(aff)) { c.watching = true; joined++; if (Event.kind == 0 && Event.ticket > 0) TicketIncome += Event.ticket; }
+                        float aff = Economy.EventAffinity(c.def, Event.kind);
+                        if (R.Chance(aff)) { c.watching = true; joined++; if (Event.kind != 1 && Event.ticket > 0) TicketIncome += Event.ticket; }
                     }
-                    Say(Event.kind == 0 ? $"Pens at the ready! The quiz begins with {joined} players." : $"Lights down. Comedy Night begins for a crowd of {joined}.", 3);
+                    Say(Event.kind == 0 ? $"Pens at the ready! The quiz begins with {joined} players." : Event.kind == 1 ? $"Lights down. Comedy Night begins for a crowd of {joined}." : $"The open mic sign-up sheet is full. {joined} people are watching.", 3);
                 }
                 return;
             }
@@ -1186,6 +1227,25 @@ namespace Loab.Sim
                     _quizRound = round;
                     if (round < 6)
                         Say($"Quiz round {round} done. {Content.QuizTeams[(S.day + round * 3) % Content.QuizTeams.Length]} {(EventPerf > 60 ? "are loving it." : EventPerf > 40 ? "lead narrowly." : "are arguing with the quizmaster.")}", 3);
+                    foreach (var c in Customers) if (c.watching) c.thirst = Math.Max(c.thirst, 0.6f);
+                }
+                if (into >= 120) EndEvent();
+            }
+            else if (Event.kind == 2)
+            {
+                // Open mic: a new act every 20 minutes, each a fresh gamble.
+                int slot = (int)(into / 20f);
+                if (slot > _quizRound && slot <= 6)
+                {
+                    _quizRound = slot;
+                    if (slot < 6)
+                    {
+                        float roll = EventPerf + R.Gaussian() * 22f;
+                        string who = R.Pick(OpenMicActs);
+                        if (roll > 80) { Say($"{who} brings the house down. Is that a talent scout?", 1); EventPerf = Math.Min(100, EventPerf + 3); if (roll > 92) Moments.Add($"An unknown {who.Replace("A ", "").Replace("An ", "")} stole the show at open mic."); }
+                        else if (roll > 50) Say($"{who} gets a warm round of applause.", 3);
+                        else { Say($"{who} forgets the words halfway through. Supportive clapping.", 2); EventPerf = Math.Max(5, EventPerf - 2); }
+                    }
                     foreach (var c in Customers) if (c.watching) c.thirst = Math.Max(c.thirst, 0.6f);
                 }
                 if (into >= 120) EndEvent();
@@ -1227,12 +1287,12 @@ namespace Loab.Sim
                 if (EventPerf >= 60) c.Mark(Note.LovedEvent);
                 else if (EventPerf < 38) c.Mark(Note.EventBombed);
             }
-            string what = Event.kind == 0 ? "quiz" : "comedy night";
+            string what = Event.kind == 0 ? "quiz" : Event.kind == 1 ? "comedy night" : "open mic";
             if (EventPerf >= 92) { EventOutcome = "Viral hit"; Say($"Incredible {what}! Clips are flying round social media.", 1); }
             else if (EventPerf >= 65) { EventOutcome = "Hit"; Say($"The {what} went down a storm.", 1); }
             else if (EventPerf >= 40) { EventOutcome = "Decent"; Say($"A decent {what}. Nobody's complaining.", 0); }
-            else { EventOutcome = "Flop"; Say(Event.kind == 0 ? "The quiz was a shambles. Two teams walked out." : $"{Event.act.name} died on stage. Tumbleweed.", 2); }
-            Moments.Add($"{(Event.kind == 0 ? "Pub Quiz" : "Comedy Night")} with {Event.act.name}: {EventOutcome.ToLowerInvariant()}.");
+            else { EventOutcome = "Flop"; Say(Event.kind == 0 ? "The quiz was a shambles. Two teams walked out." : Event.kind == 1 ? $"{Event.act.name} died on stage. Tumbleweed." : "The open mic was... brave. Very brave.", 2); }
+            Moments.Add($"{Economy.EventName(Event.kind)} with {Event.act.name}: {EventOutcome.ToLowerInvariant()}.");
         }
 
         // =====================================================================================
@@ -1305,6 +1365,7 @@ namespace Loab.Sim
             var m = S.Menu(drinkId);
             if (d == null || m == null) return "Unknown drink";
             float cost = d.CaseSize * d.UnitCost * 1.6f;
+            if (T + 20 >= LastOrders) return "Too late: it wouldn't arrive before last orders";
             if (S.cash < cost && S.difficulty > 0) return "Not enough cash";
             S.cash -= cost;
             EmergencySpend += cost;
@@ -1377,17 +1438,18 @@ namespace Loab.Sim
         /// <summary>Seat position in cell units (shared with the renderer).</summary>
         public static void SeatPos(PlacedItem it, int slot, out float x, out float y, out float faceX, out float faceY)
         {
+            // Work in the model's unrotated local space (front = -y), then rotate with the item, so seats
+            // always line up with the chairs the renderer builds.
             var d = Content.Item(it.id);
-            Layout.Size(d, it.rot, out int w, out int h);
-            float cx = it.x + (w - 1) / 2f, cy = it.y + (h - 1) / 2f;
+            int w0 = d.W, h0 = d.H;
             int n = Math.Max(1, d.Capacity);
             bool oneRow = d.Model == "sofa" || d.Model == "armchair" || d.Model == "beanbag" || d.Model == "stool";
-            bool alongX = w >= h;
+            bool alongX = w0 >= h0;
             float along, across;
             if (n == 1) { along = 0; across = 0; }
             else if (oneRow)
             {
-                along = (slot - (n - 1) / 2f) * (Math.Max(w, h) / (float)n);
+                along = (slot - (n - 1) / 2f) * (Math.Max(w0, h0) / (float)n);
                 across = 0;
             }
             else
@@ -1395,17 +1457,32 @@ namespace Loab.Sim
                 int perSide = (n + 1) / 2;
                 int side = slot % 2;
                 int k = slot / 2;
-                float len = Math.Max(w, h);
+                float len = Math.Max(w0, h0);
                 along = perSide == 1 ? 0 : (k - (perSide - 1) / 2f) * (len / perSide);
-                float half = Math.Min(w, h) / 2f;
+                float half = Math.Min(w0, h0) / 2f;
                 across = (side == 0 ? -1 : 1) * Math.Max(0.32f, half - 0.12f);
             }
-            if (alongX) { x = cx + along; y = cy + across; faceX = 0; faceY = across == 0 ? -1 : -Math.Sign(across); }
-            else { x = cx + across; y = cy + along; faceX = across == 0 ? -1 : -Math.Sign(across); faceY = 0; }
-            if (oneRow && n >= 1)
+            float lx, ly, fx, fy;
+            if (alongX) { lx = along; ly = across; fx = 0; fy = across == 0 ? -1 : -Math.Sign(across); }
+            else { lx = across; ly = along; fx = across == 0 ? -1 : -Math.Sign(across); fy = 0; }
+            if (oneRow) { fx = 0; fy = -1; }
+            Rotate(it.rot, ref lx, ref ly);
+            Rotate(it.rot, ref fx, ref fy);
+            Layout.Size(d, it.rot, out int w, out int h);
+            x = it.x + (w - 1) / 2f + lx;
+            y = it.y + (h - 1) / 2f + ly;
+            faceX = fx; faceY = fy;
+        }
+
+        /// <summary>Rotate a local offset by item rotation (matches the renderer's 90-degree Y rotations).</summary>
+        static void Rotate(int rot, ref float x, ref float y)
+        {
+            float ox = x, oy = y;
+            switch (rot & 3)
             {
-                var f = Layout.Facing(it.rot);
-                faceX = f.x; faceY = f.y;
+                case 1: x = oy; y = -ox; break;
+                case 2: x = -ox; y = -oy; break;
+                case 3: x = -oy; y = ox; break;
             }
         }
 

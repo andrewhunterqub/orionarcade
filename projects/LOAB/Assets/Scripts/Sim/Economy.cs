@@ -5,6 +5,11 @@ namespace Loab.Sim
 {
     public static class Economy
     {
+        public static readonly string[] EventNames = { "Pub Quiz", "Comedy Night", "Open Mic Night" };
+        public static string EventName(int kind) => EventNames[Math.Max(0, Math.Min(EventNames.Length - 1, kind))];
+        /// <summary>How much a segment wants to come to / join in with this kind of event.</summary>
+        public static float EventAffinity(SegmentDef d, int kind) => kind == 0 ? d.Quiz : kind == 1 ? d.Comedy : d.Stage * 0.9f;
+
         public const float RentPerWeek = 1400f;
         public const float UtilitiesPerNight = 60f;
         public const float BaseFootfall = 270f;
@@ -62,8 +67,8 @@ namespace Loab.Sim
 
                 if (ev != null)
                 {
-                    float aff2 = ev.kind == 0 ? d.Quiz : d.Comedy;
-                    float draw = (ev.kind == 0 ? 10f : 6f) + ev.act.following * 0.25f + ev.promo * 0.06f;
+                    float aff2 = EventAffinity(d, ev.kind);
+                    float draw = (ev.kind == 0 ? 10f : ev.kind == 2 ? 7f : 6f) + ev.act.following * 0.25f + ev.promo * 0.06f;
                     float ticketDrag = ev.ticket > 0 ? (float)Math.Exp(-ev.ticket * 0.05f * d.PriceSensitivity) : 1f;
                     eventExtra += draw * aff2 * d.Share * (0.4f + v.SegMatch[i]) * rep * ticketDrag * 1.6f;
                 }
@@ -124,12 +129,19 @@ namespace Loab.Sim
 
         // ---- Acts ----------------------------------------------------------------------------------------
 
+        public static void AddOpenMicActs(GameState s, Rng r)
+        {
+            s.agency.Add(new Act { uid = s.nextUid++, kind = 2, name = "Open Mic (you host)", style = "anything goes", fee = 30, quality = r.Range(30, 70), reliability = 100, following = 5, volatility = 0.6f });
+            s.agency.Add(new Act { uid = s.nextUid++, kind = 2, name = "Poetry & Pints collective", style = "spoken word", fee = 80, quality = r.Range(45, 80), reliability = 90, following = 25, volatility = 0.4f });
+        }
+
         public static void RefreshAgency(GameState s, Rng r)
         {
             s.agency.Clear();
             s.agency.Add(new Act { uid = s.nextUid++, kind = 0, name = "You (DIY quiz)", style = "home-made", fee = 0, quality = 42, reliability = 100, following = 0, volatility = 0.3f });
             s.agency.Add(new Act { uid = s.nextUid++, kind = 0, name = "Quizmaster Quentin", style = "classic", fee = 90, quality = 70, reliability = 95, following = 15, volatility = 0.15f });
             s.agency.Add(new Act { uid = s.nextUid++, kind = 0, name = "The QuizBot 3000", style = "machine", fee = 45, quality = 56, reliability = 80, following = 5, volatility = 0.45f });
+            AddOpenMicActs(s, r);
             int n = 5;
             for (int i = 0; i < n; i++)
             {
@@ -193,7 +205,7 @@ namespace Loab.Sim
             var goods = new List<Note>(); var bads = new List<Note>();
             foreach (var kv in Good) if (c.Has(kv.Key)) goods.Add(kv.Key);
             foreach (var kv in Bad) if (c.Has(kv.Key)) bads.Add(kv.Key);
-            string evName = svc.Event == null ? "event" : svc.Event.kind == 0 ? "quiz" : "comedy";
+            string evName = svc.Event == null ? "event" : svc.Event.kind == 0 ? "quiz" : svc.Event.kind == 1 ? "comedy" : "open mic";
             string drink = c.drink?.Name ?? (c.regular != null ? Content.Drink(c.regular.favDrink)?.Name : null) ?? "pint";
             string Fill(string t) => t.Replace("{drink}", drink).Replace("{event}", evName);
 

@@ -181,6 +181,22 @@ namespace Loab.Sim
             });
             Cards.Add(new CardDef
             {
+                Id = "residency", Title = "A residency offer", Art = "mic", Weight = 0, When = s => false,
+                Format = g => $"{g.S.residencyOffer.name} loved your crowd. They'd like a weekly residency every {Content.DayNames[Math.Max(0, g.S.residencyOfferDay)]}, for their usual £{g.S.residencyOffer.fee} a night. Their following grows every time it goes well.",
+                Options =
+                {
+                    Opt("Make it a weekly fixture", "Booked automatically every week. End it any time from the Events tab.", g =>
+                    {
+                        var o = g.S.residencyOffer;
+                        g.S.residencyAct = new Act { uid = g.S.nextUid++, kind = o.kind, name = o.name, style = o.style, fee = o.fee, quality = o.quality, reliability = o.reliability, following = o.following, volatility = o.volatility };
+                        g.S.residencyDay = g.S.residencyOfferDay;
+                        g.BookResidency();
+                    }),
+                    Opt("Not right now", "Maybe another time.", g => { }),
+                },
+            });
+            Cards.Add(new CardDef
+            {
                 Id = "busker", Title = "The busker", Art = "guitar", Weight = 0.8f,
                 Text = "A genuinely talented busker asks if she can play a few songs in the corner tonight, just for tips.",
                 When = s => s.day >= 2,
@@ -244,6 +260,17 @@ namespace Loab.Sim
                 Mentor = "Regulars are the heart of a bar. Look after them and they'll look after you." },
             new GoalDef { Text = "Build up £15,000 in the bank", Reward = 1000, Done = g => g.S.cash >= 15000,
                 Mentor = "Act One complete, my love. You survived the dream. I always knew you would. Keep going, the city's yours." },
+            // ---- Act 2: Making a Name (build brief 8.2)
+            new GoalDef { Text = "Act 2: land a weekly residency (a hit comedy or open mic night)", Reward = 800, Done = g => g.S.residencyDay >= 0,
+                Mentor = "A regular night with a regular crowd. That's how a bar becomes an institution." },
+            new GoalDef { Text = "Act 2: earn a Stained Oak plinth (reputation 40)", Reward = 800, Done = g => g.S.reputation >= 40,
+                Mentor = "Look at that base! People are starting to think of this place as somewhere special." },
+            new GoalDef { Text = "Act 2: knock through into the unit next door", Reward = 1500, Done = g => g.S.gridW > 16,
+                Mentor = "More room, more trade, more trouble. I wouldn't have it any other way." },
+            new GoalDef { Text = "Act 2: earn 12 regulars", Reward = 1000, Done = g => g.S.regulars.Count >= 12,
+                Mentor = "Twelve regulars. That's a darts team, a quiz team and a few strays. Lovely." },
+            new GoalDef { Text = "Act 2: reach a Walnut plinth (reputation 60) and a 4.2★ rating", Reward = 2500, Done = g => g.S.reputation >= 60 && g.S.rating >= 4.2f,
+                Mentor = "Act Two complete. You've made a name for yourself. Bar of the Year next? I'd bet on it." },
         };
     }
 

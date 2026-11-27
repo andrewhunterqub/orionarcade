@@ -63,6 +63,7 @@ namespace Loab.Game
             foreach (Transform c in _roomRoot) Destroy(c.gameObject);
             foreach (var kv in _items) Destroy(kv.Value);
             _items.Clear(); _itemKey.Clear(); _floorTiles.Clear(); _walls.Clear();
+            _lights.Clear(); _wearBand.Clear();
             ClearAgents();
             _floorKey = _wallKey = null;
             BuildRoom();
@@ -79,6 +80,7 @@ namespace Loab.Game
         static readonly Color StudioNightTop = new Color32(0x2A, 0x34, 0x40, 255), StudioNightFloor = new Color32(0x14, 0x1A, 0x21, 255);
 
         Renderer _studioFloor;
+        static Material _studioMat;
         Light _fill;
         float _night, _nightStart = -99f;
         bool _wasService;
@@ -89,12 +91,16 @@ namespace Loab.Game
         void BuildRoom()
         {
             var s = _g.S;
+            // Everything that never moves goes under one root and is statically batched at the end.
+            var st = new GameObject("Static").transform;
+            st.SetParent(_roomRoot);
+            _staticRoot = st;
             for (int x = 0; x < s.gridW; x++)
                 for (int y = 0; y < s.gridH; y++)
                 {
                     var tile = GameObject.CreatePrimitive(PrimitiveType.Cube);
                     Destroy(tile.GetComponent<Collider>());
-                    tile.transform.SetParent(_roomRoot);
+                    tile.transform.SetParent(st);
                     tile.transform.localPosition = new Vector3(x, -0.05f, y);
                     tile.transform.localScale = new Vector3(1f, 0.1f, 1f);
                     _floorTiles.Add(tile.GetComponent<Renderer>());
@@ -112,43 +118,47 @@ namespace Loab.Game
             float minX = -1.75f, maxX = w + 0.75f, minZ = -3.15f, maxZ = h + 0.75f;
             var pc = new Vector3((minX + maxX) / 2f, 0, (minZ + maxZ) / 2f);
             var pz = new Vector3(maxX - minX, 0, maxZ - minZ);
-            _plinth = Part(_roomRoot, PrimitiveType.Cube, new Vector3(pc.x, -0.38f, pc.z), new Vector3(pz.x, 0.7f, pz.z), ModelFactory.Mat(PlinthWood)).GetComponent<Renderer>();
+            _plinth = Part(st, PrimitiveType.Cube, new Vector3(pc.x, -0.38f, pc.z), new Vector3(pz.x, 0.7f, pz.z), ModelFactory.Mat(PlinthWood)).GetComponent<Renderer>();
             _rainBox = new Bounds(new Vector3(pc.x, 2.5f, pc.z), new Vector3(pz.x, 5f, pz.z));
-            Part(_roomRoot, PrimitiveType.Cube, new Vector3(pc.x, -0.025f, pc.z), new Vector3(pz.x - 0.02f, 0.03f, pz.z - 0.02f), ModelFactory.Mat(Pavement));
-            Part(_roomRoot, PrimitiveType.Cube, new Vector3(pc.x, -0.0f, minZ + 0.18f), new Vector3(pz.x - 0.02f, 0.05f, 0.14f), ModelFactory.Mat(Kerb));
+            Part(st, PrimitiveType.Cube, new Vector3(pc.x, -0.025f, pc.z), new Vector3(pz.x - 0.02f, 0.03f, pz.z - 0.02f), ModelFactory.Mat(Pavement));
+            Part(st, PrimitiveType.Cube, new Vector3(pc.x, -0.0f, minZ + 0.18f), new Vector3(pz.x - 0.02f, 0.05f, 0.14f), ModelFactory.Mat(Kerb));
             // Foam-board trim where the model's ground meets the plinth
-            Part(_roomRoot, PrimitiveType.Cube, new Vector3(pc.x, -0.035f, minZ - 0.005f), new Vector3(pz.x + 0.02f, 0.05f, 0.03f), ModelFactory.Mat(FoamBoard));
+            Part(st, PrimitiveType.Cube, new Vector3(pc.x, -0.035f, minZ - 0.005f), new Vector3(pz.x + 0.02f, 0.05f, 0.03f), ModelFactory.Mat(FoamBoard));
             // Name plaque on the front (cream card on a darker mount)
-            _plaqueMount = Part(_roomRoot, PrimitiveType.Cube, new Vector3(pc.x, -0.36f, minZ - 0.01f), new Vector3(3.6f, 0.46f, 0.03f), ModelFactory.Mat(0x2b1d14)).GetComponent<Renderer>();
-            _plaqueCard = Part(_roomRoot, PrimitiveType.Cube, new Vector3(pc.x, -0.36f, minZ - 0.025f), new Vector3(3.4f, 0.36f, 0.02f), ModelFactory.Mat(0xFFF1C9)).GetComponent<Renderer>();
+            _plaqueMount = Part(st, PrimitiveType.Cube, new Vector3(pc.x, -0.36f, minZ - 0.01f), new Vector3(3.6f, 0.46f, 0.03f), ModelFactory.Mat(0x2b1d14)).GetComponent<Renderer>();
+            _plaqueCard = Part(st, PrimitiveType.Cube, new Vector3(pc.x, -0.36f, minZ - 0.025f), new Vector3(3.4f, 0.36f, 0.02f), ModelFactory.Mat(0xFFF1C9)).GetComponent<Renderer>();
             _plinthTier = -1;
 
             // ---- Studio (brief 9.3): seamless floor that catches the plinth's soft shadow.
-            var studio = Part(_roomRoot, PrimitiveType.Cube, new Vector3(pc.x, -0.78f, pc.z), new Vector3(400f, 0.05f, 400f), ModelFactory.Mat(0x9FB2C0));
+            var studio = Part(st, PrimitiveType.Cube, new Vector3(pc.x, -0.78f, pc.z), new Vector3(400f, 0.05f, 400f), ModelFactory.Mat(0x9FB2C0));
             _studioFloor = studio.GetComponent<Renderer>();
-            _studioFloor.sharedMaterial = new Material(ModelFactory.Mat(0x9FB2C0));
+            if (_studioMat == null) _studioMat = new Material(ModelFactory.Mat(0x9FB2C0));
+            _studioFloor.sharedMaterial = _studioMat;
 
             // ---- Neighbouring buildings as white-card massing models (brief 9.2)
-            Massing(new Vector3(maxX + 4.6f, 0, (h - 1) / 2f + 1.2f), new Vector3(5f, 2.8f, h), dx);
+            if (s.gridW + Sim.Game.ExpandCols <= Sim.Game.MaxWidth)
+                Massing(new Vector3(maxX + 0.2f + Sim.Game.ExpandCols / 2f, 0, (h - 1) / 2f + 0.5f), new Vector3(Sim.Game.ExpandCols - 0.4f, 2.9f, h + 0.6f), dx);
+            else
+                Massing(new Vector3(maxX + 4.6f, 0, (h - 1) / 2f + 1.2f), new Vector3(5f, 2.8f, h), dx);
             Massing(new Vector3((w - 1) / 2f - 2f, 0, maxZ + 4.2f), new Vector3(9f, 2.4f, 4.5f), dx);
 
             // ---- Pavement furniture
-            Part(_roomRoot, PrimitiveType.Cube, new Vector3(dx, 0.005f, -0.25f), new Vector3(0.9f, 0.02f, 0.5f), ModelFactory.Mat(0xA8573A));
-            Part(_roomRoot, PrimitiveType.Cylinder, new Vector3(dx - 3f, 1.4f, -2.6f), new Vector3(0.12f, 1.4f, 0.12f), ModelFactory.Mat(0x2b2b2b));
-            Part(_roomRoot, PrimitiveType.Sphere, new Vector3(dx - 3f, 2.9f, -2.6f), new Vector3(0.4f, 0.4f, 0.4f), ModelFactory.Glow(0xFFD27A, 2f));
+            Part(st, PrimitiveType.Cube, new Vector3(dx, 0.005f, -0.25f), new Vector3(0.9f, 0.02f, 0.5f), ModelFactory.Mat(0xA8573A));
+            Part(st, PrimitiveType.Cylinder, new Vector3(dx - 3f, 1.4f, -2.6f), new Vector3(0.12f, 1.4f, 0.12f), ModelFactory.Mat(0x2b2b2b));
+            Part(st, PrimitiveType.Sphere, new Vector3(dx - 3f, 2.9f, -2.6f), new Vector3(0.4f, 0.4f, 0.4f), ModelFactory.Glow(0xFFD27A, 2f));
             // Hanging pub sign: bottle green with cream lettering (brief 7.1)
-            Part(_roomRoot, PrimitiveType.Cube, new Vector3(dx + 1.4f, 1.5f, -0.75f), new Vector3(0.1f, 3f, 0.1f), ModelFactory.Mat(0x2b1b10));
-            Part(_roomRoot, PrimitiveType.Cube, new Vector3(dx + 1.0f, 2.95f, -0.75f), new Vector3(0.9f, 0.08f, 0.08f), ModelFactory.Mat(0x2b1b10));
-            Part(_roomRoot, PrimitiveType.Cube, new Vector3(dx + 0.85f, 2.35f, -0.75f), new Vector3(1.5f, 0.85f, 0.06f), ModelFactory.Mat(0x3D8A7A));
-            Part(_roomRoot, PrimitiveType.Cube, new Vector3(dx + 0.85f, 2.35f, -0.79f), new Vector3(1.38f, 0.73f, 0.02f), ModelFactory.Mat(0xFFF1C9));
-            Part(_roomRoot, PrimitiveType.Cube, new Vector3(dx + 0.85f, 2.35f, -0.8f), new Vector3(1.32f, 0.67f, 0.02f), ModelFactory.Mat(0x3D8A7A));
+            Part(st, PrimitiveType.Cube, new Vector3(dx + 1.4f, 1.5f, -0.75f), new Vector3(0.1f, 3f, 0.1f), ModelFactory.Mat(0x2b1b10));
+            Part(st, PrimitiveType.Cube, new Vector3(dx + 1.0f, 2.95f, -0.75f), new Vector3(0.9f, 0.08f, 0.08f), ModelFactory.Mat(0x2b1b10));
+            Part(st, PrimitiveType.Cube, new Vector3(dx + 0.85f, 2.35f, -0.75f), new Vector3(1.5f, 0.85f, 0.06f), ModelFactory.Mat(0x3D8A7A));
+            Part(st, PrimitiveType.Cube, new Vector3(dx + 0.85f, 2.35f, -0.79f), new Vector3(1.38f, 0.73f, 0.02f), ModelFactory.Mat(0xFFF1C9));
+            Part(st, PrimitiveType.Cube, new Vector3(dx + 0.85f, 2.35f, -0.8f), new Vector3(1.32f, 0.67f, 0.02f), ModelFactory.Mat(0x3D8A7A));
             // Planters either side of the door
             foreach (var px in new[] { dx - 1.4f, dx + 2.6f })
             {
                 if (px < minX + 0.4f || px > maxX - 0.4f) continue;
-                Part(_roomRoot, PrimitiveType.Cube, new Vector3(px, 0.2f, -1.15f), new Vector3(0.7f, 0.4f, 0.45f), ModelFactory.Mat(0x8a5a3a));
-                Part(_roomRoot, PrimitiveType.Sphere, new Vector3(px - 0.15f, 0.5f, -1.15f), new Vector3(0.38f, 0.32f, 0.38f), ModelFactory.Mat(0x6CC070));
-                Part(_roomRoot, PrimitiveType.Sphere, new Vector3(px + 0.17f, 0.52f, -1.12f), new Vector3(0.34f, 0.36f, 0.34f), ModelFactory.Mat(0x5aab5e));
+                Part(st, PrimitiveType.Cube, new Vector3(px, 0.2f, -1.15f), new Vector3(0.7f, 0.4f, 0.45f), ModelFactory.Mat(0x8a5a3a));
+                Part(st, PrimitiveType.Sphere, new Vector3(px - 0.15f, 0.5f, -1.15f), new Vector3(0.38f, 0.32f, 0.38f), ModelFactory.Mat(0x6CC070));
+                Part(st, PrimitiveType.Sphere, new Vector3(px + 0.17f, 0.52f, -1.12f), new Vector3(0.34f, 0.36f, 0.34f), ModelFactory.Mat(0x5aab5e));
             }
             var lampLight = new GameObject("StreetLamp").AddComponent<Light>();
             lampLight.transform.SetParent(_roomRoot);
@@ -166,9 +176,11 @@ namespace Loab.Game
                 _fill.transform.SetParent(Rig.Cam.transform, false);
             }
             _practicalDirty = true;
+            StaticBatchingUtility.Combine(st.gameObject);
         }
 
         Light _practicalLamp;
+        Transform _staticRoot;
         Renderer _plinth, _plaqueMount, _plaqueCard;
         int _plinthTier = -1;
         Bounds _rainBox;
@@ -221,15 +233,23 @@ namespace Loab.Game
 
         Vector3 RandomRainPos(bool anyHeight)
         {
+            // Only outside the building: the model has no roof, but the rain shouldn't fall on the customers.
             var b = _rainBox;
-            return new Vector3(Random.Range(b.min.x, b.max.x), anyHeight ? Random.Range(0.1f, b.max.y) : b.max.y, Random.Range(b.min.z, b.max.z));
+            float w = _g.S.gridW, h = _g.S.gridH;
+            for (int tries = 0; tries < 20; tries++)
+            {
+                float x = Random.Range(b.min.x, b.max.x), z = Random.Range(b.min.z, b.max.z);
+                bool inside = x > -0.9f && x < w - 0.1f && z > -0.9f && z < h - 0.1f;
+                if (!inside) return new Vector3(x, anyHeight ? Random.Range(0.1f, b.max.y) : b.max.y, z);
+            }
+            return new Vector3(b.min.x + 0.3f, b.max.y, b.min.z + 0.3f);
         }
 
         void Massing(Vector3 centre, Vector3 size, float doorX)
         {
             float baseY = -0.755f;
             var root = new GameObject("WhiteCardBuilding").transform;
-            root.SetParent(_roomRoot);
+            root.SetParent(_staticRoot);
             root.localPosition = centre;
             Part(root, PrimitiveType.Cube, new Vector3(0, baseY + size.y / 2f, 0), size, ModelFactory.Mat(WhiteCard));
             // Window cut-outs on the street face and the side facing the bar
@@ -297,6 +317,8 @@ namespace Loab.Game
             l.shadows = LightShadows.None;
             l.intensity = 0;
             l.bounceIntensity = weight; // stash the weight; bounce isn't used without GI
+            // The bar's own lights are the hero (brief 10): keep them per-pixel on every tier.
+            l.renderMode = weight >= 1.2f ? LightRenderMode.ForcePixel : LightRenderMode.Auto;
             _practical.Add(l);
         }
 
@@ -390,6 +412,29 @@ namespace Loab.Game
             return new Vector3(it.x + (w - 1) / 2f, 0, it.y + (h - 1) / 2f);
         }
 
+        readonly Dictionary<int, int> _wearBand = new Dictionary<int, int>();
+        static MaterialPropertyBlock _mpb;
+
+        /// <summary>Worn furniture looks faded and a bit grubby (visual brief 8: simplified wear cues, not grime).</summary>
+        void ApplyWear(GameObject go, int band, int uid)
+        {
+            _wearBand[uid] = band;
+            if (_mpb == null) _mpb = new MaterialPropertyBlock();
+            foreach (var r in go.GetComponentsInChildren<Renderer>())
+            {
+                if (band == 0) { r.SetPropertyBlock(null); continue; }
+                var m = r.sharedMaterial;
+                if (m == null || m.IsKeywordEnabled("_EMISSION")) continue; // lamps and screens stay bright
+                var c = m.color;
+                float grey = c.grayscale;
+                float fade = band == 2 ? 0.45f : 0.22f;
+                var worn = Color.Lerp(c, new Color(grey, grey * 0.96f, grey * 0.9f), fade) * (band == 2 ? 0.8f : 0.9f);
+                worn.a = 1;
+                _mpb.SetColor("_Color", worn);
+                r.SetPropertyBlock(_mpb);
+            }
+        }
+
         void SyncItems()
         {
             var seen = new HashSet<int>();
@@ -397,8 +442,10 @@ namespace Loab.Game
             {
                 seen.Add(it.uid);
                 string key = $"{it.id}:{it.x}:{it.y}:{it.rot}";
+                int wearBand = it.wear >= 70 ? 2 : it.wear >= 45 ? 1 : 0;
                 if (_items.TryGetValue(it.uid, out var go))
                 {
+                    if (!_wearBand.TryGetValue(it.uid, out int wb) || wb != wearBand) ApplyWear(go, wearBand, it.uid);
                     if (_itemKey[it.uid] == key) continue;
                     go.transform.position = ItemCentre(it);
                     go.transform.rotation = Quaternion.Euler(0, 90f * it.rot, 0);
@@ -427,6 +474,7 @@ namespace Loab.Game
                 _items[it.uid] = go;
                 _itemKey[it.uid] = key;
                 _practicalDirty = true;
+                ApplyWear(go, wearBand, it.uid);
             }
             var remove = new List<int>();
             foreach (var kv in _items) if (!seen.Contains(kv.Key)) remove.Add(kv.Key);
@@ -437,6 +485,14 @@ namespace Loab.Game
                 _items.Remove(uid); _itemKey.Remove(uid);
                 _practicalDirty = true;
             }
+        }
+
+        /// <summary>Where to pin a UI badge above a customer (the rendered figure, so seats and queues line up).</summary>
+        public bool TryHeadPos(Customer c, out Vector3 pos)
+        {
+            if (_customers.TryGetValue(c, out var v) && v.Root.activeSelf) { pos = v.Root.transform.position + Vector3.up * 1.95f; return true; }
+            pos = default;
+            return false;
         }
 
         public GameObject ItemObject(int uid) => _items.TryGetValue(uid, out var go) ? go : null;
@@ -506,6 +562,9 @@ namespace Loab.Game
             _customers.Clear(); _staff.Clear();
             foreach (var kv in _incidents) Destroy(kv.Value);
             _incidents.Clear();
+            if (_performer != null) _performer.Root.SetActive(false);
+            if (_spot != null) _spot.gameObject.SetActive(false);
+            _eventLive = false;
         }
 
         CharView Rent()
@@ -671,7 +730,7 @@ namespace Loab.Game
             _performer.Place(_stagePos, face, true, 0, false);
             _performer.Root.transform.position += Vector3.up * lift;
             _performer.SetMood(-1, false, false);
-            if (svc.Event != null && svc.Event.kind == 1)
+            if (svc.Event != null && svc.Event.kind >= 1)
                 _spot.color = Color.HSVToRGB(Mathf.Repeat(Time.time * 0.05f, 1f), 0.35f, 1f);
             else _spot.color = new Color(1f, 0.93f, 0.8f);
             _spot.transform.position = _stagePos + Vector3.up * 3.6f - face * 1.2f;
@@ -721,8 +780,7 @@ namespace Loab.Game
                 {
                     var it = _g.S.Item(inc.itemUid);
                     root.transform.position = (it != null ? ItemCentre(it) : new Vector3(inc.cell.x, 0, inc.cell.y)) + Vector3.up * 2.4f;
-                    Part(root.transform, PrimitiveType.Cube, new Vector3(0, 0.15f, 0), new Vector3(0.18f, 0.5f, 0.18f), ModelFactory.Glow(0xff4d4d, 1.6f));
-                    Part(root.transform, PrimitiveType.Cube, new Vector3(0, -0.28f, 0), new Vector3(0.18f, 0.16f, 0.18f), ModelFactory.Glow(0xff4d4d, 1.6f));
+                    // The visible marker is a UI badge (Hud); this just keeps a click target over the toilets.
                     var col = root.AddComponent<BoxCollider>(); col.size = new Vector3(1.2f, 1.6f, 1.2f);
                     break;
                 }
@@ -860,8 +918,8 @@ namespace Loab.Game
 
             public void SetMood(float mood, bool rowdy, bool busy)
             {
-                _alert.gameObject.SetActive(rowdy);
-                bool showMarker = mood >= 0 && !rowdy && (mood < 40 || mood > 75);
+                _alert.gameObject.SetActive(false);
+                bool showMarker = false;
                 _marker.gameObject.SetActive(showMarker);
                 if (showMarker) _markerR.sharedMaterial = ModelFactory.Glow(mood < 25 ? 0xff4d4d : mood < 40 ? 0xffb347 : 0x3ddc84, 1.3f);
                 if (rowdy) _alert.localRotation = Quaternion.Euler(0, Time.time * 180f, 0);
