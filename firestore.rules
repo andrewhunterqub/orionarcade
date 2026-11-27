@@ -1,0 +1,25 @@
+rules_version = '2';
+
+// Security rules for Orion Arcade account saves. Paste these into
+// Firebase console > Firestore Database > Rules (or deploy with the Firebase CLI).
+//
+// Each signed-in player can read, write and delete only their own saves:
+//   users/{uid}/games/{slug} = { save: bytes, compressed: bool, updatedAt: number, format: 1, savedAt: timestamp }
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/games/{slug} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && slug.matches('^[a-z0-9][a-z0-9-]{0,63}$')
+        && request.resource.data.keys().hasOnly(['save', 'compressed', 'updatedAt', 'format', 'savedAt'])
+        && request.resource.data.save is bytes
+        && request.resource.data.save.size() <= 950000
+        && request.resource.data.compressed is bool
+        && request.resource.data.updatedAt is number
+        && request.resource.data.format == 1
+        && request.resource.data.savedAt == request.time;
+    }
+  }
+}

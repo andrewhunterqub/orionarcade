@@ -1,4 +1,5 @@
 import { loadGames, gameUrl, placeholderGradient } from "./manifest.js";
+import "./account.js";
 
 const grid = document.getElementById("grid");
 const empty = document.getElementById("empty");

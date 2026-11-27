@@ -1,4 +1,5 @@
 import { loadGames, gameUrl, aspectRatio } from "./manifest.js";
+import { prepareSaves } from "./saves.js";
 
 const $ = (id) => document.getElementById(id);
 const canvas = $("unity-canvas");
@@ -8,6 +9,7 @@ const progressLabel = $("progress-label");
 const errorBox = $("error");
 const warningBox = $("warning");
 const fullscreenBtn = $("fullscreen");
+const syncStatus = $("sync-status");
 
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
@@ -30,6 +32,19 @@ function unityBanner(message, type) {
   warningBox.textContent = message;
   warningBox.hidden = false;
   if (type !== "warning") setTimeout(() => (warningBox.hidden = true), 5000);
+}
+
+function showSyncStatus(status) {
+  if (!status) {
+    syncStatus.hidden = true;
+    return;
+  }
+  const buttons = (status.actions || []).map((a) =>
+    Object.assign(document.createElement("button"), { type: "button", className: "link-btn", textContent: a.label, onclick: a.run }),
+  );
+  syncStatus.replaceChildren(Object.assign(document.createElement("span"), { textContent: status.text }), ...buttons);
+  syncStatus.dataset.tone = status.tone || "muted";
+  syncStatus.hidden = false;
 }
 
 function loadScript(src) {
@@ -89,6 +104,9 @@ async function start() {
     }
   }
 
+  progressLabel.textContent = "Loading your progress…";
+  const saves = await prepareSaves(game.slug, { onStatus: showSyncStatus });
+
   try {
     await loadScript(gameUrl(game, b.loader));
     // createUnityInstance is defined globally by the Unity loader script.
@@ -98,6 +116,7 @@ async function start() {
       progressLabel.textContent = pct < 100 ? `Loading… ${pct}%` : "Starting…";
     });
     loading.hidden = true;
+    saves.start();
     fullscreenBtn.hidden = false;
     fullscreenBtn.addEventListener("click", () => instance.SetFullscreen(1));
     canvas.focus();
