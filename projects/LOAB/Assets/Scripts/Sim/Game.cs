@@ -112,6 +112,7 @@ namespace Loab.Sim
         {
             S = s;
             if (string.IsNullOrEmpty(s.pendingCard)) s.pendingCard = null; // JsonUtility saves null strings as ""
+            if (string.IsNullOrEmpty(s.scenario)) s.scenario = null;
             s.menu ??= new List<MenuEntry>(); s.staff ??= new List<StaffMember>(); s.events ??= new List<BookedEvent>();
             L = new Layout(s);
             _r = new Rng(s.seed + (ulong)s.day * 31UL + 7UL);
@@ -151,6 +152,21 @@ namespace Loab.Sim
             s.weather = "Mild";
             return new Game(s);
         }
+
+        public static Game NewScenario(string id, ulong seed)
+        {
+            var def = Scenarios.Get(id);
+            var g = NewCareer(seed, 1);
+            g.S.mode = 2;
+            g.S.scenario = id;
+            def?.Setup(g.S);
+            g.Recompute();
+            return g;
+        }
+
+        public ScenarioDef Scenario => S.mode == 2 ? Scenarios.Get(S.scenario) : null;
+        public int ScenarioDaysLeft => Scenario == null ? 0 : Math.Max(0, Scenario.Days - S.day);
+        public bool ScenarioJustEnded;
 
         public static Game NewSandbox(ulong seed)
         {
@@ -756,6 +772,13 @@ namespace Loab.Sim
             GoalsDoneLastNight.Clear();
             Recompute();
             CheckGoals();
+            ScenarioJustEnded = false;
+            var sc = Scenario;
+            if (sc != null && S.scenarioResult == 0)
+            {
+                if (sc.Won(this)) { S.scenarioResult = 1; ScenarioJustEnded = true; }
+                else if (S.day >= sc.Days - 1) { S.scenarioResult = 2; ScenarioJustEnded = true; }
+            }
             LastNight = rec;
             Svc = svc;
             Phase = Phase.Report;

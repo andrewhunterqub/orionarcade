@@ -116,7 +116,9 @@ namespace Loab.Sim
     public class GameState
     {
         public int version = 1;
-        public int mode;            // 0 career, 1 sandbox
+        public int mode;            // 0 career, 1 sandbox, 2 scenario
+        public string scenario;     // scenario id when mode == 2
+        public int scenarioResult;  // 0 running, 1 won, 2 out of time
         public int difficulty = 1;  // 0 relaxed, 1 standard, 2 hardcore
         public ulong seed;
         public string barName = "The Crooked Anchor";

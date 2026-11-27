@@ -18,6 +18,7 @@ namespace Loab.Game
         VisualElement _top, _tabs, _side, _sideBody, _feed, _goal, _mentor, _actions, _inspector, _overlay;
         Label _tooltip, _thought, _sign, _plaque;
         ScrollView _sideScroll;
+        Label _goalLabel;
         Label _barName, _dayText, _cash, _rating, _rep, _custLabel, _custVal, _clock, _goalText, _hint;
         Button _openBtn;
         VisualElement _speedBox, _stats, _camBox;
@@ -178,7 +179,8 @@ namespace Loab.Game
             _root.Add(_side);
 
             _goal = El("panel", "goal");
-            _goal.Add(Lbl("CURRENT GOAL", "goal-label"));
+            _goalLabel = Lbl("CURRENT GOAL", "goal-label");
+            _goal.Add(_goalLabel);
             _goalText = Lbl("", "goal-text");
             _goal.Add(_goalText);
             _root.Add(_goal);
@@ -260,7 +262,8 @@ namespace Loab.Game
             _camBox.style.display = prep || service ? DisplayStyle.Flex : DisplayStyle.None;
             _speedBox.style.display = service ? DisplayStyle.Flex : DisplayStyle.None;
             bool sideOpen = prep && (_tab != null || _run.Selected != null);
-            _goal.style.display = (prep || service) && G.CurrentGoal != null && !sideOpen ? DisplayStyle.Flex : DisplayStyle.None;
+            bool hasGoal = G.CurrentGoal != null || (G.Scenario != null && G.S.scenarioResult == 0);
+            _goal.style.display = (prep || service) && hasGoal && !sideOpen ? DisplayStyle.Flex : DisplayStyle.None;
             if (!prep) { _side.style.display = DisplayStyle.None; _tab = null; UpdateTabButtons(); }
             if (!service) { _inspector.style.display = DisplayStyle.None; _thought.style.display = DisplayStyle.None; }
             _feed.style.display = service ? DisplayStyle.Flex : DisplayStyle.None;
@@ -345,7 +348,17 @@ namespace Loab.Game
             _rating.text = $"{Stars(s.rating)} {s.rating:0.0}";
             _rep.text = $"{s.reputation:0}";
             var gl = G.CurrentGoal;
-            if (gl != null) _goalText.text = gl.Reward > 0 ? $"{gl.Text}  (+£{gl.Reward})" : gl.Text;
+            var sc = G.Scenario;
+            if (sc != null)
+            {
+                _goalLabel.text = $"SCENARIO: {sc.Name.ToUpperInvariant()}  -  {G.ScenarioDaysLeft} DAYS LEFT";
+                if (Time.frameCount % 20 == 0) _goalText.text = $"{sc.GoalText}\n{sc.Progress(G)}";
+            }
+            else
+            {
+                _goalLabel.text = "CURRENT GOAL";
+                if (gl != null) _goalText.text = gl.Reward > 0 ? $"{gl.Text}  (+£{gl.Reward})" : gl.Text;
+            }
             if (G.Phase == Phase.Service && G.Svc != null)
             {
                 var svc = G.Svc;

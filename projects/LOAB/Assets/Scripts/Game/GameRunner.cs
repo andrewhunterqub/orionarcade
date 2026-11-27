@@ -81,6 +81,13 @@ namespace Loab.Game
             Load(g);
         }
 
+        public void NewScenario(string id)
+        {
+            var g = Sim.Game.NewScenario(id, (ulong)DateTime.Now.Ticks);
+            G = g;
+            Load(g);
+        }
+
         public void NewSandbox() => Load(Sim.Game.NewSandbox((ulong)DateTime.Now.Ticks));
 
         public bool Continue()

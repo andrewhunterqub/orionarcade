@@ -51,6 +51,7 @@ namespace Loab.Game
             if (_run.HasSave)
                 col.Add(Btn("Continue", () => { if (!_run.Continue()) Flash("Couldn't load your save"); }, "btn-primary", "title-btn"));
             col.Add(Btn("New career", () => ShowNewCareer(), _run.HasSave ? "btn" : "btn-primary", "title-btn"));
+            col.Add(Btn("Scenarios", () => ShowScenarios(), "title-btn"));
             col.Add(Btn("Sandbox (unlimited cash)", () => _run.NewSandbox(), "title-btn"));
             col.Add(Btn("How to play", () => ShowHelp(true), "title-btn"));
             var foot = Lbl("An Orion Arcade original. Progress saves automatically in your browser.", "hint");
@@ -82,6 +83,23 @@ namespace Loab.Game
             var hard = Btn("", () => Start(2), "option");
             hard.Add(Lbl("Hardcore", "option-label")); hard.Add(Lbl("Impatient punters, rowdier nights, no mercy.", "option-detail"));
             m.Add(hard);
+            m.Add(Btn("Back", () => ShowTitle(), "option"));
+        }
+
+        void ShowScenarios()
+        {
+            var m = Modal("Scenarios", "Short challenges with a deadline. Each one starts a fresh bar.");
+            foreach (var sc in Scenarios.All)
+            {
+                var id = sc.Id;
+                var b = Btn("", () => _run.NewScenario(id), "option");
+                b.Add(Lbl($"{sc.Name}  ({sc.Days} days)", "option-label"));
+                b.Add(Lbl(sc.Blurb, "option-detail"));
+                var goal = Lbl("Goal: " + sc.GoalText, "option-detail");
+                goal.style.color = new Color(1f, 0.82f, 0.4f);
+                b.Add(goal);
+                m.Add(b);
+            }
             m.Add(Btn("Back", () => ShowTitle(), "option"));
         }
 
@@ -208,6 +226,21 @@ namespace Loab.Game
             cols.Add(left); cols.Add(right);
             m.Add(cols);
 
+            var sc = G.Scenario;
+            if (sc != null && G.ScenarioJustEnded)
+            {
+                var c = El("card");
+                bool won = s.scenarioResult == 1;
+                var head = Lbl(won ? $"SCENARIO COMPLETE: {sc.Name}!" : $"OUT OF TIME: {sc.Name}", "big-num");
+                head.style.fontSize = 22;
+                head.style.color = won ? new Color(0.47f, 0.86f, 0.55f) : new Color(1f, 0.43f, 0.39f);
+                c.Add(head);
+                c.Add(Lbl(won ? $"Done in {s.day + 1} of {sc.Days} days. You can keep running the bar, or head back to the title for another challenge."
+                              : $"{sc.Progress(G)}. Close, but the deadline has passed. Keep playing for fun, or try again.", "body"));
+                c.Add(Row(Btn("Back to title", () => { _run.Save(); ShowTitle(); }, "btn-small"), Btn("Try another scenario", () => ShowScenarios(), "btn-small")));
+                left.Add(c);
+                if (won) _run.Audio.Play("cheer", 0.8f);
+            }
             if (G.GoalsDoneLastNight.Count > 0)
             {
                 left.Add(Lbl("GOALS COMPLETE", "section"));

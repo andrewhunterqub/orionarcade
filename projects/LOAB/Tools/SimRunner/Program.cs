@@ -13,7 +13,10 @@ public static class Program
         string strategy = args.Length > 2 ? args[2] : "sensible";
 
         int diff = args.Length > 3 ? int.Parse(args[3]) : 1;
-        var g = Game.NewCareer(seed, diff);
+        if (strategy == "speak") { var gs = Game.NewScenario("speakeasy", seed); Speak(gs); return; }
+        var g = strategy.StartsWith("scen:") ? Game.NewScenario(strategy.Substring(5), seed) : Game.NewCareer(seed, diff);
+        bool studentPlan = strategy == "scen:freshers";
+        if (strategy.StartsWith("scen:")) strategy = "sensible";
         Console.WriteLine($"Start: cash £{g.S.cash:0}, vibe {string.Join("/", g.V.Axes.Select(a => a.ToString("0")))} ({g.V.Summary}), seats {g.V.Seats}, match {string.Join(" ", g.V.SegMatch.Select(m => m.ToString("0.00")))}");
         Console.WriteLine("day  dow  wx      cust  away  drinks walk  takings   profit     cash  sat   rating rep   staff  event");
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -25,6 +28,8 @@ public static class Program
                 else if (g.ChooseCard(0) != null) g.ChooseCard(1);
             }
             if (strategy == "sensible") Play(g);
+            if (studentPlan) Students(g);
+            if (strategy == "speak" && d == 0) Speak(g);
             if (strategy == "fuzz") Fuzz(g, new Random((int)seed * 1000 + d));
             g.OpenDoors();
             int ticks = 0;
@@ -54,6 +59,7 @@ public static class Program
                 foreach (var m in n.moments.Take(4)) Console.WriteLine("     * " + m);
                 Console.WriteLine($"     segs: {string.Join(" ", n.segCounts)}  awareness: {string.Join(" ", g.S.awareness.Select(a => a.ToString("0.00")))}  regulars {g.S.regulars.Count}  goal {g.S.goalIndex}  tags: {string.Join(", ", g.S.tags)}");
             }
+            if (g.Scenario != null && g.ScenarioJustEnded) Console.WriteLine($"SCENARIO {(g.S.scenarioResult == 1 ? "WON" : "LOST")} on day {n.day}: {g.Scenario.Progress(g)}");
             if (g.Phase == Phase.GameOver || g.S.bankrupt) { Console.WriteLine("BANKRUPT"); break; }
             g.NextDay();
         }
@@ -130,6 +136,32 @@ public static class Program
         }
         string err = g.L.CheckReachability();
         if (err != null) throw new Exception("Layout became unreachable: " + err);
+    }
+
+    // Builds a speakeasy to check the theme is reachable.
+    static void Speak(Game g)
+    {
+        var s = g.S;
+        foreach (var it in s.items.ToList()) { var d = Content.Item(it.id); if (d.Id == "plastic_set" || d.Id == "pub_table" || d.Id == "darts" || d.Id == "chalkboard") g.Execute(new SellCmd { Uid = it.uid }); }
+        g.Execute(new StyleCmd { Kind = 0, Id = "carpet" }); g.Execute(new StyleCmd { Kind = 1, Id = "green" }); g.SetMusic("jazz"); g.SetLighting(30);
+        foreach (var id in new[] { "espresso_martini", "old_fashioned", "fizz", "whisky" }) g.OrderStock(id, 1);
+        foreach (var id in new[] { "booth", "booth", "armchair", "armchair", "chesterfield", "candles", "candles", "candles", "edison", "edison", "bookshelf", "bookshelf", "curtains", "curtains", "rug" }) TryPlace(g, id);
+        foreach (var t in g.V.Themes) Console.WriteLine($"   theme {t.Def.Name}: count {t.Count} share {t.Share:0.00} active {t.Active}");
+        Console.WriteLine($"   cash left £{s.cash:0}");
+    }
+
+    static void Students(Game g)
+    {
+        var s = g.S;
+        if (s.day == 0)
+        {
+            g.SetMusic("pop"); g.SetVolume(80); g.SetLighting(55);
+            foreach (var m in s.menu) g.SetPrice(m.id, Content.Drink(m.id).DefaultPrice * 0.85f);
+            foreach (var id in new[] { "pool", "foosball", "arcade_cab", "neon_open", "flamingo", "long_table", "long_table" }) TryPlace(g, id);
+            g.Execute(new StyleCmd { Kind = 1, Id = "pink" });
+        }
+        g.Flyers();
+        if (s.DayOfWeek == 1 && !s.events.Any()) { var q = s.agency.FirstOrDefault(a => a.kind == 0 && a.fee > 0); if (q != null) g.BookEvent(q.uid, 2, 150, 0); }
     }
 
     static void TryPlace(Game g, string id)
