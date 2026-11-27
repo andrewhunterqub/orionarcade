@@ -810,6 +810,9 @@ namespace Loab.Sim
                     m.demandAvg = m.demandAvg <= 0 ? tonight : m.demandAvg * 0.6f + tonight * 0.4f;
                 }
 
+            // Tonight's verdict, judged against earlier nights (before tonight joins the history).
+            if (svc != null) Economy.Verdict(S, rec, svc.NoteCounts, svc.Arrivals);
+
             // Wear & upkeep
             foreach (var it in S.items) it.wear = Math.Min(100, it.wear + (Content.Item(it.id).Fn == ItemFn.Games ? 0.8f : 0.35f));
             S.lineQuality = Math.Max(20, S.lineQuality - 4);

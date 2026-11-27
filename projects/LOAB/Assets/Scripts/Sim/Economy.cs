@@ -102,6 +102,105 @@ namespace Loab.Sim
             return t;
         }
 
+        // ---- Tonight's verdict (task L5) ---------------------------------------------------------------
+
+        static readonly Note[] Complaints =
+        {
+            Note.WaitedLong, Note.GaveUpQueue, Note.Dirty, Note.OutOfStock, Note.Pricey, Note.NoSeat, Note.Crowded,
+            Note.ToiletQueue, Note.NoToilet, Note.HatedVibe, Note.HatedMusic, Note.RowdyNearby, Note.GrumpyStaff, Note.BadDrink,
+        };
+
+        /// What to do about each complaint, in the mentor's plain words.
+        public static string FixFor(Note n)
+        {
+            switch (n)
+            {
+                case Note.WaitedLong:
+                case Note.GaveUpQueue: return "Hire another bartender, add a second bar counter, or jump behind the bar yourself when it's busy.";
+                case Note.Dirty: return "Floor staff keep tables and spills under control. A deep clean before opening gives you a fresh start.";
+                case Note.OutOfStock: return "Use Restock all before opening: it now orders what actually sells.";
+                case Note.Pricey: return "Bring prices closer to normal (red prices on the Drinks tab), or try a happy hour.";
+                case Note.NoSeat: return "Add more seating: long tables seat six.";
+                case Note.Crowded: return "You're packed out: knock through next door, or charge a little more on busy nights.";
+                case Note.ToiletQueue:
+                case Note.NoToilet: return "Add a toilet block. Nobody forgives a toilet queue.";
+                case Note.HatedVibe: return "Check the Vibe tab: your look doesn't match the crowd you're getting.";
+                case Note.HatedMusic: return "Try different music, or turn the volume down a notch.";
+                case Note.RowdyNearby: return "Keep responsible service on, call last orders early on rough nights, and deal with rowdy customers quickly.";
+                case Note.GrumpyStaff: return "Low morale: check wages on the Staff tab and don't overwork people.";
+                case Note.BadDrink: return "Clean the beer lines (Drinks tab).";
+                default: return null;
+            }
+        }
+
+        /// Fills rec.highlight, rec.problem and rec.fix from tonight's service.
+        public static void Verdict(GameState s, NightRecord rec, int[] noteCounts, int arrivals)
+        {
+            // Biggest problem: the most common complaint, if enough people had it to matter.
+            Note worst = Note.Count; int worstCount = 0;
+            foreach (var n in Complaints) if (noteCounts[(int)n] > worstCount) { worst = n; worstCount = noteCounts[(int)n]; }
+            if (worst != Note.Count && arrivals > 0 && worstCount >= Math.Max(3, arrivals * 0.12f))
+            {
+                rec.problem = ProblemText(worst, worstCount, arrivals);
+                rec.fix = FixFor(worst);
+            }
+
+            // Best thing: a record, a big event, or what people loved most.
+            float bestTakings = 0; int mostCustomers = 0;
+            foreach (var h in s.history) { bestTakings = Math.Max(bestTakings, h.takings); mostCustomers = Math.Max(mostCustomers, h.customers); }
+            if (rec.eventOutcome == "Viral hit") rec.highlight = $"{rec.eventName} went viral.";
+            else if (s.history.Count >= 3 && rec.takings > bestTakings) rec.highlight = $"Your best takings yet: £{rec.takings:#,0}.";
+            else if (s.history.Count >= 3 && rec.customers > mostCustomers) rec.highlight = $"Your busiest night yet: {rec.customers} customers.";
+            else if (rec.eventOutcome == "Hit") rec.highlight = $"{rec.eventName} was a hit.";
+            else
+            {
+                Note best = Note.Count; int bestCount = 0;
+                foreach (var n in new[] { Note.LovedVibe, Note.LovedDrink, Note.FriendlyStaff, Note.LovedMusic, Note.ComfySeat, Note.Bargain, Note.Dog, Note.Games })
+                    if (noteCounts[(int)n] > bestCount) { best = n; bestCount = noteCounts[(int)n]; }
+                if (best != Note.Count && arrivals > 0 && bestCount >= Math.Max(3, arrivals * 0.1f)) rec.highlight = PraiseText(best, bestCount, arrivals);
+            }
+        }
+
+        static string Pct(int count, int total) => $"{Math.Round(100f * count / Math.Max(1, total))}%";
+
+        static string ProblemText(Note n, int count, int total)
+        {
+            switch (n)
+            {
+                case Note.WaitedLong: return $"Slow service: {Pct(count, total)} waited too long at the bar.";
+                case Note.GaveUpQueue: return $"{count} people gave up queuing for a drink.";
+                case Note.Dirty: return $"{Pct(count, total)} thought the place was dirty.";
+                case Note.OutOfStock: return $"{count} couldn't get the drink they wanted.";
+                case Note.Pricey: return $"{Pct(count, total)} thought it was overpriced.";
+                case Note.NoSeat: return $"{Pct(count, total)} couldn't find a seat.";
+                case Note.Crowded: return $"{Pct(count, total)} found it too crowded.";
+                case Note.ToiletQueue: return $"{count} complained about the toilet queue.";
+                case Note.NoToilet: return $"{count} were horrified there were no toilets.";
+                case Note.HatedVibe: return $"{Pct(count, total)} felt it wasn't their kind of place.";
+                case Note.HatedMusic: return $"{Pct(count, total)} hated the music.";
+                case Note.RowdyNearby: return $"{count} were bothered by rowdy customers.";
+                case Note.GrumpyStaff: return $"{count} found the staff grumpy.";
+                case Note.BadDrink: return $"{Pct(count, total)} said a drink tasted off.";
+                default: return null;
+            }
+        }
+
+        static string PraiseText(Note n, int count, int total)
+        {
+            switch (n)
+            {
+                case Note.LovedVibe: return $"{Pct(count, total)} loved the vibe.";
+                case Note.LovedDrink: return $"{Pct(count, total)} loved their drinks.";
+                case Note.FriendlyStaff: return $"{Pct(count, total)} said the staff were lovely.";
+                case Note.LovedMusic: return $"{Pct(count, total)} liked the music.";
+                case Note.ComfySeat: return $"{Pct(count, total)} loved the comfy seating.";
+                case Note.Bargain: return $"{Pct(count, total)} thought it was great value.";
+                case Note.Dog: return $"{count} people fell for Biscuit the dog.";
+                case Note.Games: return $"{count} people had fun with the games.";
+                default: return null;
+            }
+        }
+
         // ---- Weekly statement (task T6) ----------------------------------------------------------------
 
         public sealed class WeekStatement

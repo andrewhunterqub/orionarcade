@@ -27,6 +27,7 @@ public static class Tests
         Test("cash crisis: loan, then final demand, then bankrupt only after the deadline", CashCrisisArc);
         Test("last orders early: the night ends sooner and can't be called before 9pm", LastOrdersEarly);
         Test("switch duty: a bartender can move to the floor and back mid-service", SwitchDuty);
+        Test("verdict: nights get a highlight or a problem, and every problem has a fix", Verdicts);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -158,6 +159,27 @@ public static class Tests
         while (g.Phase == Phase.Service && ticks++ < 20000) { g.Svc.Step(); g.EndServiceIfDone(); }
         Assert(g.Phase == Phase.Report, "night didn't finish");
         Assert(g.Svc.SwitchDuty(g.Svc.Staff.Find(x => x.IsOwner)) != null, "owner shouldn't be switchable");
+    }
+
+    static void Verdicts()
+    {
+        foreach (bool sensible in new[] { true, false })
+        {
+            var g = Game.NewCareer(55, 1);
+            int highlights = 0, problems = 0;
+            for (int d = 0; d < 21; d++)
+            {
+                if (!PlayDay(g, sensible)) break;
+                var n = g.S.history[g.S.history.Count - 1];
+                if (!string.IsNullOrEmpty(n.highlight)) highlights++;
+                if (!string.IsNullOrEmpty(n.problem)) { problems++; Assert(!string.IsNullOrEmpty(n.fix), $"day {n.day}: problem '{n.problem}' has no fix"); }
+            }
+            Assert(problems > 0, $"{(sensible ? "sensible" : "idle")} player never had a problem in 3 weeks");
+            if (sensible) Assert(highlights > 0, "sensible player never had a highlight in 3 weeks");
+        }
+        foreach (Note n in Enum.GetValues(typeof(Note)))
+            if (n == Note.WaitedLong || n == Note.Dirty || n == Note.OutOfStock || n == Note.Pricey || n == Note.Crowded)
+                Assert(Economy.FixFor(n) != null, $"no fix text for {n}");
     }
 
     static void CashCrisisArc()

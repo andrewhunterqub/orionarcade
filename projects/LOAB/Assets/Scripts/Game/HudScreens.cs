@@ -199,6 +199,59 @@ namespace Loab.Game
         //  Nightly report
         // =====================================================================================
 
+        // Tonight's verdict (task L5): the best thing, the biggest problem and what to do about it.
+        VisualElement VerdictCard(NightRecord n)
+        {
+            if (string.IsNullOrEmpty(n.highlight) && string.IsNullOrEmpty(n.problem)) return null;
+            var c = El("card");
+            c.Add(Lbl("TONIGHT'S VERDICT", "section"));
+            if (!string.IsNullOrEmpty(n.highlight))
+            {
+                var good = Lbl("Best: " + n.highlight, "body");
+                good.style.color = Col(0x6ee7a8);
+                c.Add(good);
+            }
+            if (!string.IsNullOrEmpty(n.problem))
+            {
+                var bad = Lbl("Problem: " + n.problem, "body");
+                bad.style.color = Col(0xff8a80);
+                c.Add(bad);
+                if (!string.IsNullOrEmpty(n.fix)) c.Add(Lbl($"{Mentor.Name}: \"{n.fix}\"", "card-sub"));
+            }
+            return c;
+        }
+
+        // A small bar chart of recent nights, newest on the right, with tonight's value.
+        VisualElement TrendRow(string label, System.Collections.Generic.List<float> values, uint color, string now)
+        {
+            var row = Row();
+            var name = Lbl(label, "slider-label");
+            name.style.width = 90;
+            row.Add(name);
+            var bars = Row();
+            bars.style.alignItems = Align.FlexEnd;
+            bars.style.height = 22;
+            bars.style.flexGrow = 1;
+            float max = Mathf.Max(0.0001f, values.Max());
+            for (int i = 0; i < values.Count; i++)
+            {
+                var b = new VisualElement();
+                b.style.width = 10;
+                b.style.marginRight = 3;
+                b.style.height = Mathf.Max(2f, 22f * Mathf.Max(0, values[i]) / max);
+                b.style.backgroundColor = Col(color);
+                b.style.opacity = i == values.Count - 1 ? 1f : 0.55f;
+                b.tooltip = values[i].ToString("0.#");
+                bars.Add(b);
+            }
+            row.Add(bars);
+            var v = Lbl(now, "card-sub");
+            v.style.width = 64;
+            v.style.unityTextAlign = TextAnchor.MiddleRight;
+            row.Add(v);
+            return row;
+        }
+
         // Sunday's report: where the week's money went (task T6).
         VisualElement WeeklyStatementCard(GameState s)
         {
@@ -279,6 +332,8 @@ namespace Loab.Game
                 left.Add(c);
                 if (won) _run.Audio.Play("cheer", 0.8f);
             }
+            var verdict = VerdictCard(n);
+            if (verdict != null) left.Add(verdict);
             if (n.rent > 0) left.Add(WeeklyStatementCard(s));
             if (G.GoalsDoneLastNight.Count > 0)
             {
@@ -309,12 +364,27 @@ namespace Loab.Game
             if (n.turnedAway > 0) left.Add(Lbl($"{n.turnedAway} people were turned away because you were full.", "chip-bad"));
 
             right.Add(Lbl("MONEY", "section"));
-            void Line(string a, float v) { var r = Row(Lbl(a, "body"), Spacer(), Lbl(Money(v), "body")); r.style.marginBottom = -6; right.Add(r); }
+            void Line(string a, float v, bool hideZero = false) { if (hideZero && Mathf.Abs(v) < 0.5f) return; var r = Row(Lbl(a, "body"), Spacer(), Lbl(Money(v), "body")); r.style.marginBottom = -6; right.Add(r); }
             Line("Takings (inc. tickets)", n.takings);
             Line("Cost of drinks sold", -n.cogs);
             Line("Wages", -n.wages);
-            Line("Rent, bills & other", -(n.costs - n.cogs - n.wages));
+            Line("Rent (weekly)", -n.rent, true);
+            Line("Utilities", -n.utilities, true);
+            Line("Loan repayment", -n.loan, true);
+            Line("Other", -n.other, true);
+            float unexplained = n.costs - n.cogs - n.wages - n.rent - n.utilities - n.loan - n.other;
+            Line("Bills", -unexplained, true); // nights saved before the breakdown existed
             Line("Profit", n.profit);
+
+            var recent = s.history.Skip(Mathf.Max(0, s.history.Count - 7)).ToList();
+            if (recent.Count >= 2)
+            {
+                right.Add(Lbl("LAST 7 NIGHTS", "section"));
+                right.Add(TrendRow("Takings", recent.Select(h => h.takings).ToList(), 0x4cc9f0, Money(n.takings)));
+                right.Add(TrendRow("Customers", recent.Select(h => (float)h.customers).ToList(), 0xffd166, n.customers.ToString()));
+                right.Add(TrendRow("Satisfaction", recent.Select(h => h.satisfaction).ToList(), 0x6ee7a8, $"{n.satisfaction:0}%"));
+                right.Add(TrendRow("Rating", recent.Select(h => h.rating).ToList(), 0xff9f1c, $"{n.rating:0.0}"));
+            }
 
             right.Add(Lbl("WHO CAME", "section"));
             if (n.segCounts.Count == 5 && n.customers > 0)

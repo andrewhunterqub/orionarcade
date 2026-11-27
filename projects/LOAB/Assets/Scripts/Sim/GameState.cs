@@ -90,6 +90,8 @@ namespace Loab.Sim
         public int customers, turnedAway, servedDrinks, walkouts;
         public float takings, costs, wages, cogs, profit, satisfaction;
         public float rent, utilities, loan, other; // cost breakdown (task T6); other = fines, emergency deliveries, the dog
+        // Tonight's verdict (task L5): the best thing, the biggest problem and what would fix it.
+        public string highlight, problem, fix;
         public float[] vibe = new float[Axis.Count];
         public float rating;
         public string eventName, eventOutcome;
