@@ -43,8 +43,8 @@ namespace Loab.Sim
             int dayInSeason = s.day % 28;
             switch (s.Season)
             {
-                case 0: return 1.0f + (dayInSeason < 7 ? 0.1f : 0f);   // autumn: students return
-                case 1: return dayInSeason >= 14 && dayInSeason < 21 ? 1.35f : dayInSeason >= 21 ? 0.8f : 1.05f; // winter: Christmas peak, January slump
+                case 0: return 1.0f;                                   // autumn (freshers' week is on the Calendar)
+                case 1: return 1.05f;                                  // winter (Christmas, New Year and Dry January are on the Calendar)
                 case 2: return 1.0f;
                 default: return 1.12f;                                 // summer
             }
@@ -55,7 +55,7 @@ namespace Loab.Sim
         /// How much more (or less) people want a kind of drink, given the season and tonight's weather.
         public static float SeasonalDrinkMult(GameState s, DrinkCat cat)
         {
-            float m = 1f;
+            float m = Calendar.DrinkMult(s, cat);
             switch (s.Season)
             {
                 case 1: // winter
@@ -91,11 +91,10 @@ namespace Loab.Sim
         public static string SeasonNote(GameState s)
         {
             int d = s.day % 28;
+            var cal = Calendar.Today(s);
+            if (cal != null) return cal.Blurb;
             if (Heatwave(s)) return "A hot summer night: cider and lager will fly, and staff will tire faster.";
             if (s.Season == 1 && d < 14 && (s.weather == "Rain" || s.weather == "Storm")) return "A cold, wet winter night: hot drinks and stout sell well, and cosy bars win.";
-            if (s.Season == 1 && d >= 14 && d < 21) return "Christmas party season: expect big crowds.";
-            if (s.Season == 1 && d >= 21) return "The January slump. Alcohol-free drinks are in demand.";
-            if (s.Season == 0 && d < 7) return "Freshers' week: students are out in force.";
             if (s.Season == 3) return "Summer evenings: everyone's out.";
             return null;
         }
@@ -118,7 +117,7 @@ namespace Loab.Sim
                 float theme = 1f;
                 if (v.ActiveTheme != null && d.ThemeAffinity.TryGetValue(v.ActiveTheme.Def.Id, out float aff)) theme += aff * 0.25f;
                 float sports = (s.DayOfWeek == 2 || s.DayOfWeek == 5) && i == (int)Seg.SportsFans && v.Screens > 0 ? 1.5f : 1f; // match days
-                float appeal = (0.15f + 0.85f * v.SegMatch[i]) * rep * price * ent * theme * sports;
+                float appeal = (0.15f + 0.85f * v.SegMatch[i]) * rep * price * ent * theme * sports * Calendar.SegmentMult(s, v, i);
                 float social = 1f + s.socialPostBoost;
                 outExpected[i] = canServe ? foot * d.Share * s.awareness[i] * appeal * day * social : 0;
 

@@ -29,6 +29,7 @@ public static class Tests
         Test("switch duty: a bartender can move to the floor and back mid-service", SwitchDuty);
         Test("verdict: nights get a highlight or a problem, and every problem has a fix", Verdicts);
         Test("seasons: hot drinks sell more in winter than in summer", SeasonalDrinks);
+        Test("calendar: no overlapping nights, and St Patrick's Day draws a crowd", CalendarNights);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -208,6 +209,26 @@ public static class Tests
         int winter = HotSold(1), summer = HotSold(3);
         // Customers at the responsible-service limit can only pick soft or hot drinks, which dampens the gap.
         Assert(winter > summer * 1.5, $"hot drinks: winter {winter}, summer {summer}");
+    }
+
+    static void CalendarNights()
+    {
+        for (int d = 0; d < Calendar.YearDays; d++)
+        {
+            int hits = Calendar.All.Count(c => c.Contains(d));
+            Assert(hits <= 1, $"day {d} is in {hits} calendar entries");
+        }
+        foreach (var c in Calendar.All) Assert(c.From <= c.To && c.To < 28 && !string.IsNullOrEmpty(c.Blurb), $"bad entry {c.Id}");
+        var g = Game.NewCareer(14, 1);
+        g.S.day = 2 * 28 + 8; // the day before St Patrick's
+        var up = Calendar.Upcoming(g.S, 3);
+        Assert(up.Count == 1 && up[0].def.Id == "st_patricks", "Upcoming didn't find St Patrick's Day");
+        float normal = Economy.ExpectedTotal(g.S, g.V);
+        g.S.day++;
+        Assert(Calendar.Today(g.S)?.Id == "st_patricks", "St Patrick's isn't today");
+        float paddys = Economy.ExpectedTotal(g.S, g.V);
+        Assert(paddys > normal * 1.25f, $"St Patrick's footfall {paddys:0} vs normal {normal:0}");
+        Assert(Economy.SeasonalDrinkMult(g.S, DrinkCat.Stout) >= 2f, "no stout boost on St Patrick's");
     }
 
     static void CashCrisisArc()

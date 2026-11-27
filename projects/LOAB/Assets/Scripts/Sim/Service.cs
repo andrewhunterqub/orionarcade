@@ -899,13 +899,12 @@ namespace Loab.Sim
             // How many drinks of each category are on the menu, to split category weight.
             var catCount = new int[10];
             foreach (var m in S.menu) if (m.onMenu) catCount[(int)Content.Drink(m.id).Cat]++;
-            bool dry = S.Season == 1 && (S.day % 28) >= 21; // "Dry January"-ish stretch at the end of winter
             foreach (var m in S.menu)
             {
                 if (!m.onMenu) continue;
                 var dd = Content.Drink(m.id);
                 float w = d.DrinkPrefs[(int)dd.Cat] / Math.Max(1, catCount[(int)dd.Cat]);
-                if (dd.Cat == DrinkCat.AlcoholFree) w *= 1f + c.alcoholic * 0.25f + (dry ? 1.5f : 0f);
+                if (dd.Cat == DrinkCat.AlcoholFree) w *= 1f + c.alcoholic * 0.25f;
                 w *= Economy.SeasonalDrinkMult(S, dd.Cat);
                 if (c.regular != null && c.regular.favDrink == dd.Id) w *= 4f;
                 if (V.ActiveTheme != null && Array.IndexOf(dd.Themes, V.ActiveTheme.Def.Id) >= 0) w *= 1.3f;
