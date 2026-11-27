@@ -183,6 +183,8 @@ public static class Tests
             Assert(problems > 0, $"{(sensible ? "sensible" : "idle")} player never had a problem in 3 weeks");
             if (sensible) Assert(highlights > 0, "sensible player never had a highlight in 3 weeks");
         }
+        foreach (var d in Content.Drinks)
+            if (d.Id == "mulled_wine" || d.Id == "hot_toddy") Assert(d.Alcoholic, $"{d.Name} must count as alcoholic for responsible service");
         foreach (Note n in Enum.GetValues(typeof(Note)))
             if (n == Note.WaitedLong || n == Note.Dirty || n == Note.OutOfStock || n == Note.Pricey || n == Note.Crowded)
                 Assert(Economy.FixFor(n) != null, $"no fix text for {n}");
@@ -203,6 +205,7 @@ public static class Tests
             for (int n = 0; n < 4; n++)
             {
                 g.S.weather = "Rain";
+                g.S.cash = 50000; g.RestockAll(); // otherwise stock-outs push people onto whatever's left
                 g.OpenDoors(); int t = 0;
                 while (g.Phase == Phase.Service && t++ < 20000) { g.Svc.Step(); g.EndServiceIfDone(); }
                 sold += hot.Sum(m => m.soldTonight);

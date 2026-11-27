@@ -78,7 +78,10 @@ namespace Loab.Sim
         public DrinkCat Cat;
         public float UnitCost, DefaultPrice, PrepMinutes;
         public string[] Themes;
-        public bool Alcoholic => Cat != DrinkCat.AlcoholFree && Cat != DrinkCat.Hot;
+        /// Hot drinks are soft by default; Boozy marks the ones that aren't (mulled wine, hot toddy), so
+        /// responsible service still applies to them.
+        public bool Boozy;
+        public bool Alcoholic => Cat != DrinkCat.AlcoholFree && (Cat != DrinkCat.Hot || Boozy);
         public int CaseSize => Cat switch
         {
             DrinkCat.Lager or DrinkCat.Ale or DrinkCat.Stout or DrinkCat.Craft or DrinkCat.Cider => 88, // keg ~ 88 pints
@@ -343,6 +346,9 @@ namespace Loab.Sim
             // ---- Suppliers & drinks -----------------------------------------------------------------
             Suppliers.Add(new SupplierDef { Id = "barrel", Name = "Big Barrel Wholesale", Quality = 52, Reliability = 0.97f, Blurb = "Cheap, cheerful, always turns up." });
             Suppliers.Add(new SupplierDef { Id = "docklands", Name = "Docklands Brewing Co.", Quality = 82, Reliability = 0.86f, Blurb = "Local craft brewers. Brilliant beer, occasionally late." });
+            Suppliers.Add(new SupplierDef { Id = "hopfield", Name = "Hopfield Craft Collective", Quality = 88, Reliability = 0.82f, Blurb = "Small-batch brewers and makers. Superb, pricey, sometimes sold out." });
+            Suppliers.Add(new SupplierDef { Id = "chateau", Name = "Chateau Direct", Quality = 90, Reliability = 0.9f, Blurb = "Fine wines and premium spirits, imported with a flourish." });
+            Suppliers.Add(new SupplierDef { Id = "cashcarry", Name = "Cut-Price Cash & Carry", Quality = 38, Reliability = 0.99f, Blurb = "Rock-bottom prices. You get what you pay for." });
             Suppliers.Add(new SupplierDef { Id = "velvet", Name = "Velvet & Vine Merchants", Quality = 76, Reliability = 0.93f, Blurb = "Wines, spirits and cocktail kit." });
 
             Drink("lager", "Hopkins Lager", DrinkCat.Lager, "barrel", 1.10f, 4.60f, 1.1f, "sports", "dive");
@@ -365,6 +371,37 @@ namespace Loab.Sim
             Drink("mocktail", "Virgin Colada", DrinkCat.AlcoholFree, "velvet", 1.10f, 6.00f, 2.4f);
             Drink("soft", "Cola & Lemonade", DrinkCat.AlcoholFree, "barrel", 0.40f, 2.80f, 0.5f);
             Drink("coffee", "Coffee", DrinkCat.Hot, "barrel", 0.30f, 3.00f, 1.0f);
+
+            // ---- More drinks (task K3) ------------------------------------------------------------------
+            Drink("helles", "Bavarian-Style Helles", DrinkCat.Lager, "hopfield", 1.60f, 5.60f, 1.1f, "craft");
+            Drink("value_lager", "Value Lager", DrinkCat.Lager, "cashcarry", 0.75f, 3.60f, 1.0f, "dive", "sports");
+            Drink("golden_ale", "Golden Hour Ale", DrinkCat.Ale, "docklands", 1.20f, 4.70f, 1.3f, "pub", "craft");
+            Drink("mild", "Dark Mild", DrinkCat.Ale, "barrel", 1.00f, 4.20f, 1.3f, "pub");
+            Drink("oyster_stout", "Oyster Stout", DrinkCat.Stout, "hopfield", 1.80f, 6.00f, 1.6f, "craft", "pub");
+            Drink("pastry_stout", "Pastry Stout", DrinkCat.Stout, "hopfield", 2.30f, 6.80f, 1.6f, "craft");
+            Drink("neipa", "Hazy Pale", DrinkCat.Craft, "hopfield", 2.40f, 7.00f, 1.2f, "craft");
+            Drink("dipa", "Double IPA", DrinkCat.Craft, "hopfield", 2.60f, 7.50f, 1.2f, "craft");
+            Drink("can_of_week", "Craft Can of the Week", DrinkCat.Craft, "hopfield", 2.00f, 6.50f, 0.6f, "craft", "arcade");
+            Drink("farm_cider", "Farmhouse Cider", DrinkCat.Cider, "hopfield", 1.60f, 5.60f, 1.1f, "pub", "craft");
+            Drink("fruit_cider", "Fruit Cider", DrinkCat.Cider, "cashcarry", 1.00f, 4.80f, 1.0f, "dive");
+            Drink("orange_wine", "Natural Orange Wine", DrinkCat.Wine, "chateau", 3.00f, 8.50f, 0.8f, "lounge", "craft");
+            Drink("rose", "Provence-Style Rose", DrinkCat.Wine, "chateau", 2.40f, 7.00f, 0.8f, "lounge");
+            Drink("grand_fizz", "Grand Cru Fizz (glass)", DrinkCat.Wine, "chateau", 4.00f, 11.00f, 0.9f, "lounge", "speakeasy");
+            Drink("smallbatch_gin", "Small-Batch Gin & Tonic", DrinkCat.Spirit, "chateau", 2.40f, 9.00f, 1.4f, "lounge", "speakeasy");
+            Drink("aged_rum", "Aged Rum", DrinkCat.Spirit, "chateau", 3.20f, 8.50f, 0.9f, "lounge", "speakeasy");
+            Drink("vodka_mixer", "Vodka & Mixer", DrinkCat.Spirit, "cashcarry", 0.90f, 5.00f, 1.1f, "dive", "sports");
+            Drink("spiced_rum", "Spiced Rum & Ginger", DrinkCat.Spirit, "cashcarry", 1.00f, 5.20f, 1.2f, "dive", "arcade");
+            Drink("negroni", "Negroni", DrinkCat.Cocktail, "velvet", 2.40f, 10.50f, 2.2f, "speakeasy", "lounge");
+            Drink("margarita", "Margarita", DrinkCat.Cocktail, "velvet", 2.20f, 9.50f, 2.8f, "arcade");
+            Drink("spritz", "Aperitivo Spritz", DrinkCat.Cocktail, "chateau", 2.00f, 9.00f, 2.0f, "lounge");
+            Drink("summer_cup", "Summer Fruit Cup", DrinkCat.Cocktail, "velvet", 1.60f, 7.50f, 2.2f, "pub");
+            Drink("af_ipa", "Alcohol-Free IPA", DrinkCat.AlcoholFree, "hopfield", 1.00f, 5.20f, 0.8f, "craft");
+            Drink("kombucha", "Kombucha", DrinkCat.AlcoholFree, "hopfield", 1.00f, 4.80f, 0.6f, "craft", "lounge");
+            Drink("zero_gin", "Zero-Proof G&T", DrinkCat.AlcoholFree, "velvet", 1.20f, 6.50f, 1.2f, "lounge", "speakeasy");
+            Drink("mulled_wine", "Mulled Wine", DrinkCat.Hot, "barrel", 0.90f, 5.00f, 1.2f, "pub");
+            Drink("hot_toddy", "Hot Toddy", DrinkCat.Hot, "velvet", 1.20f, 6.50f, 1.8f, "pub", "speakeasy");
+            _drinks["mulled_wine"].Boozy = true;
+            _drinks["hot_toddy"].Boozy = true;
 
             // ---- Customer segments ------------------------------------------------------------------
             //                                       Lager Ale  Stout Craft Cider Wine Spirit Cockt AF   Hot
