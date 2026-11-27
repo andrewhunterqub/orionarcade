@@ -467,6 +467,36 @@ namespace Loab.Sim
 
         public void EndResidency() { S.residencyDay = -1; S.events.RemoveAll(e => e.act != null && e.act.name == S.residencyAct.name && e.day >= S.day); Changed?.Invoke(); }
 
+        // ---- Cocktail Lab (task K4) ---------------------------------------------------------------------
+        public const int SignatureCost = 250, MaxSignatures = 3;
+
+        /// Invent a signature cocktail from a base, a modifier and a style. Goes straight on the menu with a first batch.
+        public string CreateSignature(int b, int m, int st)
+        {
+            if (b < 0 || b >= Content.LabBases.Length || m < 0 || m >= Content.LabMods.Length || st < 0 || st >= Content.LabStyles.Length) return Fail("Pick a base, a twist and a style");
+            string id = Content.SignatureId(b, m, st);
+            if (S.signatures.Contains(id)) return Fail("You already serve that one");
+            if (S.signatures.Count >= MaxSignatures) return Fail($"Three signatures is plenty. Retire one first");
+            if (S.cash < SignatureCost && S.difficulty > 0) return Fail("Not enough cash");
+            Spend(SignatureCost, "Cocktail Lab");
+            S.signatures.Add(id);
+            var e = S.Menu(id);
+            e.onMenu = true;
+            e.price = Content.Drink(id).DefaultPrice;
+            e.stock = Math.Max(e.stock, Content.Drink(id).CaseSize);
+            Recompute();
+            return null;
+        }
+
+        public string RetireSignature(string id)
+        {
+            if (!S.signatures.Remove(id)) return Fail("Not one of yours");
+            var e = S.Menu(id);
+            if (e != null) e.onMenu = false;
+            Recompute();
+            return null;
+        }
+
         public string CleanLines()
         {
             if (S.lineQuality >= 95) return Fail("Lines are already clean");
@@ -839,6 +869,15 @@ namespace Loab.Sim
                     float tonight = m.soldTonight + m.missedTonight;
                     m.demandAvg = m.demandAvg <= 0 ? tonight : m.demandAvg * 0.6f + tonight * 0.4f;
                 }
+
+            // Signature cocktails (task K4): sell enough and they become part of the bar's reputation.
+            int sigSold = 0;
+            foreach (var m in S.menu) if (Content.Drink(m.id).Signature) sigSold += m.soldTonight;
+            if (sigSold > 0)
+            {
+                S.SetFlag("sig_sold", S.GetFlag("sig_sold") + sigSold);
+                if (S.GetFlag("sig_sold") >= 120 && !S.tags.Contains("Signature Cocktails")) { AddTag("Signature Cocktails"); rec.moments.Add("People are coming in just for your signature cocktails."); }
+            }
 
             // Tonight's verdict, judged against earlier nights (before tonight joins the history).
             if (svc != null) Economy.Verdict(S, rec, svc.NoteCounts, svc.Arrivals);

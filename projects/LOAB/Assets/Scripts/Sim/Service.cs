@@ -901,6 +901,7 @@ namespace Loab.Sim
             float q = sup.Quality;
             bool draught = d.Cat == DrinkCat.Lager || d.Cat == DrinkCat.Ale || d.Cat == DrinkCat.Stout || d.Cat == DrinkCat.Craft || d.Cat == DrinkCat.Cider;
             if (draught) q = q * 0.6f + s.lineQuality * 0.4f;
+            if (d.Signature) q += 8; // the house's own recipe, made with care
             return q;
         }
 
@@ -922,6 +923,7 @@ namespace Loab.Sim
                 float w = d.DrinkPrefs[(int)dd.Cat] / Math.Max(1, catCount[(int)dd.Cat]);
                 if (dd.Cat == DrinkCat.AlcoholFree) w *= 1f + c.alcoholic * 0.25f;
                 w *= Economy.SeasonalDrinkMult(S, dd.Cat);
+                if (dd.Signature) w *= 1.6f; // "what's your signature?" 
                 if (c.regular != null && c.regular.favDrink == dd.Id) w *= 4f;
                 if (V.ActiveTheme != null && Array.IndexOf(dd.Themes, V.ActiveTheme.Def.Id) >= 0) w *= 1.3f;
                 float ratio = m.price / dd.DefaultPrice;

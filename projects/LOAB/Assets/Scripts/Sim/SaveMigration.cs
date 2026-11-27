@@ -32,6 +32,7 @@ namespace Loab.Sim
             s.flags ??= new List<Flag>();
             s.seenTips ??= new List<string>();
             s.cardHistory ??= new List<string>();
+            s.signatures ??= new List<string>();
             s.residencyAct ??= new Act();
             s.residencyOffer ??= new Act();
             s.awareness = Resize(s.awareness, Content.Segments.Count, 0.15f);

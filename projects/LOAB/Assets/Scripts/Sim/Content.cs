@@ -81,6 +81,8 @@ namespace Loab.Sim
         /// Hot drinks are soft by default; Boozy marks the ones that aren't (mulled wine, hot toddy), so
         /// responsible service still applies to them.
         public bool Boozy;
+        /// A Cocktail Lab creation (task K4): hidden until the bar invents it.
+        public bool Signature;
         public bool Alcoholic => Cat != DrinkCat.AlcoholFree && (Cat != DrinkCat.Hot || Boozy);
         public int CaseSize => Cat switch
         {
@@ -169,6 +171,19 @@ namespace Loab.Sim
         /// Wholesale cost multiplier on the base costs below: gives about 55-65% gross margin at normal prices,
         /// in line with UK pub "wet" margins (was 1.25, about 70%, which made money too easy; task T5).
         public const float WholesaleMarkup = 1.55f;
+
+        // ---- Cocktail Lab ingredients (task K4) ----
+        public static readonly string[] LabBases = { "Gin", "Rum", "Whisky", "Vodka" };
+        public static readonly float[] LabBaseCost = { 1.6f, 1.5f, 2.2f, 1.3f };
+        static readonly string[][] LabBaseThemes = { new[] { "lounge" }, new[] { "arcade" }, new[] { "pub", "speakeasy" }, new string[0] };
+        public static readonly string[] LabMods = { "Sour", "Bitter Twist", "Espresso", "Bramble" };
+        public static readonly string[] LabModBlurbs = { "citrus and foam", "bitter and aromatic", "coffee and a little sugar", "berries and a long pour" };
+        public static readonly string[] LabStyles = { "Classic", "Smoky", "Playful" };
+        static readonly string[] LabStyleAdj = { "", "Smoked ", "Neon " };
+        static readonly string[][] LabStyleThemes = { new[] { "speakeasy", "lounge" }, new[] { "speakeasy", "pub", "craft" }, new[] { "arcade", "dive" } };
+        static readonly float[] LabStylePrice = { 11.0f, 11.5f, 10.5f };
+        public static string SignatureId(int b, int m, int st) => $"sig_{b}_{m}_{st}";
+        public static string SignatureName(int b, int m, int st) => $"{LabStyleAdj[st]}{LabBases[b]} {LabMods[m]}";
 
         static void Drink(string id, string name, DrinkCat cat, string sup, float cost, float price, float prep, params string[] themes)
         {
@@ -401,6 +416,18 @@ namespace Loab.Sim
             Drink("mulled_wine", "Mulled Wine", DrinkCat.Hot, "barrel", 0.90f, 5.00f, 1.2f, "pub");
             Drink("hot_toddy", "Hot Toddy", DrinkCat.Hot, "velvet", 1.20f, 6.50f, 1.8f, "pub", "speakeasy");
             _drinks["mulled_wine"].Boozy = true;
+
+            // ---- Cocktail Lab signatures (task K4): every base x modifier x style, hidden until invented ------
+            for (int b = 0; b < LabBases.Length; b++)
+                for (int m = 0; m < LabMods.Length; m++)
+                    for (int st = 0; st < LabStyles.Length; st++)
+                    {
+                        var themes = new List<string>(LabStyleThemes[st]);
+                        foreach (var t in LabBaseThemes[b]) if (!themes.Contains(t)) themes.Add(t);
+                        Drink(SignatureId(b, m, st), SignatureName(b, m, st), DrinkCat.Cocktail, "velvet",
+                            LabBaseCost[b] + 0.6f, LabStylePrice[st], 3.0f, themes.ToArray());
+                        _drinks[SignatureId(b, m, st)].Signature = true;
+                    }
             _drinks["hot_toddy"].Boozy = true;
 
             // ---- Customer segments ------------------------------------------------------------------

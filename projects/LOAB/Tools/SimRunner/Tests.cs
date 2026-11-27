@@ -34,6 +34,7 @@ public static class Tests
         Test("cleaner: works after close and raises tomorrow's cleanliness", Cleaner);
         Test("rota: staff off tonight aren't there or paid; long streaks wear them down", Rota);
         Test("themes: a Craft Beer Hall and a Wine & Cocktail Lounge can be recognised", NewThemes);
+        Test("cocktail lab: signatures go on the menu, sell, and are capped at three", CocktailLab);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -331,6 +332,26 @@ public static class Tests
         Build("lounge", "parquet", "plum", "jazz", "bar_marble",
             new[] { "banquette", "cocktail_table", "wine_wall", "brass_lamps", "gallery_prints", "candles", "armchair" },
             new[] { "house_red", "house_white", "fizz", "gin_tonic", "espresso_martini", "mocktail" });
+    }
+
+    static void CocktailLab()
+    {
+        var g = Game.NewCareer(71, 1);
+        g.S.cash = 5000;
+        Assert(g.CreateSignature(2, 0, 1) == null, "couldn't create a Smoked Whisky Sour");
+        string id = Content.SignatureId(2, 0, 1);
+        Assert(Content.Drink(id).Name == "Smoked Whisky Sour", $"name was {Content.Drink(id).Name}");
+        Assert(g.S.Menu(id).onMenu && g.S.Menu(id).stock > 0, "signature not on the menu with stock");
+        Assert(g.CreateSignature(2, 0, 1) != null, "allowed a duplicate");
+        Assert(g.CreateSignature(0, 1, 0) == null && g.CreateSignature(1, 3, 2) == null, "couldn't create a second and third");
+        Assert(g.CreateSignature(3, 2, 0) != null, "allowed a fourth signature");
+        int sold = 0;
+        for (int d = 0; d < 3; d++) { g.S.cash = 5000; PlayDay(g, false, null, game => sold += game.S.signatures.Sum(x => game.S.Menu(x).soldTonight)); }
+        Assert(sold > 0, "no signature cocktails sold in three nights");
+        Assert(g.RetireSignature(id) == null && !g.S.Menu(id).onMenu && g.S.signatures.Count == 2, "retire failed");
+        // Uninvented recipes never appear on a fresh menu.
+        var h = Game.NewCareer(72, 1);
+        Assert(!h.S.menu.Exists(m => m.onMenu && Content.Drink(m.id).Signature), "a signature is on a new career's menu");
     }
 
     static void CashCrisisArc()

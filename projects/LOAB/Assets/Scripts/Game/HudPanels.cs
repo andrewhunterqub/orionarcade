@@ -251,10 +251,13 @@ namespace Loab.Game
             p.Add(Row(resp));
             p.Add(hh);
 
+            p.Add(CocktailLab());
+
             DrinkCat? lastCat = null;
             foreach (var m in G.S.menu)
             {
                 var d = Content.Drink(m.id);
+                if (d.Signature && !G.S.signatures.Contains(d.Id)) continue; // uninvented Cocktail Lab recipes
                 if (lastCat != d.Cat) { p.Add(Lbl(CatName(d.Cat).ToUpperInvariant(), "section")); lastCat = d.Cat; }
                 var me = m;
                 var row = El("drink-row");
@@ -471,6 +474,43 @@ namespace Loab.Game
                     MarkDirty();
                 }, "btn-small"));
             }
+            return c;
+        }
+
+        // ---- Cocktail Lab (task K4) ----
+        int _labBase, _labMod, _labStyle;
+
+        VisualElement CocktailLab()
+        {
+            var c = El("card");
+            c.Add(Row(Lbl("COCKTAIL LAB", "section"), Spacer(), Lbl($"{G.S.signatures.Count}/{Sim.Game.MaxSignatures} signatures", "chip")));
+            foreach (var id in G.S.signatures)
+            {
+                var sid = id;
+                c.Add(Row(Lbl(Content.Drink(id).Name, "card-title"), Spacer(), Btn("Retire", () => { G.RetireSignature(sid); MarkDirty(); }, "btn-small")));
+            }
+            if (G.S.signatures.Count < Sim.Game.MaxSignatures)
+            {
+                VisualElement Pick(string label, string[] opts, int cur, Action<int> set)
+                {
+                    var r = Row(Lbl(label, "slider-label"));
+                    r.AddToClassList("wrap");
+                    for (int i = 0; i < opts.Length; i++) { int k = i; r.Add(Toggle(opts[i], cur == i, () => { set(k); MarkDirty(); })); }
+                    return r;
+                }
+                c.Add(Pick("Base", Content.LabBases, _labBase, k => _labBase = k));
+                c.Add(Pick("Twist", Content.LabMods, _labMod, k => _labMod = k));
+                c.Add(Pick("Style", Content.LabStyles, _labStyle, k => _labStyle = k));
+                var d = Content.Drink(Content.SignatureId(_labBase, _labMod, _labStyle));
+                c.Add(Lbl($"\"{d.Name}\": {Content.LabModBlurbs[_labMod]}. Suits: {string.Join(", ", d.Themes.Select(t => Content.Theme(t)?.Name ?? t))}.", "card-sub"));
+                c.Add(Btn($"Create it (£{Sim.Game.SignatureCost}, includes the first batch)", () =>
+                {
+                    var e = G.CreateSignature(_labBase, _labMod, _labStyle);
+                    if (e != null) Flash(e); else { _run.Audio.Play("fanfare", 0.3f); Flash($"{d.Name} is on the menu!"); }
+                    MarkDirty();
+                }, "btn-primary"));
+            }
+            c.Add(Lbl("Signatures sell better than anything off the shelf, and enough of them earns a reputation.", "hint"));
             return c;
         }
 

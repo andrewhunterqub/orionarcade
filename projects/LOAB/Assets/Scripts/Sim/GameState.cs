@@ -153,6 +153,7 @@ namespace Loab.Sim
 
         // Menu & stock
         public List<MenuEntry> menu = new List<MenuEntry>();
+        public List<string> signatures = new List<string>(); // Cocktail Lab creations on the books (task K4)
         public int cleanGlasses = 80;
         public float lineQuality = 80; // beer line cleanliness 0..100
         public float cleanliness = 85;  // start-of-night cleanliness
