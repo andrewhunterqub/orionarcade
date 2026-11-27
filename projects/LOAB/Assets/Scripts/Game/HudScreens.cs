@@ -279,6 +279,14 @@ namespace Loab.Game
                 float diff = w.Profit - w.PrevProfit;
                 c.Add(Lbl(diff >= 0 ? $"Up {Money(diff)} on last week." : $"Down {Money(-diff)} on last week.", "card-sub"));
             }
+            if (w.BestNightDay >= 0)
+                c.Add(Lbl($"{w.Customers:#,0} customers this week. Best night: {Content.DayNames[w.BestNightDay % 7]} ({Money(w.BestNightTakings)}). {s.regulars.Count} regulars.", "card-sub"));
+            var ahead = s.events.Where(e => e.day > s.day && e.day <= s.day + 7).OrderBy(e => e.day).ToList();
+            string coming = ahead.Count > 0
+                ? "Coming up: " + string.Join(", ", ahead.Select(e => $"{Economy.EventName(e.kind)} on {Content.DayNames[e.day % 7]}"))
+                : "Nothing booked for next week yet. Events build regulars.";
+            if (s.residencyDay >= 0) coming += $" Residency every {Content.DayNames[s.residencyDay]}.";
+            c.Add(Lbl(coming, "card-sub"));
             c.Add(Lbl("Rent is paid on Sunday nights, so Sunday's own profit often looks low.", "hint"));
             return c;
         }

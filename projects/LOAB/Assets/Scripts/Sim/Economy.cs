@@ -208,6 +208,8 @@ namespace Loab.Sim
             public int Nights;
             public float Takings, Drinks, Wages, Utilities, Rent, Loan, Other, Profit;
             public float PrevProfit; public bool HasPrev;
+            public int BestNightDay = -1; public float BestNightTakings;
+            public int Customers;
         }
 
         /// The week ending with the most recent night in history (up to 7 nights), plus last week's profit for comparison.
@@ -221,6 +223,8 @@ namespace Loab.Sim
                 w.Nights++;
                 w.Takings += h.takings; w.Drinks += h.cogs; w.Wages += h.wages; w.Utilities += h.utilities;
                 w.Rent += h.rent; w.Loan += h.loan; w.Other += h.other; w.Profit += h.profit;
+                w.Customers += h.customers;
+                if (h.takings > w.BestNightTakings) { w.BestNightTakings = h.takings; w.BestNightDay = h.day; }
             }
             for (int i = end - 7; i >= 0 && i > end - 14; i--) { w.PrevProfit += s.history[i].profit; w.HasPrev = true; }
             return w;
