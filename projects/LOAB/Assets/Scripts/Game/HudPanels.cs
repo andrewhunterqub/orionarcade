@@ -314,7 +314,7 @@ namespace Loab.Game
         VisualElement StaffCard(StaffMember m, bool applicant)
         {
             var c = El("card");
-            var head = Row(Lbl(m.name, "card-title"), Lbl(m.role == 0 ? "  Bartender" : "  Floor staff", "card-sub"), Spacer(), Lbl($"£{m.wage}/night", "price"));
+            var head = Row(Lbl(m.name, "card-title"), Lbl("  " + Roles.Names[Math.Max(0, Math.Min(Roles.Count - 1, m.role))], "card-sub"), Spacer(), Lbl($"£{m.wage}/night", "price"));
             c.Add(head);
             void Attr(string n, int v) => c.Add(Row(Lbl(n, "slider-label"), Bar(v / 20f, null), Lbl($" {v}", "card-sub")));
             Attr("Speed", m.speed); Attr("Charm", m.charm);
@@ -344,8 +344,9 @@ namespace Loab.Game
             else
             {
                 var me = m;
-                var roleBtn = Btn(m.role == 0 ? "Hire as bartender" : "Hire as floor staff", () => { var e = G.Hire(me.uid); if (e != null) Flash(e); else _run.Audio.Play("coin"); }, "btn-primary");
-                var swap = Btn("Switch role", () => { me.role = 1 - me.role; MarkDirty(); }, "btn-small");
+                var roleBtn = Btn("Hire as " + Roles.Names[me.role].ToLowerInvariant(), () => { var e = G.Hire(me.uid); if (e != null) Flash(e); else _run.Audio.Play("coin"); }, "btn-primary");
+                var swap = Btn("Switch role", () => { me.role = Roles.Next(me.role); MarkDirty(); }, "btn-small");
+                swap.tooltip = "Bartenders serve, floor staff clean and collect, door security keeps the peace.";
                 c.Add(Row(roleBtn, swap));
             }
             return c;

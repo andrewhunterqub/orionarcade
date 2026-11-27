@@ -746,6 +746,14 @@ namespace Loab.Sim
                 wages *= 0.5f; // paid a half shift for helping out
             }
 
+            // Licensing (task S1): on Hardcore, a rough Friday or Saturday with nobody on the door draws a fine.
+            if (svc != null && S.difficulty == 2 && (S.DayOfWeek == 4 || S.DayOfWeek == 5) && svc.RowdyCount >= 2
+                && !S.staff.Exists(m => m.role == Roles.Door))
+            {
+                fines += 300;
+                rec.moments.Add("The licensing officer fined you £300: a rowdy weekend night with no door staff.");
+            }
+
             // Money
             rec.wages = wages;
             float utilities = Economy.UtilitiesPerNight + rec.customers * 0.4f;

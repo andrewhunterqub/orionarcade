@@ -308,7 +308,12 @@ namespace Loab.Sim
         {
             s.applicants.Clear();
             int baseQ = 7 + (int)(s.reputation / 12f);
-            for (int i = 0; i < 4; i++) s.applicants.Add(MakeApplicant(s, r, i < 2 ? 0 : (r.Chance(0.5) ? 0 : 1), baseQ + r.Range(-2, 4)));
+            // Two bartenders, then bar or floor, then floor or (once you're known) door security.
+            for (int i = 0; i < 4; i++)
+            {
+                int role = i < 2 ? Roles.Bartender : i == 2 ? (r.Chance(0.5) ? Roles.Bartender : Roles.Floor) : (r.Chance(0.5) ? Roles.Floor : (s.reputation >= 15 ? Roles.Door : Roles.Floor));
+                s.applicants.Add(MakeApplicant(s, r, role, baseQ + r.Range(-2, 4)));
+            }
         }
 
         // ---- Acts ----------------------------------------------------------------------------------------

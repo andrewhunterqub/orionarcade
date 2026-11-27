@@ -18,6 +18,14 @@ namespace Loab.Sim
 
     public enum Seg { Students, YoungPros, Locals, SportsFans, Creatives }
 
+    /// Staff roles (StaffMember.role). Door security added in task S1.
+    public static class Roles
+    {
+        public const int Bartender = 0, Floor = 1, Door = 2, Count = 3;
+        public static readonly string[] Names = { "Bartender", "Floor staff", "Door security" };
+        public static int Next(int role) => (role + 1) % Count;
+    }
+
     public sealed class ItemDef
     {
         public string Id, Name, Model, Blurb;

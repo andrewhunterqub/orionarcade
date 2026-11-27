@@ -598,7 +598,7 @@ namespace Loab.Game
             foreach (var m in _g.S.staff)
             {
                 var v = _idleStaff[i];
-                v.Dress(m.shirt, m.skin, m.hair, true, m.role == 0);
+                v.Dress(m.role == Roles.Door ? 0x1b1b22u : m.shirt, m.skin, m.hair, true, m.role == Roles.Bartender);
                 Vector3 pos;
                 if (m.role == 0 && bars.Count > 0)
                 {
@@ -645,7 +645,7 @@ namespace Loab.Game
                 if (!_staff.TryGetValue(a, out var v))
                 {
                     v = Rent();
-                    v.Dress(a.m.shirt, a.IsOwner ? 0xf1c27d : a.m.skin, a.IsOwner ? 0x4a3020 : a.m.hair, true, a.m.role == 0);
+                    v.Dress(!a.IsOwner && a.m.role == Roles.Door ? 0x1b1b22u : a.m.shirt, a.IsOwner ? 0xf1c27d : a.m.skin, a.IsOwner ? 0x4a3020 : a.m.hair, true, a.Duty == Roles.Bartender || a.IsOwner);
                     v.Tag.Staff = a;
                     v.Snap = true;
                     _staff[a] = v;
@@ -655,7 +655,7 @@ namespace Loab.Game
                 if (!show) continue;
                 var pos = new Vector3(a.x, 0, a.y);
                 Vector3 face = Vector3.back;
-                if (a.m.role == 0 || a.IsOwner)
+                if (a.Duty == Roles.Bartender || a.IsOwner)
                 {
                     if (a.barPoint >= 0 && a.barPoint < svc.BarPoints.Count)
                     {

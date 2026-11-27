@@ -30,6 +30,7 @@ public static class Tests
         Test("verdict: nights get a highlight or a problem, and every problem has a fix", Verdicts);
         Test("seasons: hot drinks sell more in winter than in summer", SeasonalDrinks);
         Test("calendar: no overlapping nights, and St Patrick's Day draws a crowd", CalendarNights);
+        Test("door security: fewer rowdy customers, and Hardcore weekends without it get fined", DoorSecurity);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -229,6 +230,36 @@ public static class Tests
         float paddys = Economy.ExpectedTotal(g.S, g.V);
         Assert(paddys > normal * 1.25f, $"St Patrick's footfall {paddys:0} vs normal {normal:0}");
         Assert(Economy.SeasonalDrinkMult(g.S, DrinkCat.Stout) >= 2f, "no stout boost on St Patrick's");
+    }
+
+    static void DoorSecurity()
+    {
+        (int rowdy, int fines) Weekends(bool door)
+        {
+            int rowdy = 0, fines = 0;
+            for (ulong seed = 1; seed <= 12; seed++)
+            {
+                var g = Game.NewCareer(seed, 2);
+                g.S.cash = 50000; g.S.responsibleService = false; g.S.reputation = 60;
+                foreach (var m in g.S.awareness.Select((_, i) => i).ToList()) g.S.awareness[m] = 0.8f;
+                if (door)
+                {
+                    var d = Economy.MakeApplicant(g.S, new Rng(seed), Roles.Door, 12);
+                    g.S.staff.Add(d);
+                }
+                g.S.day = 5; // a Saturday
+                g.Recompute();
+                g.OpenDoors(); int t = 0;
+                while (g.Phase == Phase.Service && t++ < 20000) { g.Svc.Step(); g.EndServiceIfDone(); }
+                rowdy += g.Svc.RowdyCount;
+                if (g.LastNight.moments.Exists(x => x.Contains("licensing officer"))) fines++;
+            }
+            return (rowdy, fines);
+        }
+        var without = Weekends(false); var with = Weekends(true);
+        Assert(with.rowdy < without.rowdy, $"rowdy with door staff {with.rowdy} vs without {without.rowdy}");
+        Assert(with.fines == 0, "fined despite door staff");
+        Assert(without.fines > 0, $"no licensing fines on rowdy Hardcore Saturdays without door staff (rowdy {without.rowdy})");
     }
 
     static void CashCrisisArc()

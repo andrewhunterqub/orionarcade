@@ -133,8 +133,10 @@ namespace Loab.Sim
             if (Event != null)
                 Say(Event.kind == 0 ? $"Tonight: Pub Quiz with {Event.act.name}, from 8pm." : Event.kind == 1 ? $"Tonight: Comedy Night headlined by {Event.act.name}, from 8pm." : $"Tonight: Open Mic Night ({Event.act.name}), from 8pm. Anything could happen.", 3);
             if (BarPoints.Count == 0) Say("There's no bar counter! Nobody can be served.", 2);
-            if (s.staff.Find(m => m.role == 0) == null) Say("No bartenders on the rota. You'll have to serve everyone yourself.", 2);
-            if (s.staff.Find(m => m.role == 0) == null) SetOwnerBehindBar(true);
+            if (s.staff.Find(m => m.role == Roles.Bartender) == null) Say("No bartenders on the rota. You'll have to serve everyone yourself.", 2);
+            if (s.staff.Find(m => m.role == Roles.Bartender) == null) SetOwnerBehindBar(true);
+            if (s.difficulty == 2 && s.DayOfWeek >= 4 && s.DayOfWeek <= 5 && s.staff.Find(m => m.role == Roles.Door) == null)
+                Say("A weekend night with no door staff. The licensing officer won't like a rough one.", 2);
         }
 
         public static string Clock(float t)
@@ -826,7 +828,8 @@ namespace Loab.Sim
             if (!c.rowdy && c.alcoholic >= 3)
             {
                 float p = 0.00022f * (c.alcoholic - 2) * d.RowdyBase * (V.Axes[Axis.Energy] / 55f)
-                          * (S.responsibleService ? 0.5f : 1f) * (S.difficulty == 0 ? 0.5f : S.difficulty == 2 ? 1.5f : 1f);
+                          * (S.responsibleService ? 0.5f : 1f) * (S.difficulty == 0 ? 0.5f : S.difficulty == 2 ? 1.5f : 1f)
+                          * (DoorStaffOn ? 0.55f : 1f); // a visible bouncer keeps people in line
                 if (R.Chance(p)) MakeRowdy(c);
             }
             if (c.rowdy)
@@ -839,6 +842,16 @@ namespace Loab.Sim
         }
 
         static string FirstName(Customer c) => c.name.Split(' ')[0];
+
+        // Door staff stand just inside the entrance between jobs.
+        void WalkToDoor(StaffAgent a, float walk)
+        {
+            var spot = new Cell(L.Door.x, Math.Min(S.gridH - 1, L.Door.y + 1));
+            float dx = spot.x - a.x, dy = spot.y - a.y, dist = (float)Math.Sqrt(dx * dx + dy * dy);
+            if (dist < 0.05f) return;
+            float step = Math.Min(dist, walk * Tick);
+            a.x += dx / dist * step; a.y += dy / dist * step;
+        }
 
         void MakeRowdy(Customer c)
         {
@@ -965,7 +978,8 @@ namespace Loab.Sim
                 }
                 else return;
             }
-            if (a.IsOwner || a.Duty == 0) UpdateBartender(a); else UpdateFloor(a);
+            if (a.IsOwner || a.Duty == Roles.Bartender) UpdateBartender(a);
+            else UpdateFloor(a, a.Duty == Roles.Door);
         }
 
         void UpdateBartender(StaffAgent a)
@@ -1114,16 +1128,22 @@ namespace Loab.Sim
             Settle(c);
         }
 
-        void UpdateFloor(StaffAgent a)
+        /// Door security on duty tonight (task S1): fewer customers turn rowdy, and rowdy ones are dealt with first.
+        public bool DoorStaffOn => Staff.Exists(x => x.present && !x.IsOwner && x.Duty == Roles.Door);
+
+        /// Floor staff take any job; door staff (doorOnly) only deal with rowdy customers and otherwise mind the door.
+        void UpdateFloor(StaffAgent a, bool doorOnly = false)
         {
             const float walk = 2.8f;
             if (a.task == null)
             {
-                a.activity = "Looking for jobs";
+                a.activity = doorOnly ? "Minding the door" : "Looking for jobs";
+                if (doorOnly) WalkToDoor(a, walk);
                 Incident best = null; float bestScore = float.MaxValue;
                 foreach (var i in Incidents)
                 {
                     if (i.resolved || i.claimed || T < i.retryAt) continue;
+                    if (doorOnly && i.kind != IncidentKind.Rowdy) continue;
                     float pri = i.kind == IncidentKind.Rowdy ? 0 : i.kind == IncidentKind.Spill ? 5 : i.kind == IncidentKind.Toilet ? 8 : (i.count >= 3 ? 10 : 18);
                     Cell at = i.kind == IncidentKind.Rowdy && i.customer != null ? new Cell((int)Math.Round(i.customer.x), (int)Math.Round(i.customer.y)) : i.cell;
                     float score = pri + Math.Abs(at.x - a.x) + Math.Abs(at.y - a.y);
@@ -1173,7 +1193,7 @@ namespace Loab.Sim
                 case IncidentKind.Rowdy:
                     if (t.customer != null && t.customer.rowdy)
                     {
-                        float p = 0.45f + a.m.charm / 40f + (a.m.HasTrait("life_soul") ? 0.2f : 0);
+                        float p = 0.45f + a.m.charm / 40f + (a.m.HasTrait("life_soul") ? 0.2f : 0) + (a.Duty == Roles.Door ? 0.2f : 0);
                         if (R.Chance(p)) { t.customer.rowdy = false; Say($"{a.m.name} calmed {FirstName(t.customer)} down.", 1); }
                         else { t.customer.Mark(Note.ShownDoor); Say($"{a.m.name} showed {FirstName(t.customer)} the door.", 0); Leave(t.customer, false); }
                     }
@@ -1362,6 +1382,7 @@ namespace Loab.Sim
         public string SwitchDuty(StaffAgent a)
         {
             if (a == null || a.IsOwner) return "Use \"Help behind the bar\" for yourself";
+            if (a.m.role == Roles.Door) return $"{a.m.name} stays on the door";
             if (!a.present) return $"{a.m.name} isn't in yet";
             if (a.serving != null) return $"{a.m.name} is mid-pour. Try again in a moment";
             if (a.Duty == 0)
