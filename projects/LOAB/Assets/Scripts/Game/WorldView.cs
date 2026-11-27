@@ -306,6 +306,8 @@ namespace Loab.Game
             l.shadows = LightShadows.None;
             l.intensity = 0;
             l.bounceIntensity = weight; // stash the weight; bounce isn't used without GI
+            // The bar's own lights are the hero (brief 10): keep them per-pixel on every tier.
+            l.renderMode = weight >= 1.2f ? LightRenderMode.ForcePixel : LightRenderMode.Auto;
             _practical.Add(l);
         }
 

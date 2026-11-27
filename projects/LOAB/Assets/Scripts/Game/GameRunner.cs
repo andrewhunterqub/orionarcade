@@ -45,7 +45,8 @@ namespace Loab.Game
         {
             Application.targetFrameRate = 60;
             QualitySettings.shadowDistance = 100;
-            QualitySettings.pixelLightCount = 10;
+            QualitySettings.pixelLightCount = 8;
+            QualitySettings.shadows = ShadowQuality.All;
             ModelFactory.Init(Resources.Load<Material>("Materials/Lit"), Resources.Load<Material>("Materials/Glow"));
             Audio = gameObject.AddComponent<Sfx>();
             // Start with a fresh career in the background of the title screen so there's something to look at.
@@ -145,6 +146,26 @@ namespace Loab.Game
             Audio.Play("fanfare", 0.5f);
             Ui.Flash("The wall's down! You've got room to grow.");
             Save();
+        }
+
+        // ---- Device tiers (visual brief 16.2): step quality down if the frame rate can't keep up.
+        int _tier = 2;
+        float _dtAvg = 1f / 60f, _tierTimer;
+
+        void AutoQuality()
+        {
+            float dt = Mathf.Min(Time.unscaledDeltaTime, 0.25f);
+            _dtAvg = Mathf.Lerp(_dtAvg, dt, 0.02f);
+            _tierTimer += dt;
+            if (_tierTimer < 6f || _tier == 0 || Time.realtimeSinceStartup < 20f) return;
+            _tierTimer = 0;
+            if (_dtAvg > 1f / 28f)
+            {
+                _tier--;
+                if (_tier == 1) { QualitySettings.pixelLightCount = 4; QualitySettings.shadows = ShadowQuality.HardOnly; QualitySettings.shadowDistance = 60; }
+                else { QualitySettings.pixelLightCount = 2; QualitySettings.shadows = ShadowQuality.Disable; Blur.Enabled = false; }
+                Debug.Log($"LOAB: lowered quality to tier {_tier} (avg {1f / _dtAvg:0} fps)");
+            }
         }
 
         public void SetBlur(bool on)
@@ -273,6 +294,7 @@ namespace Loab.Game
             if (G.Phase == Phase.Service && !Ui.TitleOpen) TickService();
             UpdateGhost();
             UpdateBlur();
+            AutoQuality();
             Ui.Update();
         }
 
