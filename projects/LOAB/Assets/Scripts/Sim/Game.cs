@@ -421,6 +421,24 @@ namespace Loab.Sim
             return null;
         }
 
+        public const int ExpandCost = 15000, ExpandRep = 35, ExpandCols = 6, MaxWidth = 22;
+        public bool CanExpand => S.gridW + ExpandCols <= MaxWidth;
+
+        /// <summary>Knock through into the unit next door (brief 5.4): the bar grows by a few columns.</summary>
+        public string Expand()
+        {
+            if (Phase != Phase.Prep) return Fail("Only during Prep");
+            if (!CanExpand) return Fail("There's nowhere left to expand into");
+            if (S.reputation < ExpandRep && S.mode != 1) return Fail($"The landlord wants to see reputation {ExpandRep} first");
+            if (S.cash < ExpandCost && S.difficulty > 0) return Fail($"Expanding costs £{ExpandCost:#,0}");
+            Spend(ExpandCost, "Expansion");
+            S.gridW += ExpandCols;
+            L = new Layout(S);
+            _undo.Clear(); _redo.Clear();
+            Recompute();
+            return null;
+        }
+
         public string CleanLines()
         {
             if (S.lineQuality >= 95) return Fail("Lines are already clean");

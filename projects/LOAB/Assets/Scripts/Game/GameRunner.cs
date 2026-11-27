@@ -113,6 +113,8 @@ namespace Loab.Game
             G = g;
             G.Changed += () => Ui?.MarkDirty();
             World.Bind(G);
+            Rig.Target = new Vector3((g.S.gridW - 1) / 2f, 0, (g.S.gridH - 1) / 2f - 1.6f);
+            Rig.SetBounds(new Vector3(-2, 0, -4), new Vector3(g.S.gridW + 1, 0, g.S.gridH + 1));
             ClearInteraction();
             Paused = false; SpeedMult = 1;
             Ui.OnGameLoaded();
@@ -129,6 +131,20 @@ namespace Loab.Game
                 PlayerPrefs.Save();
             }
             catch (Exception e) { Debug.LogWarning("Save failed: " + e.Message); }
+        }
+
+        /// <summary>The room got bigger: rebuild the model and re-centre the camera.</summary>
+        public void OnExpanded()
+        {
+            ClearInteraction();
+            World.Bind(G);
+            var s = G.S;
+            Rig.Target = new Vector3((s.gridW - 1) / 2f, 0, (s.gridH - 1) / 2f - 1.6f);
+            Rig.SetBounds(new Vector3(-2, 0, -4), new Vector3(s.gridW + 1, 0, s.gridH + 1));
+            Rig.Zoom = Mathf.Min(CameraRig.MaxDist, Rig.Zoom * (s.gridW / 16f));
+            Audio.Play("fanfare", 0.5f);
+            Ui.Flash("The wall's down! You've got room to grow.");
+            Save();
         }
 
         public void SetBlur(bool on)

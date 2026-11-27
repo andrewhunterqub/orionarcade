@@ -91,6 +91,10 @@ public static class Program
             TryPlace(g, "long_table");
         if (s.day == 2) { TryPlace(g, "pool"); TryPlace(g, "photos"); TryPlace(g, "mirror"); }
         if (s.day == 5 && s.cash > 3000) { TryPlace(g, "toilets"); }
+        if (g.CanExpand && s.reputation >= Game.ExpandRep && s.cash > 20000)
+        {
+            if (g.Expand() == null) { Console.WriteLine($"   expanded to {s.gridW} wide on day {s.day}"); for (int i = 0; i < 3; i++) TryPlace(g, "long_table"); TryPlace(g, "bar_counter"); }
+        }
         if (s.day >= 8 && !g.V.HasStage && s.cash > 4000) TryPlace(g, "stage");
         if (g.V.HasStage && s.DayOfWeek == 4 && !s.events.Any(e => e.kind == 2))
         {

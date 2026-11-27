@@ -133,7 +133,10 @@ namespace Loab.Game
             _studioFloor.sharedMaterial = new Material(ModelFactory.Mat(0x9FB2C0));
 
             // ---- Neighbouring buildings as white-card massing models (brief 9.2)
-            Massing(new Vector3(maxX + 4.6f, 0, (h - 1) / 2f + 1.2f), new Vector3(5f, 2.8f, h), dx);
+            if (s.gridW + Sim.Game.ExpandCols <= Sim.Game.MaxWidth)
+                Massing(new Vector3(maxX + 0.2f + Sim.Game.ExpandCols / 2f, 0, (h - 1) / 2f + 0.5f), new Vector3(Sim.Game.ExpandCols - 0.4f, 2.9f, h + 0.6f), dx);
+            else
+                Massing(new Vector3(maxX + 4.6f, 0, (h - 1) / 2f + 1.2f), new Vector3(5f, 2.8f, h), dx);
             Massing(new Vector3((w - 1) / 2f - 2f, 0, maxZ + 4.2f), new Vector3(9f, 2.4f, 4.5f), dx);
 
             // ---- Pavement furniture

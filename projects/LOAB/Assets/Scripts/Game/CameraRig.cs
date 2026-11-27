@@ -40,6 +40,8 @@ namespace Loab.Game
             return rig;
         }
 
+        public void SetBounds(Vector3 min, Vector3 max) { _min = min; _max = max; }
+
         public void Rotate(int dir) => YawStep = (YawStep + dir + 4) % 4;
 
         public void ZoomBy(float delta) => Zoom = Mathf.Clamp(Zoom * (1f + delta), MinDist, MaxDist);

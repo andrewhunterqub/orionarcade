@@ -36,6 +36,21 @@ namespace Loab.Game
         void BuildBuild(VisualElement p)
         {
             Title(p, "Build", "Pick something, then click the floor. R rotates, right-click cancels. Click placed items to move or sell them.");
+            if (G.CanExpand)
+            {
+                var ex = El("card");
+                ex.Add(Lbl("Knock through next door", "card-title"));
+                ex.Add(Lbl($"The empty unit next door (the white card model) adds {Sim.Game.ExpandCols} columns of floor. Needs reputation {Sim.Game.ExpandRep}.", "card-sub"));
+                var eb = Btn($"Expand ({Money(Sim.Game.ExpandCost)})", () =>
+                {
+                    var e = G.Expand();
+                    if (e != null) { Flash(e); return; }
+                    _run.OnExpanded();
+                }, "btn-primary");
+                eb.SetEnabled(G.S.reputation >= Sim.Game.ExpandRep || G.S.mode == 1);
+                ex.Add(eb);
+                p.Add(ex);
+            }
             var undo = Row(Btn("Undo", () => { G.Undo(); _run.ClearInteraction(); }, "btn-small"), Btn("Redo", () => { G.Redo(); _run.ClearInteraction(); }, "btn-small"), Spacer(),
                 Lbl($"Seats {G.V.Seats}  -  Serving points {G.V.BarPoints}  -  Toilets {G.V.Toilets}", "card-sub"));
             p.Add(undo);
