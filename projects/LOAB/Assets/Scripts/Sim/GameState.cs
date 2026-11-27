@@ -157,6 +157,11 @@ namespace Loab.Sim
         public List<Act> agency = new List<Act>();
         public List<BookedEvent> events = new List<BookedEvent>();
         public int happyHourStart = -1; // hour (17..22), -1 = none
+        // Residencies (brief 7.4): a hit act can become a weekly fixture.
+        public Act residencyAct = new Act();
+        public int residencyDay = -1;   // day of week, -1 = none
+        public Act residencyOffer = new Act();
+        public int residencyOfferDay = -1;
         public int happyHourDiscount = 30;
 
         // Reputation

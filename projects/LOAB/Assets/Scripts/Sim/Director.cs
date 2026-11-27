@@ -181,6 +181,22 @@ namespace Loab.Sim
             });
             Cards.Add(new CardDef
             {
+                Id = "residency", Title = "A residency offer", Art = "mic", Weight = 0, When = s => false,
+                Format = g => $"{g.S.residencyOffer.name} loved your crowd. They'd like a weekly residency every {Content.DayNames[Math.Max(0, g.S.residencyOfferDay)]}, for their usual £{g.S.residencyOffer.fee} a night. Their following grows every time it goes well.",
+                Options =
+                {
+                    Opt("Make it a weekly fixture", "Booked automatically every week. End it any time from the Events tab.", g =>
+                    {
+                        var o = g.S.residencyOffer;
+                        g.S.residencyAct = new Act { uid = g.S.nextUid++, kind = o.kind, name = o.name, style = o.style, fee = o.fee, quality = o.quality, reliability = o.reliability, following = o.following, volatility = o.volatility };
+                        g.S.residencyDay = g.S.residencyOfferDay;
+                        g.BookResidency();
+                    }),
+                    Opt("Not right now", "Maybe another time.", g => { }),
+                },
+            });
+            Cards.Add(new CardDef
+            {
                 Id = "busker", Title = "The busker", Art = "guitar", Weight = 0.8f,
                 Text = "A genuinely talented busker asks if she can play a few songs in the corner tonight, just for tips.",
                 When = s => s.day >= 2,

@@ -49,7 +49,12 @@ namespace Loab.Game
             col.Add(Lbl("Let's Own A Bar!", "title-logo"));
             col.Add(Lbl("Build the bar you've always talked about,\nand find out if you'd actually be any good at running it.", "title-tag"));
             if (_run.HasSave)
-                col.Add(Btn("Continue", () => { if (!_run.Continue()) Flash("Couldn't load your save"); }, "btn-primary", "title-btn"));
+            {
+                string what = _run.LastMode == 2 ? "Continue scenario" : _run.LastMode == 1 ? "Continue sandbox" : "Continue";
+                col.Add(Btn(what, () => { if (!_run.Continue()) Flash("Couldn't load your save"); }, "btn-primary", "title-btn"));
+            }
+            if (_run.LastMode != 0 && _run.HasSaveFor(0))
+                col.Add(Btn("Continue career", () => { if (!_run.Continue(0)) Flash("Couldn't load your career"); }, "title-btn"));
             col.Add(Btn("New career", () => ShowNewCareer(), _run.HasSave ? "btn" : "btn-primary", "title-btn"));
             col.Add(Btn("Scenarios", () => ShowScenarios(), "title-btn"));
             col.Add(Btn("Sandbox (unlimited cash)", () => _run.NewSandbox(), "title-btn"));
@@ -238,7 +243,8 @@ namespace Loab.Game
                 c.Add(head);
                 c.Add(Lbl(won ? $"Done in {s.day + 1} of {sc.Days} days. You can keep running the bar, or head back to the title for another challenge."
                               : $"{sc.Progress(G)}. Close, but the deadline has passed. Keep playing for fun, or try again.", "body"));
-                c.Add(Row(Btn("Back to title", () => { _run.Save(); ShowTitle(); }, "btn-small"), Btn("Try another scenario", () => ShowScenarios(), "btn-small")));
+                // Move on to the next morning first, so the result is saved.
+                c.Add(Row(Btn("Back to title", () => { _run.NextDay(); ShowTitle(); }, "btn-small"), Btn("Try another scenario", () => { _run.NextDay(); ShowScenarios(); }, "btn-small")));
                 left.Add(c);
                 if (won) _run.Audio.Play("cheer", 0.8f);
             }

@@ -72,7 +72,11 @@ namespace Loab.Game
         //  Game lifecycle
         // =====================================================================================
 
-        public bool HasSave => PlayerPrefs.HasKey(SaveKey);
+        // Career, scenario and sandbox each get their own save slot, so trying one never wipes another.
+        public static string KeyFor(int mode) => mode == 0 ? SaveKey : mode == 2 ? "loab_save_scenario" : "loab_save_sandbox";
+        public int LastMode => PlayerPrefs.GetInt("loab_last_mode", 0);
+        public bool HasSaveFor(int mode) => PlayerPrefs.HasKey(KeyFor(mode));
+        public bool HasSave => HasSaveFor(LastMode);
 
         public void NewCareer(int difficulty)
         {
@@ -91,11 +95,12 @@ namespace Loab.Game
 
         public void NewSandbox() => Load(Sim.Game.NewSandbox((ulong)DateTime.Now.Ticks));
 
-        public bool Continue()
+        public bool Continue(int mode = -1)
         {
+            if (mode < 0) mode = LastMode;
             try
             {
-                var json = PlayerPrefs.GetString(SaveKey, null);
+                var json = PlayerPrefs.GetString(KeyFor(mode), null);
                 if (string.IsNullOrEmpty(json)) return false;
                 var s = JsonUtility.FromJson<GameState>(json);
                 if (s == null || s.items == null || s.items.Count == 0) return false;
@@ -120,6 +125,7 @@ namespace Loab.Game
             Paused = false; SpeedMult = 1;
             Ui.OnGameLoaded();
             Save();
+            Resources.UnloadUnusedAssets(); // frees the previous model's combined meshes
         }
 
         public void Save()
@@ -128,7 +134,8 @@ namespace Loab.Game
             if (G == null || (G.Phase != Phase.Prep && G.Phase != Phase.GameOver)) return;
             try
             {
-                PlayerPrefs.SetString(SaveKey, JsonUtility.ToJson(G.S));
+                PlayerPrefs.SetString(KeyFor(G.S.mode), JsonUtility.ToJson(G.S));
+                PlayerPrefs.SetInt("loab_last_mode", G.S.mode);
                 PlayerPrefs.Save();
             }
             catch (Exception e) { Debug.LogWarning("Save failed: " + e.Message); }
@@ -146,6 +153,7 @@ namespace Loab.Game
             Audio.Play("fanfare", 0.5f);
             Ui.Flash("The wall's down! You've got room to grow.");
             Save();
+            Resources.UnloadUnusedAssets();
         }
 
         // ---- Device tiers (visual brief 16.2): step quality down if the frame rate can't keep up.
@@ -200,7 +208,7 @@ namespace Loab.Game
             Blur.Focus = Mathf.Lerp(Blur.Focus, focus, 1f - Mathf.Exp(-Time.unscaledDeltaTime / 0.3f * 3f));
         }
 
-        public void DeleteSave() { PlayerPrefs.DeleteKey(SaveKey); PlayerPrefs.Save(); }
+        public void DeleteSave() { if (G != null) PlayerPrefs.DeleteKey(KeyFor(G.S.mode)); PlayerPrefs.Save(); }
 
         public void OpenDoors()
         {
@@ -229,7 +237,7 @@ namespace Loab.Game
             if (G.Phase == Phase.Service)
             {
                 Audio.Ambience(0);
-                if (!Continue()) Load(Sim.Game.NewCareer((ulong)DateTime.Now.Ticks, 1));
+                if (!Continue(G.S.mode)) Load(Sim.Game.NewCareer((ulong)DateTime.Now.Ticks, 1));
             }
             else Save();
             Ui.ShowTitle();
@@ -327,7 +335,7 @@ namespace Loab.Game
             if (Input.GetKeyDown(KeyCode.Escape)) { if (PlaceId != null || Moving || Selected != null || Inspected != null) ClearInteraction(); else Ui.CloseSide(); }
             if (Input.GetKeyDown(KeyCode.R)) RotateSelectedOrGhost();
             if (Input.GetKeyDown(KeyCode.H)) Ui.TogglePhotoMode();
-            if (G.Phase == Phase.Report && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) && G.S.pendingCard == null && !G.S.bankrupt) NextDay();
+            if (G.Phase == Phase.Report && !Ui.TitleOpen && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) && G.S.pendingCard == null && !G.S.bankrupt) NextDay();
             if (Input.GetKeyDown(KeyCode.Q)) Rig.Rotate(-1);
             if (Input.GetKeyDown(KeyCode.E)) Rig.Rotate(1);
             if (Input.GetKeyDown(KeyCode.Delete) || Input.GetKeyDown(KeyCode.Backspace)) SellSelected();

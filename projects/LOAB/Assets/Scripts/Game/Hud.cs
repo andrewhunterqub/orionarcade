@@ -378,9 +378,9 @@ namespace Loab.Game
                 UpdateInspector(svc);
                 UpdateBadges(svc);
             }
-            else if (_badges.Count > 0) UpdateBadges(null);
             else
             {
+                if (_badges.Count > 0) UpdateBadges(null);
                 float exp = Economy.ExpectedTotal(s, G.V);
                 _custVal.text = $"~{exp:0}";
                 _custLabel.text = "expected tonight";

@@ -113,6 +113,8 @@ namespace Loab.Sim
             S = s;
             if (string.IsNullOrEmpty(s.pendingCard)) s.pendingCard = null; // JsonUtility saves null strings as ""
             if (string.IsNullOrEmpty(s.scenario)) s.scenario = null;
+            s.agency ??= new List<Act>();
+            if (!s.agency.Exists(a => a.kind == 2)) Economy.AddOpenMicActs(s, new Rng(s.seed + 99)); // saves from before Open Mic
             s.menu ??= new List<MenuEntry>(); s.staff ??= new List<StaffMember>(); s.events ??= new List<BookedEvent>();
             L = new Layout(s);
             _r = new Rng(s.seed + (ulong)s.day * 31UL + 7UL);
@@ -439,6 +441,24 @@ namespace Loab.Sim
             return null;
         }
 
+        /// <summary>Book the residency act on its next weekday, if that night is free.</summary>
+        public void BookResidency()
+        {
+            if (S.residencyDay < 0) return;
+            for (int off = 0; off < 7; off++)
+            {
+                int day = S.day + off;
+                if (day % 7 != S.residencyDay) continue;
+                if (S.events.Exists(e => e.day == day)) return;
+                var a = S.residencyAct;
+                Spend(a.fee, "Residency");
+                S.events.Add(new BookedEvent { uid = S.nextUid++, day = day, kind = a.kind, act = a, promo = 0, ticket = a.kind == 1 ? 5 : 0 });
+                return;
+            }
+        }
+
+        public void EndResidency() { S.residencyDay = -1; S.events.RemoveAll(e => e.act != null && e.act.name == S.residencyAct.name && e.day >= S.day); Changed?.Invoke(); }
+
         public string CleanLines()
         {
             if (S.lineQuality >= 95) return Fail("Lines are already clean");
@@ -651,8 +671,22 @@ namespace Loab.Sim
                     else if (svc.Event.kind == 1) S.SetFlag("comedy_hosted", S.GetFlag("comedy_hosted") + 1);
                     else S.SetFlag("openmic_hosted", S.GetFlag("openmic_hosted") + 1);
                     if (svc.EventOutcome == "Viral hit") { S.reputation += 6; for (int i = 0; i < 5; i++) S.awareness[i] += 0.04f; AddTag(svc.Event.kind == 0 ? "Best Quiz in Town" : svc.Event.kind == 1 ? "Best Comedy Night" : "Legendary Open Mic"); }
-                    else if (svc.EventOutcome == "Hit") { S.reputation += 2.5f; S.SetFlag(svc.Event.kind == 0 ? "quiz_hits" : "comedy_hits", S.GetFlag(svc.Event.kind == 0 ? "quiz_hits" : "comedy_hits") + 1); }
+                    else if (svc.EventOutcome == "Hit") { S.reputation += 2.5f; string hk = svc.Event.kind == 0 ? "quiz_hits" : svc.Event.kind == 1 ? "comedy_hits" : "openmic_hits"; S.SetFlag(hk, S.GetFlag(hk) + 1); }
                     else if (svc.EventOutcome == "Flop") S.reputation -= 2;
+                    bool hit = svc.EventOutcome == "Hit" || svc.EventOutcome == "Viral hit";
+                    bool isResidency = S.residencyDay >= 0 && svc.Event.act.name == S.residencyAct.name;
+                    if (hit && isResidency)
+                    {
+                        S.residencyAct.following = Math.Min(100, S.residencyAct.following + 6);
+                        rec.moments.Add($"Residency night with {S.residencyAct.name} is building a real following.");
+                    }
+                    else if (hit && svc.Event.kind >= 1 && S.residencyDay < 0 && S.pendingCard == null)
+                    {
+                        var a = svc.Event.act;
+                        S.residencyOffer = new Act { kind = a.kind, name = a.name, style = a.style, fee = a.fee, quality = a.quality, reliability = a.reliability, following = a.following, volatility = a.volatility };
+                        S.residencyOfferDay = S.DayOfWeek;
+                        S.pendingCard = "residency";
+                    }
                     if (S.GetFlag("quiz_hits") >= 3) AddTag("Best Quiz in Town");
                 }
                 // Staff
@@ -889,7 +923,8 @@ namespace Loab.Sim
                 Economy.RefreshApplicants(S, _r);
                 Economy.RefreshAgency(S, _r);
             }
-            if (S.pendingCard == "loan") { /* keep */ }
+            if (S.residencyDay >= 0 && V != null && V.HasStage) BookResidency();
+            if (S.pendingCard != null) { /* keep the loan or residency decision */ }
             else Director.Roll(this, _r);
             Svc = null;
             Phase = Phase.Prep;

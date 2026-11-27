@@ -129,14 +129,19 @@ namespace Loab.Sim
 
         // ---- Acts ----------------------------------------------------------------------------------------
 
+        public static void AddOpenMicActs(GameState s, Rng r)
+        {
+            s.agency.Add(new Act { uid = s.nextUid++, kind = 2, name = "Open Mic (you host)", style = "anything goes", fee = 30, quality = r.Range(30, 70), reliability = 100, following = 5, volatility = 0.6f });
+            s.agency.Add(new Act { uid = s.nextUid++, kind = 2, name = "Poetry & Pints collective", style = "spoken word", fee = 80, quality = r.Range(45, 80), reliability = 90, following = 25, volatility = 0.4f });
+        }
+
         public static void RefreshAgency(GameState s, Rng r)
         {
             s.agency.Clear();
             s.agency.Add(new Act { uid = s.nextUid++, kind = 0, name = "You (DIY quiz)", style = "home-made", fee = 0, quality = 42, reliability = 100, following = 0, volatility = 0.3f });
             s.agency.Add(new Act { uid = s.nextUid++, kind = 0, name = "Quizmaster Quentin", style = "classic", fee = 90, quality = 70, reliability = 95, following = 15, volatility = 0.15f });
             s.agency.Add(new Act { uid = s.nextUid++, kind = 0, name = "The QuizBot 3000", style = "machine", fee = 45, quality = 56, reliability = 80, following = 5, volatility = 0.45f });
-            s.agency.Add(new Act { uid = s.nextUid++, kind = 2, name = "Open Mic (you host)", style = "anything goes", fee = 30, quality = r.Range(30, 70), reliability = 100, following = 5, volatility = 0.6f });
-            s.agency.Add(new Act { uid = s.nextUid++, kind = 2, name = "Poetry & Pints collective", style = "spoken word", fee = 80, quality = r.Range(45, 80), reliability = 90, following = 25, volatility = 0.4f });
+            AddOpenMicActs(s, r);
             int n = 5;
             for (int i = 0; i < n; i++)
             {

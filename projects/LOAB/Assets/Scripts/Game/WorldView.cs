@@ -63,6 +63,7 @@ namespace Loab.Game
             foreach (Transform c in _roomRoot) Destroy(c.gameObject);
             foreach (var kv in _items) Destroy(kv.Value);
             _items.Clear(); _itemKey.Clear(); _floorTiles.Clear(); _walls.Clear();
+            _lights.Clear(); _wearBand.Clear();
             ClearAgents();
             _floorKey = _wallKey = null;
             BuildRoom();
@@ -79,6 +80,7 @@ namespace Loab.Game
         static readonly Color StudioNightTop = new Color32(0x2A, 0x34, 0x40, 255), StudioNightFloor = new Color32(0x14, 0x1A, 0x21, 255);
 
         Renderer _studioFloor;
+        static Material _studioMat;
         Light _fill;
         float _night, _nightStart = -99f;
         bool _wasService;
@@ -130,7 +132,8 @@ namespace Loab.Game
             // ---- Studio (brief 9.3): seamless floor that catches the plinth's soft shadow.
             var studio = Part(st, PrimitiveType.Cube, new Vector3(pc.x, -0.78f, pc.z), new Vector3(400f, 0.05f, 400f), ModelFactory.Mat(0x9FB2C0));
             _studioFloor = studio.GetComponent<Renderer>();
-            _studioFloor.sharedMaterial = new Material(ModelFactory.Mat(0x9FB2C0));
+            if (_studioMat == null) _studioMat = new Material(ModelFactory.Mat(0x9FB2C0));
+            _studioFloor.sharedMaterial = _studioMat;
 
             // ---- Neighbouring buildings as white-card massing models (brief 9.2)
             if (s.gridW + Sim.Game.ExpandCols <= Sim.Game.MaxWidth)

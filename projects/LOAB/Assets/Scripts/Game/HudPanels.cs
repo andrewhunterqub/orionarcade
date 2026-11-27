@@ -358,6 +358,13 @@ namespace Loab.Game
         void BuildEvents(VisualElement p)
         {
             Title(p, "Events", "Book a Pub Quiz, Comedy Night or Open Mic. Promotion brings a bigger crowd. Acts are hit and miss: high quality is safer, volatile acts are a gamble.");
+            if (G.S.residencyDay >= 0)
+            {
+                var rc = El("card");
+                rc.Add(Row(Lbl($"Residency: {G.S.residencyAct.name}", "card-title"), Spacer(), Lbl("every " + Content.DayNames[G.S.residencyDay], "chip")));
+                rc.Add(Row(Lbl($"£{G.S.residencyAct.fee} a night  -  following {G.S.residencyAct.following}", "card-sub"), Spacer(), Btn("End residency", () => G.EndResidency(), "btn-small", "btn-bad")));
+                p.Add(rc);
+            }
             if (G.S.events.Count > 0)
             {
                 p.Add(Lbl("BOOKED", "section"));

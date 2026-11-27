@@ -1182,7 +1182,7 @@ namespace Loab.Sim
         static readonly string[] OpenMicActs =
         {
             "A nervous poet", "A ukulele duo", "A retired postman with a banjo", "A teenage rapper", "A woman doing bird impressions",
-            "A folk singer", "A stand-up first-timer", "Your bartender's cousin", "A beatboxer", "An accordion player",
+            "A folk singer", "A stand-up first-timer", "A bartender's cousin", "A beatboxer", "An accordion player",
         };
 
         public float EventEndTime => EventStart < 0 ? 240 : EventStart + 120;
