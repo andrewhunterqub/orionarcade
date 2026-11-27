@@ -644,6 +644,9 @@ namespace Loab.Sim
 
         void FinishNight(Service svc)
         {
+            // End-of-night rolls (level-ups, resignations) get their own seed, so a game loaded that morning
+            // makes the same rolls as one that never left: the morning's weather and card draws don't shift them.
+            _r = new Rng(S.seed + (ulong)S.day * 31UL + 19UL);
             var rec = new NightRecord { day = S.day, weather = S.weather };
             float wages = 0, fines = 0;
             foreach (var m in S.staff) wages += m.wage;

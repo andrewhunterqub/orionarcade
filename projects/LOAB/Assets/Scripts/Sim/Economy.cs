@@ -50,9 +50,49 @@ namespace Loab.Sim
             }
         }
 
+        // ---- Seasons that matter (task C1) -------------------------------------------------------------
+
+        /// How much more (or less) people want a kind of drink, given the season and tonight's weather.
+        public static float SeasonalDrinkMult(GameState s, DrinkCat cat)
+        {
+            float m = 1f;
+            switch (s.Season)
+            {
+                case 1: // winter
+                    if (cat == DrinkCat.Hot) m *= 2.5f; else if (cat == DrinkCat.Stout) m *= 1.3f; else if (cat == DrinkCat.Wine) m *= 1.15f;
+                    else if (cat == DrinkCat.Cider || cat == DrinkCat.Lager) m *= 0.85f;
+                    break;
+                case 3: // summer
+                    if (cat == DrinkCat.Cider) m *= 1.5f; else if (cat == DrinkCat.Lager) m *= 1.3f; else if (cat == DrinkCat.AlcoholFree) m *= 1.2f;
+                    else if (cat == DrinkCat.Hot) m *= 0.3f; else if (cat == DrinkCat.Stout) m *= 0.8f;
+                    break;
+            }
+            switch (s.weather)
+            {
+                case "Sunny": if (cat == DrinkCat.Lager || cat == DrinkCat.Cider) m *= 1.2f; else if (cat == DrinkCat.Hot) m *= 0.6f; break;
+                case "Rain":
+                case "Storm": if (cat == DrinkCat.Hot) m *= 1.4f; else if (cat == DrinkCat.Stout) m *= 1.1f; break;
+            }
+            return m;
+        }
+
+        /// The season's trend: cosy, intimate bars draw better in winter; lively ones in summer. Roughly ±8%.
+        public static float SeasonalVibeMult(GameState s, VibeReport v)
+        {
+            if (v == null) return 1f;
+            if (s.Season == 1) return 1f + (v.Axes[Axis.Intimacy] - 50f) / 50f * 0.08f;
+            if (s.Season == 3) return 1f + (v.Axes[Axis.Energy] - 50f) / 50f * 0.08f;
+            return 1f;
+        }
+
+        /// Sunny summer nights wear staff out faster.
+        public static bool Heatwave(GameState s) => s.Season == 3 && s.weather == "Sunny";
+
         public static string SeasonNote(GameState s)
         {
             int d = s.day % 28;
+            if (Heatwave(s)) return "A hot summer night: cider and lager will fly, and staff will tire faster.";
+            if (s.Season == 1 && d < 14 && (s.weather == "Rain" || s.weather == "Storm")) return "A cold, wet winter night: hot drinks and stout sell well, and cosy bars win.";
             if (s.Season == 1 && d >= 14 && d < 21) return "Christmas party season: expect big crowds.";
             if (s.Season == 1 && d >= 21) return "The January slump. Alcohol-free drinks are in demand.";
             if (s.Season == 0 && d < 7) return "Freshers' week: students are out in force.";
@@ -63,7 +103,7 @@ namespace Loab.Sim
         /// <summary>Expected customers per segment tonight, plus extra event-driven arrivals.</summary>
         public static void ExpectedArrivals(GameState s, VibeReport v, float[] outExpected, BookedEvent ev, out float eventExtra)
         {
-            float foot = BaseFootfall * FootfallMult(s) * SeasonMult(s) * WeatherMult(s.weather) * (1f - s.rivalPressure * 0.3f);
+            float foot = BaseFootfall * FootfallMult(s) * SeasonMult(s) * SeasonalVibeMult(s, v) * WeatherMult(s.weather) * (1f - s.rivalPressure * 0.3f);
             if (s.day == 0) foot *= 1.5f; // opening-night curiosity
             float rep = 0.35f + s.reputation / 100f * 1.25f;
             float ratio = VibeCalc.PriceRatio(s);

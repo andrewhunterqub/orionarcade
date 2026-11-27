@@ -28,6 +28,7 @@ public static class Tests
         Test("last orders early: the night ends sooner and can't be called before 9pm", LastOrdersEarly);
         Test("switch duty: a bartender can move to the floor and back mid-service", SwitchDuty);
         Test("verdict: nights get a highlight or a problem, and every problem has a fix", Verdicts);
+        Test("seasons: hot drinks sell more in winter than in summer", SeasonalDrinks);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -180,6 +181,33 @@ public static class Tests
         foreach (Note n in Enum.GetValues(typeof(Note)))
             if (n == Note.WaitedLong || n == Note.Dirty || n == Note.OutOfStock || n == Note.Pricey || n == Note.Crowded)
                 Assert(Economy.FixFor(n) != null, $"no fix text for {n}");
+    }
+
+    static void SeasonalDrinks()
+    {
+        int HotSold(int season)
+        {
+            var g = Game.NewCareer(61, 1);
+            g.S.day = season * 28 + 3;            // a mid-season Thursday
+            g.S.weather = "Rain";
+            g.ToggleMenu("tea");                   // make sure a hot drink is on (no-op if it doesn't exist)
+            var hot = g.S.menu.FindAll(m => Content.Drink(m.id).Cat == DrinkCat.Hot);
+            Assert(hot.Count > 0, "no hot drinks in the content");
+            foreach (var m in hot) { m.onMenu = true; m.stock = 500; }
+            int sold = 0;
+            for (int n = 0; n < 4; n++)
+            {
+                g.S.weather = "Rain";
+                g.OpenDoors(); int t = 0;
+                while (g.Phase == Phase.Service && t++ < 20000) { g.Svc.Step(); g.EndServiceIfDone(); }
+                sold += hot.Sum(m => m.soldTonight);
+                g.NextDay(); g.S.pendingCard = null;
+            }
+            return sold;
+        }
+        int winter = HotSold(1), summer = HotSold(3);
+        // Customers at the responsible-service limit can only pick soft or hot drinks, which dampens the gap.
+        Assert(winter > summer * 1.5, $"hot drinks: winter {winter}, summer {summer}");
     }
 
     static void CashCrisisArc()

@@ -345,6 +345,7 @@ namespace Loab.Game
             var s = G.S;
             _barName.text = s.barName;
             _dayText.text = $"{Content.DayNames[s.DayOfWeek]}  -  Week {s.Week}, {Content.Seasons[s.Season]}  -  {s.weather}";
+            _dayText.tooltip = Economy.SeasonNote(s) ?? $"{Content.Seasons[s.Season]}, {s.weather.ToLowerInvariant()}.";
             _cash.text = Money(s.cash);
             _cash.EnableInClassList("neg", s.cash < 0);
             _rating.text = $"{Stars(s.rating)} {s.rating:0.0}";

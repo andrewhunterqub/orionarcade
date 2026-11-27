@@ -128,6 +128,8 @@ namespace Loab.Sim
 
             Economy.ExpectedArrivals(s, V, _expected, Event, out _eventExpected);
             if (s.day == 0) Say("Opening night! Word has got round and people are curious.", 1);
+            var seasonNote = Economy.SeasonNote(s);
+            if (seasonNote != null) Say(seasonNote, 1);
             if (Event != null)
                 Say(Event.kind == 0 ? $"Tonight: Pub Quiz with {Event.act.name}, from 8pm." : Event.kind == 1 ? $"Tonight: Comedy Night headlined by {Event.act.name}, from 8pm." : $"Tonight: Open Mic Night ({Event.act.name}), from 8pm. Anything could happen.", 3);
             if (BarPoints.Count == 0) Say("There's no bar counter! Nobody can be served.", 2);
@@ -904,6 +906,7 @@ namespace Loab.Sim
                 var dd = Content.Drink(m.id);
                 float w = d.DrinkPrefs[(int)dd.Cat] / Math.Max(1, catCount[(int)dd.Cat]);
                 if (dd.Cat == DrinkCat.AlcoholFree) w *= 1f + c.alcoholic * 0.25f + (dry ? 1.5f : 0f);
+                w *= Economy.SeasonalDrinkMult(S, dd.Cat);
                 if (c.regular != null && c.regular.favDrink == dd.Id) w *= 4f;
                 if (V.ActiveTheme != null && Array.IndexOf(dd.Themes, V.ActiveTheme.Def.Id) >= 0) w *= 1.3f;
                 float ratio = m.price / dd.DefaultPrice;
@@ -946,7 +949,7 @@ namespace Loab.Sim
             if (m.HasTrait("gossip")) f *= 1.1f;
             int q = 0; foreach (var bp in BarPoints) q += bp.queue.Count;
             if (q > 6 && !m.HasTrait("calm")) f *= 1.15f;
-            float fatigue = T / 360f * (1.2f - m.stamina * 0.04f);
+            float fatigue = T / 360f * (1.2f - m.stamina * 0.04f) * (Economy.Heatwave(S) ? 1.4f : 1f);
             f *= 1f + Math.Max(0, fatigue) * 0.25f;
             f *= 1.15f - m.morale / 100f * 0.25f;
             return Math.Max(0.4f, f);
