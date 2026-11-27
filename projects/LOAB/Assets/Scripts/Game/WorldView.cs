@@ -390,6 +390,29 @@ namespace Loab.Game
             return new Vector3(it.x + (w - 1) / 2f, 0, it.y + (h - 1) / 2f);
         }
 
+        readonly Dictionary<int, int> _wearBand = new Dictionary<int, int>();
+        static MaterialPropertyBlock _mpb;
+
+        /// <summary>Worn furniture looks faded and a bit grubby (visual brief 8: simplified wear cues, not grime).</summary>
+        void ApplyWear(GameObject go, int band, int uid)
+        {
+            _wearBand[uid] = band;
+            if (_mpb == null) _mpb = new MaterialPropertyBlock();
+            foreach (var r in go.GetComponentsInChildren<Renderer>())
+            {
+                if (band == 0) { r.SetPropertyBlock(null); continue; }
+                var m = r.sharedMaterial;
+                if (m == null || m.IsKeywordEnabled("_EMISSION")) continue; // lamps and screens stay bright
+                var c = m.color;
+                float grey = c.grayscale;
+                float fade = band == 2 ? 0.45f : 0.22f;
+                var worn = Color.Lerp(c, new Color(grey, grey * 0.96f, grey * 0.9f), fade) * (band == 2 ? 0.8f : 0.9f);
+                worn.a = 1;
+                _mpb.SetColor("_Color", worn);
+                r.SetPropertyBlock(_mpb);
+            }
+        }
+
         void SyncItems()
         {
             var seen = new HashSet<int>();
@@ -397,8 +420,10 @@ namespace Loab.Game
             {
                 seen.Add(it.uid);
                 string key = $"{it.id}:{it.x}:{it.y}:{it.rot}";
+                int wearBand = it.wear >= 70 ? 2 : it.wear >= 45 ? 1 : 0;
                 if (_items.TryGetValue(it.uid, out var go))
                 {
+                    if (!_wearBand.TryGetValue(it.uid, out int wb) || wb != wearBand) ApplyWear(go, wearBand, it.uid);
                     if (_itemKey[it.uid] == key) continue;
                     go.transform.position = ItemCentre(it);
                     go.transform.rotation = Quaternion.Euler(0, 90f * it.rot, 0);
@@ -427,6 +452,7 @@ namespace Loab.Game
                 _items[it.uid] = go;
                 _itemKey[it.uid] = key;
                 _practicalDirty = true;
+                ApplyWear(go, wearBand, it.uid);
             }
             var remove = new List<int>();
             foreach (var kv in _items) if (!seen.Contains(kv.Key)) remove.Add(kv.Key);

@@ -352,7 +352,7 @@ namespace Loab.Game
             if (sc != null)
             {
                 _goalLabel.text = $"SCENARIO: {sc.Name.ToUpperInvariant()}  -  {G.ScenarioDaysLeft} DAYS LEFT";
-                if (Time.frameCount % 20 == 0) _goalText.text = $"{sc.GoalText}\n{sc.Progress(G)}";
+                _goalText.text = $"{sc.GoalText}\n{sc.Progress(G)}";
             }
             else
             {
