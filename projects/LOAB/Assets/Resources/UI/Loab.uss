@@ -259,3 +259,21 @@
     color: rgb(60, 38, 24);
     -unity-font-style: bold-and-italic;
 }
+
+.badge {
+    position: absolute;
+    width: 20px; height: 20px;
+    margin-left: -10px; margin-top: -20px;
+    border-radius: 10px;
+    border-width: 2px;
+    border-color: rgb(255, 250, 240);
+    -unity-text-align: middle-center;
+    -unity-font-style: bold;
+    font-size: 13px;
+    color: white;
+    padding: 0;
+}
+.badge-wide { width: 30px; margin-left: -15px; font-size: 10px; }
+.badge-bad { background-color: rgb(230, 57, 70); }
+.badge-warn { background-color: rgb(244, 162, 47); }
+.badge-good { background-color: rgb(46, 170, 90); }

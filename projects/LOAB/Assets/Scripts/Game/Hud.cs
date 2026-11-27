@@ -376,7 +376,9 @@ namespace Loab.Game
                 _behindBtn.text = svc.OwnerBehindBar ? "Behind the bar\n(you're serving)" : "Help behind\nthe bar";
                 _behindBtn.EnableInClassList("btn-on", svc.OwnerBehindBar);
                 UpdateInspector(svc);
+                UpdateBadges(svc);
             }
+            else if (_badges.Count > 0) UpdateBadges(null);
             else
             {
                 float exp = Economy.ExpectedTotal(s, G.V);
@@ -607,6 +609,62 @@ namespace Loab.Game
         // =====================================================================================
 
         Customer _inspectedShown;
+        readonly List<Label> _badges = new List<Label>();
+
+        Label Badge(int i)
+        {
+            while (_badges.Count <= i)
+            {
+                var b = Lbl("", "badge");
+                b.pickingMode = PickingMode.Ignore;
+                _root.Insert(2, b); // under the panels, over the world
+                _badges.Add(b);
+            }
+            return _badges[i];
+        }
+
+        /// <summary>Crisp UI badges for moods and problems, pinned over the 3D scene.</summary>
+        void UpdateBadges(Service svc)
+        {
+            int n = 0;
+            if (svc != null && !_photo)
+            {
+                foreach (var c in svc.Customers)
+                {
+                    if (n >= 60) break;
+                    string text = null, cls = null;
+                    if (c.rowdy) { text = "!"; cls = "badge-bad"; }
+                    else if (c.mood < 32 && c.state != CState.Leaving) { text = "?"; cls = "badge-warn"; }
+                    else if (c.mood > 80) { text = "+"; cls = "badge-good"; }
+                    if (text == null || !_run.World.TryHeadPos(c, out var head)) continue;
+                    var p = WorldToPanel(head);
+                    var b = Badge(n++);
+                    b.text = text;
+                    b.EnableInClassList("badge-bad", cls == "badge-bad");
+                    b.EnableInClassList("badge-warn", cls == "badge-warn");
+                    b.EnableInClassList("badge-good", cls == "badge-good");
+                    b.EnableInClassList("badge-wide", false);
+                    b.style.left = p.x; b.style.top = p.y;
+                    b.style.display = DisplayStyle.Flex;
+                }
+                foreach (var inc in svc.Incidents)
+                {
+                    if (n >= 70 || inc.resolved || inc.kind != IncidentKind.Toilet) continue;
+                    var it = G.S.Item(inc.itemUid);
+                    if (it == null) continue;
+                    var p = WorldToPanel(WorldView.ItemCentre(it) + Vector3.up * 2.4f);
+                    var b = Badge(n++);
+                    b.text = "WC";
+                    b.EnableInClassList("badge-bad", true);
+                    b.EnableInClassList("badge-warn", false);
+                    b.EnableInClassList("badge-good", false);
+                    b.EnableInClassList("badge-wide", true);
+                    b.style.left = p.x; b.style.top = p.y;
+                    b.style.display = DisplayStyle.Flex;
+                }
+            }
+            for (int i = n; i < _badges.Count; i++) _badges[i].style.display = DisplayStyle.None;
+        }
 
         void UpdateInspector(Service svc)
         {

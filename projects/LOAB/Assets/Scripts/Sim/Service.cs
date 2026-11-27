@@ -116,16 +116,16 @@ namespace Loab.Sim
             }
 
             Event = s.events.Find(e => e.day == s.day);
-            if (Event != null && Event.kind == 1 && !V.HasStage)
+            if (Event != null && Event.kind >= 1 && !V.HasStage)
             {
-                Say("The comedians took one look and left: you need a stage for Comedy Night.", 2);
+                Say($"No stage, no show: the {Economy.EventName(Event.kind)} was called off.", 2);
                 Event = null;
             }
 
             Economy.ExpectedArrivals(s, V, _expected, Event, out _eventExpected);
             if (s.day == 0) Say("Opening night! Word has got round and people are curious.", 1);
             if (Event != null)
-                Say(Event.kind == 0 ? $"Tonight: Pub Quiz with {Event.act.name}, from 8pm." : $"Tonight: Comedy Night headlined by {Event.act.name}, from 8pm.", 3);
+                Say(Event.kind == 0 ? $"Tonight: Pub Quiz with {Event.act.name}, from 8pm." : Event.kind == 1 ? $"Tonight: Comedy Night headlined by {Event.act.name}, from 8pm." : $"Tonight: Open Mic Night ({Event.act.name}), from 8pm. Anything could happen.", 3);
             if (BarPoints.Count == 0) Say("There's no bar counter! Nobody can be served.", 2);
             if (s.staff.Find(m => m.role == 0) == null) Say("No bartenders on the rota. You'll have to serve everyone yourself.", 2);
             if (s.staff.Find(m => m.role == 0) == null) SetOwnerBehindBar(true);
@@ -261,7 +261,7 @@ namespace Loab.Sim
             for (int i = 0; i < 5; i++)
             {
                 var d = Content.Segments[i];
-                w[i] = (Event.kind == 0 ? d.Quiz : d.Comedy) * d.Share * (0.3f + V.SegMatch[i]);
+                w[i] = Economy.EventAffinity(d, Event.kind) * d.Share * (0.3f + V.SegMatch[i]);
             }
             int idx = R.WeightedIndex(w);
             return (Seg)Math.Max(0, idx);
@@ -330,7 +330,7 @@ namespace Loab.Sim
             if (forEvent && Event != null && EventPhase >= 1 && EventPhase <= 3)
             {
                 c.watching = true;
-                if (Event.kind == 0 && Event.ticket > 0) TicketIncome += Event.ticket;
+                if (Event.kind != 1 && Event.ticket > 0) TicketIncome += Event.ticket;
             }
             Customers.Add(c);
             Arrivals++;
@@ -776,7 +776,7 @@ namespace Loab.Sim
 
             if (c.watching && EventPhase >= 1 && EventPhase <= 3)
             {
-                float affE = Event.kind == 0 ? d.Quiz : d.Comedy;
+                float affE = Economy.EventAffinity(d, Event.kind);
                 target += (EventPerf - 45f) / 3.5f * affE;
             }
 
@@ -840,7 +840,7 @@ namespace Loab.Sim
             if (c.state == CState.Standing) return "Wish I could find a seat.";
             if (c.Has(Note.HatedMusic)) return "Who chose this music?";
             if (c.Has(Note.LovedDrink)) return $"This {c.drink?.Name ?? "drink"} is incredible.";
-            if (c.watching && EventPerf > 65) return Event.kind == 0 ? "We're definitely winning this round." : "I can't breathe, this is so funny.";
+            if (c.watching && EventPerf > 65) return Event.kind == 0 ? "We're definitely winning this round." : Event.kind == 1 ? "I can't breathe, this is so funny." : "That last act gave me chills.";
             if (c.Has(Note.LovedVibe)) return "Love the feel of this place.";
             var complaint = VibeCalc.Complaint(V.Axes, c.def);
             if (complaint != null) return complaint + ".";
@@ -1179,6 +1179,12 @@ namespace Loab.Sim
         //  Events
         // =====================================================================================
 
+        static readonly string[] OpenMicActs =
+        {
+            "A nervous poet", "A ukulele duo", "A retired postman with a banjo", "A teenage rapper", "A woman doing bird impressions",
+            "A folk singer", "A stand-up first-timer", "Your bartender's cousin", "A beatboxer", "An accordion player",
+        };
+
         public float EventEndTime => EventStart < 0 ? 240 : EventStart + 120;
 
         void UpdateEvent()
@@ -1205,10 +1211,10 @@ namespace Loab.Sim
                     foreach (var c in Customers)
                     {
                         if (!c.Inside || c.state == CState.Leaving) continue;
-                        float aff = Event.kind == 0 ? c.def.Quiz : c.def.Comedy;
-                        if (R.Chance(aff)) { c.watching = true; joined++; if (Event.kind == 0 && Event.ticket > 0) TicketIncome += Event.ticket; }
+                        float aff = Economy.EventAffinity(c.def, Event.kind);
+                        if (R.Chance(aff)) { c.watching = true; joined++; if (Event.kind != 1 && Event.ticket > 0) TicketIncome += Event.ticket; }
                     }
-                    Say(Event.kind == 0 ? $"Pens at the ready! The quiz begins with {joined} players." : $"Lights down. Comedy Night begins for a crowd of {joined}.", 3);
+                    Say(Event.kind == 0 ? $"Pens at the ready! The quiz begins with {joined} players." : Event.kind == 1 ? $"Lights down. Comedy Night begins for a crowd of {joined}." : $"The open mic sign-up sheet is full. {joined} people are watching.", 3);
                 }
                 return;
             }
@@ -1221,6 +1227,25 @@ namespace Loab.Sim
                     _quizRound = round;
                     if (round < 6)
                         Say($"Quiz round {round} done. {Content.QuizTeams[(S.day + round * 3) % Content.QuizTeams.Length]} {(EventPerf > 60 ? "are loving it." : EventPerf > 40 ? "lead narrowly." : "are arguing with the quizmaster.")}", 3);
+                    foreach (var c in Customers) if (c.watching) c.thirst = Math.Max(c.thirst, 0.6f);
+                }
+                if (into >= 120) EndEvent();
+            }
+            else if (Event.kind == 2)
+            {
+                // Open mic: a new act every 20 minutes, each a fresh gamble.
+                int slot = (int)(into / 20f);
+                if (slot > _quizRound && slot <= 6)
+                {
+                    _quizRound = slot;
+                    if (slot < 6)
+                    {
+                        float roll = EventPerf + R.Gaussian() * 22f;
+                        string who = R.Pick(OpenMicActs);
+                        if (roll > 80) { Say($"{who} brings the house down. Is that a talent scout?", 1); EventPerf = Math.Min(100, EventPerf + 3); if (roll > 92) Moments.Add($"An unknown {who.Replace("A ", "").Replace("An ", "")} stole the show at open mic."); }
+                        else if (roll > 50) Say($"{who} gets a warm round of applause.", 3);
+                        else { Say($"{who} forgets the words halfway through. Supportive clapping.", 2); EventPerf = Math.Max(5, EventPerf - 2); }
+                    }
                     foreach (var c in Customers) if (c.watching) c.thirst = Math.Max(c.thirst, 0.6f);
                 }
                 if (into >= 120) EndEvent();
@@ -1262,12 +1287,12 @@ namespace Loab.Sim
                 if (EventPerf >= 60) c.Mark(Note.LovedEvent);
                 else if (EventPerf < 38) c.Mark(Note.EventBombed);
             }
-            string what = Event.kind == 0 ? "quiz" : "comedy night";
+            string what = Event.kind == 0 ? "quiz" : Event.kind == 1 ? "comedy night" : "open mic";
             if (EventPerf >= 92) { EventOutcome = "Viral hit"; Say($"Incredible {what}! Clips are flying round social media.", 1); }
             else if (EventPerf >= 65) { EventOutcome = "Hit"; Say($"The {what} went down a storm.", 1); }
             else if (EventPerf >= 40) { EventOutcome = "Decent"; Say($"A decent {what}. Nobody's complaining.", 0); }
-            else { EventOutcome = "Flop"; Say(Event.kind == 0 ? "The quiz was a shambles. Two teams walked out." : $"{Event.act.name} died on stage. Tumbleweed.", 2); }
-            Moments.Add($"{(Event.kind == 0 ? "Pub Quiz" : "Comedy Night")} with {Event.act.name}: {EventOutcome.ToLowerInvariant()}.");
+            else { EventOutcome = "Flop"; Say(Event.kind == 0 ? "The quiz was a shambles. Two teams walked out." : Event.kind == 1 ? $"{Event.act.name} died on stage. Tumbleweed." : "The open mic was... brave. Very brave.", 2); }
+            Moments.Add($"{Economy.EventName(Event.kind)} with {Event.act.name}: {EventOutcome.ToLowerInvariant()}.");
         }
 
         // =====================================================================================

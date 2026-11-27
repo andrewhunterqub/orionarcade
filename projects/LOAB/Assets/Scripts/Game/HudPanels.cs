@@ -342,7 +342,7 @@ namespace Loab.Game
 
         void BuildEvents(VisualElement p)
         {
-            Title(p, "Events", "Book a Pub Quiz or a Comedy Night. Promotion brings a bigger crowd. Acts are hit and miss: high quality is safer, volatile acts are a gamble.");
+            Title(p, "Events", "Book a Pub Quiz, Comedy Night or Open Mic. Promotion brings a bigger crowd. Acts are hit and miss: high quality is safer, volatile acts are a gamble.");
             if (G.S.events.Count > 0)
             {
                 p.Add(Lbl("BOOKED", "section"));
@@ -351,7 +351,7 @@ namespace Loab.Game
                     var ev = e;
                     int offset = e.day - G.S.day;
                     var c = El("card");
-                    c.Add(Row(Lbl($"{(e.kind == 0 ? "Pub Quiz" : "Comedy Night")}: {e.act.name}", "card-title"), Spacer(), Lbl(offset == 0 ? "TONIGHT" : Content.DayNames[e.day % 7], "chip")));
+                    c.Add(Row(Lbl($"{Economy.EventName(e.kind)}: {e.act.name}", "card-title"), Spacer(), Lbl(offset == 0 ? "TONIGHT" : Content.DayNames[e.day % 7], "chip")));
                     c.Add(Row(Lbl($"Promo £{e.promo}  -  {(e.ticket > 0 ? $"£{e.ticket} a head" : "free entry")}", "card-sub"), Spacer(), Btn("Cancel (50% refund)", () => G.CancelEvent(ev.uid), "btn-small")));
                     p.Add(c);
                 }
@@ -359,9 +359,11 @@ namespace Loab.Game
             p.Add(Lbl("BOOK A NIGHT", "section"));
             var kinds = Row(
                 Toggle("Pub Quiz", _eventKind == 0, () => { _eventKind = 0; _eventTicket = 0; MarkDirty(); }),
-                Toggle("Comedy Night", _eventKind == 1, () => { _eventKind = 1; _eventTicket = 5; MarkDirty(); }));
+                Toggle("Comedy Night", _eventKind == 1, () => { _eventKind = 1; _eventTicket = 5; MarkDirty(); }),
+                Toggle("Open Mic", _eventKind == 2, () => { _eventKind = 2; _eventTicket = 0; MarkDirty(); }));
             p.Add(kinds);
-            if (_eventKind == 1 && !G.V.HasStage) p.Add(Lbl("Comedy needs a Small Stage (Build > Stage & Music).", "chip-bad"));
+            if (_eventKind >= 1 && !G.V.HasStage) p.Add(Lbl($"{Economy.EventName(_eventKind)} needs a Small Stage (Build > Stage & Music).", "chip-bad"));
+            if (_eventKind == 2) p.Add(Lbl("Open mic is cheap and wildly unpredictable. Creatives and students love it.", "hint"));
 
             var days = Row(); days.AddToClassList("wrap");
             days.Add(Lbl("Night:", "card-sub"));
@@ -382,13 +384,13 @@ namespace Loab.Game
             }
             p.Add(promo);
             var tix = Row(Lbl(_eventKind == 0 ? "Entry:" : "Tickets:", "card-sub"));
-            foreach (var t in _eventKind == 0 ? new[] { 0, 1, 2 } : new[] { 0, 5, 10, 15 })
+            foreach (var t in _eventKind == 1 ? new[] { 0, 5, 10, 15 } : new[] { 0, 1, 2 })
             {
                 int tt = t;
                 tix.Add(Toggle(t == 0 ? "Free" : $"£{t}", _eventTicket == t, () => { _eventTicket = tt; MarkDirty(); }));
             }
             p.Add(tix);
-            p.Add(Lbl(_eventKind == 0 ? "QUIZMASTERS" : "COMEDY AGENCY (new acts each Monday)", "section"));
+            p.Add(Lbl(_eventKind == 0 ? "QUIZMASTERS" : _eventKind == 1 ? "COMEDY AGENCY (new acts each Monday)" : "OPEN MIC HOSTS", "section"));
             foreach (var act in G.S.agency.Where(a => a.kind == _eventKind))
             {
                 var a = act;

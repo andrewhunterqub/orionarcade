@@ -477,7 +477,7 @@ namespace Loab.Sim
             if (act == null) return Fail("Act not available");
             int day = S.day + dayOffset;
             if (S.events.Exists(e => e.day == day)) return Fail("You've already got an event that night");
-            if (act.kind == 1 && !V.HasStage) return Fail("Comedy Night needs a Small Stage. Build one first");
+            if (act.kind >= 1 && !V.HasStage) return Fail($"{Economy.EventName(act.kind)} needs a Small Stage. Build one first");
             float cost = act.fee + promo;
             if (S.cash < cost && S.difficulty > 0) return Fail("Not enough cash");
             Spend(cost, "Event booking");
@@ -627,11 +627,12 @@ namespace Loab.Sim
                 }
                 if (svc.Event != null)
                 {
-                    rec.eventName = (svc.Event.kind == 0 ? "Pub Quiz" : "Comedy Night") + " with " + svc.Event.act.name;
+                    rec.eventName = Economy.EventName(svc.Event.kind) + " with " + svc.Event.act.name;
                     rec.eventOutcome = svc.EventOutcome ?? "Didn't happen";
                     if (svc.Event.kind == 0) S.SetFlag("quiz_hosted", S.GetFlag("quiz_hosted") + 1);
-                    else S.SetFlag("comedy_hosted", S.GetFlag("comedy_hosted") + 1);
-                    if (svc.EventOutcome == "Viral hit") { S.reputation += 6; for (int i = 0; i < 5; i++) S.awareness[i] += 0.04f; AddTag(svc.Event.kind == 0 ? "Best Quiz in Town" : "Best Comedy Night"); }
+                    else if (svc.Event.kind == 1) S.SetFlag("comedy_hosted", S.GetFlag("comedy_hosted") + 1);
+                    else S.SetFlag("openmic_hosted", S.GetFlag("openmic_hosted") + 1);
+                    if (svc.EventOutcome == "Viral hit") { S.reputation += 6; for (int i = 0; i < 5; i++) S.awareness[i] += 0.04f; AddTag(svc.Event.kind == 0 ? "Best Quiz in Town" : svc.Event.kind == 1 ? "Best Comedy Night" : "Legendary Open Mic"); }
                     else if (svc.EventOutcome == "Hit") { S.reputation += 2.5f; S.SetFlag(svc.Event.kind == 0 ? "quiz_hits" : "comedy_hits", S.GetFlag(svc.Event.kind == 0 ? "quiz_hits" : "comedy_hits") + 1); }
                     else if (svc.EventOutcome == "Flop") S.reputation -= 2;
                     if (S.GetFlag("quiz_hits") >= 3) AddTag("Best Quiz in Town");

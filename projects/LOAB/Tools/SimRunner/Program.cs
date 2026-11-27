@@ -92,6 +92,11 @@ public static class Program
         if (s.day == 2) { TryPlace(g, "pool"); TryPlace(g, "photos"); TryPlace(g, "mirror"); }
         if (s.day == 5 && s.cash > 3000) { TryPlace(g, "toilets"); }
         if (s.day >= 8 && !g.V.HasStage && s.cash > 4000) TryPlace(g, "stage");
+        if (g.V.HasStage && s.DayOfWeek == 4 && !s.events.Any(e => e.kind == 2))
+        {
+            var om = s.agency.FirstOrDefault(a => a.kind == 2);
+            if (om != null) g.BookEvent(om.uid, 2, 50, 1);
+        }
         if (g.V.HasStage && s.DayOfWeek == 2 && !s.events.Any(e => e.kind == 1))
         {
             var comic = s.agency.Where(a => a.kind == 1 && a.fee < s.cash * 0.15f).OrderByDescending(a => a.quality).FirstOrDefault();

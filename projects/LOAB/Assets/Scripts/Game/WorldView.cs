@@ -465,6 +465,14 @@ namespace Loab.Game
             }
         }
 
+        /// <summary>Where to pin a UI badge above a customer (the rendered figure, so seats and queues line up).</summary>
+        public bool TryHeadPos(Customer c, out Vector3 pos)
+        {
+            if (_customers.TryGetValue(c, out var v) && v.Root.activeSelf) { pos = v.Root.transform.position + Vector3.up * 1.95f; return true; }
+            pos = default;
+            return false;
+        }
+
         public GameObject ItemObject(int uid) => _items.TryGetValue(uid, out var go) ? go : null;
 
         public static Color ToColor(uint rgb) => new Color32((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb, 255);
@@ -700,7 +708,7 @@ namespace Loab.Game
             _performer.Place(_stagePos, face, true, 0, false);
             _performer.Root.transform.position += Vector3.up * lift;
             _performer.SetMood(-1, false, false);
-            if (svc.Event != null && svc.Event.kind == 1)
+            if (svc.Event != null && svc.Event.kind >= 1)
                 _spot.color = Color.HSVToRGB(Mathf.Repeat(Time.time * 0.05f, 1f), 0.35f, 1f);
             else _spot.color = new Color(1f, 0.93f, 0.8f);
             _spot.transform.position = _stagePos + Vector3.up * 3.6f - face * 1.2f;
@@ -750,8 +758,7 @@ namespace Loab.Game
                 {
                     var it = _g.S.Item(inc.itemUid);
                     root.transform.position = (it != null ? ItemCentre(it) : new Vector3(inc.cell.x, 0, inc.cell.y)) + Vector3.up * 2.4f;
-                    Part(root.transform, PrimitiveType.Cube, new Vector3(0, 0.15f, 0), new Vector3(0.18f, 0.5f, 0.18f), ModelFactory.Glow(0xff4d4d, 1.6f));
-                    Part(root.transform, PrimitiveType.Cube, new Vector3(0, -0.28f, 0), new Vector3(0.18f, 0.16f, 0.18f), ModelFactory.Glow(0xff4d4d, 1.6f));
+                    // The visible marker is a UI badge (Hud); this just keeps a click target over the toilets.
                     var col = root.AddComponent<BoxCollider>(); col.size = new Vector3(1.2f, 1.6f, 1.2f);
                     break;
                 }
@@ -889,8 +896,8 @@ namespace Loab.Game
 
             public void SetMood(float mood, bool rowdy, bool busy)
             {
-                _alert.gameObject.SetActive(rowdy);
-                bool showMarker = mood >= 0 && !rowdy && (mood < 40 || mood > 75);
+                _alert.gameObject.SetActive(false);
+                bool showMarker = false;
                 _marker.gameObject.SetActive(showMarker);
                 if (showMarker) _markerR.sharedMaterial = ModelFactory.Glow(mood < 25 ? 0xff4d4d : mood < 40 ? 0xffb347 : 0x3ddc84, 1.3f);
                 if (rowdy) _alert.localRotation = Quaternion.Euler(0, Time.time * 180f, 0);

@@ -16,10 +16,10 @@ Play it at `arcade.oriondesign.xyz/play.html?game=loab` (or locally with `npm ru
 | Drinks (6.6) | 20 drinks in 10 categories, 3 suppliers, pricing, stock, line cleaning, quality |
 | Staff (6.9) | Bartenders and floor staff, 4 attributes, 8 traits, morale, levelling, weekly applicants |
 | Customers (6.10) | 5 segments as individual agents with needs, utility choices, A* pathing, thoughts, regulars |
-| Events (7) | Pub Quiz and Comedy Night: book acts, promote, tickets, live moments, hit/flop outcomes |
+| Events (7) | Pub Quiz, Comedy Night and Open Mic: book acts, promote, tickets, live moments, hit/flop outcomes |
 | Reputation (6.12) | BarHopper reviews generated from each customer's actual night, rating, reputation, tags |
 | Director (6.15) | 13 opportunity/problem cards with trade-offs (yes, including the dog) |
-| Career (8.2) | Act 1 goals with Maggie the mentor; Relaxed / Standard / Hardcore; Sandbox |
+| Career & modes (8) | Act 1 goals with Maggie the mentor; Relaxed / Standard / Hardcore; three deadline Scenarios; Sandbox |
 | Responsible design (18.2) | Responsible-service toggle, alcohol-free demand, incidents kept light |
 
 ### Visual direction
@@ -29,7 +29,7 @@ the bar is a scale model on a plinth (cardboard, then MDF, oak, walnut and marbl
 narrow 22 degree lens and a tilt-shift band that follows what you're looking at. Prep is cool studio daylight; when the
 doors open the studio darkens and the bar's own lamps come on one by one. Cut walls get foam-board caps, the
 neighbours are white-card massing models, and customers wear segment silhouettes (backpacks, ties, flat caps, scarves,
-beanies). Not yet done from the brief: bevelled meshes, bloom, grain textures, stop-motion animation, URP.
+beanies). Moods and problems are crisp UI badges that the blur never touches. Not yet done from the brief: bevelled meshes, bloom, grain textures, stop-motion animation, URP.
 
 Not in the slice: food, outdoor space, multiple venues, multiplayer, monetisation, localisation.
 
