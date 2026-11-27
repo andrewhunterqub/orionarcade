@@ -37,6 +37,7 @@ public static class Tests
         Test("cocktail lab: signatures go on the menu, sell, and are capped at three", CocktailLab);
         Test("events: live music, karaoke and the big match run end to end", NewEvents);
         Test("director: every option of every card applies cleanly on a mid-game bar", AllCards);
+        Test("content: ids unique, themes and suppliers exist, footprints and prices sane", ContentIntegrity);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -413,6 +414,31 @@ public static class Tests
         }
         Assert(Director.Cards.Count >= 30, $"only {Director.Cards.Count} cards");
         Assert(applied >= 60, $"only {applied} card options applied");
+    }
+
+    static void ContentIntegrity()
+    {
+        var themeIds = Content.Themes.Select(t => t.Id).ToHashSet();
+        Assert(Content.Items.Select(i => i.Id).Distinct().Count() == Content.Items.Count, "duplicate item ids");
+        Assert(Content.Drinks.Select(d => d.Id).Distinct().Count() == Content.Drinks.Count, "duplicate drink ids");
+        foreach (var it in Content.Items)
+        {
+            Assert(!string.IsNullOrWhiteSpace(it.Name) && !string.IsNullOrWhiteSpace(it.Model), $"{it.Id}: missing name or model");
+            Assert(it.W >= 1 && it.H >= 1 && it.W <= 3 && it.H <= 3, $"{it.Id}: footprint {it.W}x{it.H}");
+            Assert(it.Cost >= 0 && it.Cost <= 5000, $"{it.Id}: cost {it.Cost}");
+            Assert(it.Vibe.Length == Axis.Count, $"{it.Id}: vibe has {it.Vibe.Length} axes");
+            foreach (var t in it.Themes) Assert(themeIds.Contains(t), $"{it.Id}: unknown theme {t}");
+            if (it.Fn == ItemFn.Seat) Assert(it.Capacity >= 1, $"{it.Id}: a seat with no seats");
+        }
+        foreach (var d in Content.Drinks)
+        {
+            Assert(Content.Supplier(d.Supplier) != null, $"{d.Id}: unknown supplier {d.Supplier}");
+            Assert(d.DefaultPrice > d.UnitCost, $"{d.Id}: sells at a loss by default");
+            foreach (var t in d.Themes) Assert(themeIds.Contains(t), $"{d.Id}: unknown theme {t}");
+        }
+        foreach (var st in Content.Floors.Concat(Content.Walls)) foreach (var t in st.Themes) Assert(themeIds.Contains(t), $"{st.Id}: unknown theme {t}");
+        foreach (var m in Content.Music) Assert(m.SegLikes.Length == Content.Segments.Count, $"music {m.Id}: {m.SegLikes.Length} segment likes");
+        foreach (var th in Content.Themes) Assert(Content.Items.Count(i => i.Themes.Contains(th.Id)) >= 6, $"theme {th.Id} has under 6 items");
     }
 
     static void CashCrisisArc()

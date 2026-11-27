@@ -240,6 +240,9 @@ namespace Loab.Game
                 case "tapwall": TapWall(t, def); break;
                 case "kegs": Kegs(t, def); break;
                 case "winerack": WineRack(t, def); break;
+                case "still": CopperStill(t, def); break;
+                case "trophies": TrophyCabinet(t, def); break;
+                case "photobooth": PhotoBooth(t, def); break;
                 default:
                     Box(t, 0, 0.4f, 0, Mathf.Max(0.1f, def.W - 0.1f), 0.8f, Mathf.Max(0.1f, def.H - 0.1f), M(def.Color));
                     break;
@@ -1055,6 +1058,59 @@ namespace Loab.Game
                     CylR(t, V(x, y, z - 0.14f), 0.08f, 0.06f, m, V(90, 0, 0));
                 }
             }
+        }
+
+        // ---- K2 hero pieces ---------------------------------------------------------------------------
+
+        // A copper pot still: a round pot, a neck and a coiled pipe on a wooden stand.
+        static void CopperStill(Transform t, Loab.Sim.ItemDef d)
+        {
+            var copper = M(d.Color);
+            var wood = M(d.Color2);
+            Box(t, 0, 0.15f, 0, 0.8f, 0.3f, 0.8f, wood);
+            Sph(t, 0, 0.62f, 0, 0.62f, 0.62f, 0.62f, copper);
+            Cyl(t, 0, 1.05f, 0, 0.22f, 0.35f, copper);
+            Sph(t, 0, 1.28f, 0, 0.3f, 0.26f, 0.3f, copper);
+            Rod(t, V(0, 1.35f, 0), V(0.32f, 1.25f, 0.1f), 0.07f, copper);
+            Rod(t, V(0.32f, 1.25f, 0.1f), V(0.32f, 0.55f, 0.1f), 0.07f, copper);
+            for (int i = 0; i < 4; i++) CylR(t, V(0.32f, 0.65f + i * 0.14f, 0.1f), 0.2f, 0.04f, copper, V(0, 0, 0));
+        }
+
+        // A glass-fronted cabinet of trophies.
+        static void TrophyCabinet(Transform t, Loab.Sim.ItemDef d)
+        {
+            var wood = M(d.Color);
+            var gold = M(d.Color2);
+            const float z = 0.25f;
+            Box(t, 0, 0.95f, z + 0.13f, 0.86f, 1.9f, 0.04f, wood);
+            for (int s = -1; s <= 1; s += 2) Box(t, s * 0.42f, 0.95f, z, 0.04f, 1.9f, 0.3f, wood);
+            Box(t, 0, 1.88f, z, 0.88f, 0.04f, 0.3f, wood);
+            Box(t, 0, 0.06f, z, 0.84f, 0.12f, 0.3f, wood);
+            float[] shelves = { 0.62f, 1.2f };
+            foreach (var y in shelves) Box(t, 0, y, z, 0.8f, 0.03f, 0.28f, wood);
+            float[] rows = { 0.14f, 0.64f, 1.22f };
+            for (int r = 0; r < 3; r++)
+                for (int i = -1; i <= 1; i++)
+                {
+                    float x = i * 0.24f, y = rows[r];
+                    Cyl(t, x, y + 0.04f, z, 0.1f, 0.08f, wood);
+                    Cyl(t, x, y + 0.16f, z, 0.04f, 0.16f, gold);
+                    Sph(t, x, y + 0.3f, z, 0.16f, 0.12f, 0.16f, gold);
+                }
+            Box(t, 0, 0.95f, z - 0.15f, 0.8f, 1.8f, 0.01f, M(0xcfe8ff));
+        }
+
+        // A photo booth: a red box with a curtain, a little screen and a light.
+        static void PhotoBooth(Transform t, Loab.Sim.ItemDef d)
+        {
+            var body = M(d.Color);
+            var trim = M(d.Color2);
+            Box(t, 0, 1.0f, 0.05f, 0.9f, 2.0f, 0.8f, body);
+            Box(t, 0, 2.05f, 0.05f, 0.94f, 0.1f, 0.84f, trim);
+            Box(t, -0.2f, 1.0f, -0.36f, 0.44f, 1.6f, 0.03f, M(0x2b1b10));      // curtain
+            Box(t, 0.28f, 1.35f, -0.36f, 0.22f, 0.16f, 0.03f, G(0x4cc9f0, 1.6f)); // screen
+            Box(t, 0.28f, 1.7f, -0.36f, 0.22f, 0.12f, 0.03f, trim);
+            Box(t, 0.28f, 1.05f, -0.36f, 0.12f, 0.2f, 0.03f, M(0x111111));      // photo slot
         }
 
         static void Flamingo(Transform t, Loab.Sim.ItemDef d)

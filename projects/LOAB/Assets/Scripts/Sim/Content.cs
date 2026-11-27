@@ -327,6 +327,64 @@ namespace Loab.Sim
                 blurb: "Warm pools of light. Everyone looks better.");
             Add("gallery_prints", "Gallery Prints", ItemFn.Decor, 1, 1, 200, 0, 0, 0, V(-1, 5, 3, 2, 4), T("lounge"), "frames", 0x222222, 0xe76f51,
                 blurb: "Abstract prints from a local artist. Prices on request.");
+
+            // ---- More decor (task K2): something for every theme --------------------------------------
+            // Traditional Pub
+            Add("snug_table", "Snug Corner Table", ItemFn.Seat, 2, 2, 420, 4, 6, 0, V(-2, 1, -5, 6, 1), T("pub"), "pubtable", 0x5a3a22, 0x3a2414,
+                blurb: "Seats 4. Dark wood, a little lamp, the best seat in the house.");
+            Add("settle", "Oak Settle", ItemFn.Seat, 2, 1, 480, 3, 5, 0, V(-1, 1, -6, 4, 1), T("pub"), "sofa", 0x6b4226, 0x4a2e18,
+                blurb: "Seats 3. A high-backed wooden bench older than the building.");
+            Add("trophy_cabinet", "Trophy Cabinet", ItemFn.Decor, 1, 1, 380, 0, 0, 1, V(1, 1, -4, 2, 3), T("pub", "sports"), "trophies", 0x4a2e18, 0xd4af37,
+                blurb: "Darts, quiz and pub-league trophies, some of them genuinely yours.");
+            Add("bar_billiards", "Bar Billiards", ItemFn.Games, 2, 1, 650, 2, 0, 7, V(2, 0, -6, 1, 4), T("pub"), "pool", 0x7a1f1f, 0x4a2e18,
+                blurb: "The pub game nobody under fifty knows the rules to.");
+            // Speakeasy
+            Add("copper_still", "Copper Still", ItemFn.Decor, 1, 1, 900, 0, 0, 1, V(-1, 5, -5, 3, 5), T("speakeasy", "craft"), "still", 0xb87333, 0x3a2414,
+                unlock: 20, blurb: "A gleaming pot still. Purely decorative. Officially.");
+            Add("secret_door", "Secret Bookcase Door", ItemFn.Decor, 1, 1, 650, 0, 0, 0, V(-2, 5, -4, 5, 6), T("speakeasy"), "bookshelf", 0x3a2414, 0x6b1a2a,
+                unlock: 15, blurb: "Pull the right book and... it's the toilets.");
+            Add("gramophone", "Gramophone", ItemFn.Decor, 1, 1, 320, 0, 0, 1, V(-2, 4, -7, 3, 4), T("speakeasy", "lounge"), "jukebox", 0x2b1b10, 0xd4a64a,
+                blurb: "Crackly jazz from a brass horn.");
+            // Sports Bar
+            Add("video_wall", "Video Wall", ItemFn.Screen, 2, 1, 2400, 0, 0, 12, V(5, 2, 6, -5, 0), T("sports"), "projector", 0x111111, 0x2e86de,
+                unlock: 30, blurb: "Four screens, one massive picture. Every angle of every game.");
+            Add("signed_shirt", "Signed Shirt Frame", ItemFn.Decor, 1, 1, 260, 0, 0, 0, V(2, 1, 1, -1, 2), T("sports"), "frames", 0x111111, 0xd62828,
+                blurb: "Signed by a local hero. Allegedly.");
+            Add("table_tennis", "Table Tennis", ItemFn.Games, 2, 1, 520, 2, 0, 7, V(5, -1, 3, -2, 3), T("sports", "craft"), "foosball", 0x1b4d8a, 0xeeeeee,
+                blurb: "Ping, pong, spilled pint.");
+            // Dive Bar
+            Add("graffiti", "Graffiti Wall", ItemFn.Decor, 1, 1, 150, 0, 0, 0, V(4, -5, 5, -1, 7), T("dive", "arcade"), "frames", 0x222222, 0xff3fa4,
+                blurb: "A local artist was paid in beer. Fair trade.");
+            Add("photobooth", "Photo Booth", ItemFn.Games, 1, 1, 900, 2, 0, 6, V(4, -1, 4, 2, 7), T("dive", "arcade", "lounge"), "photobooth", 0xc0392b, 0xffd166,
+                blurb: "Four poses, one strip, endless group chat material.");
+            Add("pallet_seats", "Pallet Benches", ItemFn.Seat, 2, 1, 160, 4, 2, 0, V(2, -4, 4, -1, 4), T("dive", "craft"), "longtable", 0xc9a26b, 0x8a6a42,
+                blurb: "Seats 4. Upcycled, which is a nice word for 'free'.");
+            // Retro Arcade Bar
+            Add("racing_cab", "Racing Cabinet", ItemFn.Games, 1, 1, 750, 1, 0, 8, V(5, -1, 4, -2, 6), T("arcade"), "arcade", 0xd62828, 0xffd166,
+                unlock: 10, blurb: "A sit-down racer with a wobbly steering wheel.");
+            Add("claw_machine", "Claw Machine", ItemFn.Games, 1, 1, 680, 1, 0, 6, V(4, -2, 3, 0, 8), T("arcade", "dive"), "arcade", 0xff6fb5, 0x4cc9f0,
+                blurb: "The claw is weak. The dream is strong.");
+            Add("neon_palm", "Neon Palm", ItemFn.Decor, 1, 1, 240, 0, 0, 0, V(3, 0, 4, 0, 6), T("arcade"), "flamingo", 0x39ff14, 0x39ff14,
+                blurb: "A palm tree in green neon. Very Miami, very not Miami.");
+            // Craft Beer Hall
+            Add("fermenter", "Fermentation Tank", ItemFn.Decor, 1, 1, 700, 0, 0, 0, V(1, 3, 6, -2, 4), T("craft"), "kegs", 0xd9dde1, 0x2a6f97,
+                unlock: 20, blurb: "Stainless steel and a faint smell of yeast.");
+            Add("shuffleboard", "Shuffleboard", ItemFn.Games, 2, 1, 820, 2, 0, 7, V(3, 2, 2, 0, 4), T("craft", "sports"), "pool", 0xc9a26b, 0x2b2b2b,
+                blurb: "Slide the puck, argue about the measurement.");
+            Add("olive_tree", "Olive Tree", ItemFn.Decor, 1, 1, 260, 0, 0, 0, V(-1, 4, 2, 3, 2), T("craft", "lounge"), "plant", 0x7d8f69, 0x8a8a8a,
+                blurb: "A potted olive. Very Mediterranean, very hard to keep alive.");
+            // Wine & Cocktail Lounge
+            Add("grand_piano", "Baby Grand Piano", ItemFn.Decor, 2, 1, 2600, 0, 0, 4, V(-2, 9, -3, 5, 3), T("lounge", "speakeasy"), "piano", 0x111111, 0xeeeeee,
+                unlock: 35, blurb: "Someone always plays the first four bars of the same song.");
+            Add("orchids", "Orchid Display", ItemFn.Decor, 1, 1, 160, 0, 0, 0, V(-2, 6, 2, 3, 2), T("lounge"), "plant", 0xf3e5f5, 0xe8e4dc,
+                blurb: "Elegant, expensive, extremely fussy about water.");
+            Add("fireside_table", "Fireside Coffee Table", ItemFn.Seat, 2, 2, 720, 4, 8, 0, V(-4, 5, -3, 7, 1), T("lounge", "pub"), "booth", 0x2b1b10, 0x6b1a2a,
+                unlock: 15, blurb: "Seats 4. Low armchairs round a low table. Nobody leaves early.");
+            // Everywhere
+            Add("string_lights", "Warm String Lights", ItemFn.Decor, 1, 1, 70, 0, 0, 0, V(1, 1, 0, 3, 1), T("pub", "craft", "lounge"), "festoon", 0xffb35c, 0xffb35c,
+                blurb: "Instant cosy.");
+            Add("community_board", "Community Noticeboard", ItemFn.Decor, 1, 1, 60, 0, 0, 0, V(0, -1, -3, 3, 3), T("pub"), "chalkboard", 0x8a6a42, 0xf1f1f1,
+                blurb: "Lost cats, guitar lessons and this week's quiz scores.");
             Add("dog_bed", "Biscuit's Bed", ItemFn.Decor, 1, 1, 0, 0, 0, 1, V(0, 0, 0, 3, 6), T("pub"), "dogbed", 0x8a5a33, 0xd9a066, blurb: "Home of the bar's unofficial mascot.", hidden: true);
 
             // ---- Floors & walls -----------------------------------------------------------------------
