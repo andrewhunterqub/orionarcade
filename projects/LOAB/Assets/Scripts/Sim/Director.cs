@@ -181,6 +181,21 @@ namespace Loab.Sim
             });
             Cards.Add(new CardDef
             {
+                Id = "bailiff", Title = "Final demand", Art = "letter", Weight = 0, When = s => false,
+                Format = g => $"A letter in red ink. You're £{-g.S.cash:#,0} overdrawn and the bank wants it back. Get above £0 by {Content.DayNames[Math.Max(0, g.FinalDemandDeadline) % 7]} ({g.FinalDemandDays} days), or the bailiffs take the keys.",
+                Options =
+                {
+                    Opt("Sell something", "Sell your most valuable piece (never the last bar counter or the toilets) for cash today.", g =>
+                    {
+                        var it = g.BestToSell();
+                        if (it != null) { g.S.cash += g.SellValue(it); g.S.items.Remove(it); } // not undoable
+                    }, g => g.BestToSell() == null ? "Nothing left worth selling" : null),
+                    Opt("Second loan", "£2,000 now, £3,000 to repay at £110 a night. Expensive, but it buys time.", g => g.TakeSecondLoan(), g => g.SecondLoanBlocker()),
+                    Opt("Tough it out", "Trust the takings. Cut costs, fill the room and hope.", g => { }),
+                },
+            });
+            Cards.Add(new CardDef
+            {
                 Id = "residency", Title = "A residency offer", Art = "mic", Weight = 0, When = s => false,
                 Format = g => $"{g.S.residencyOffer.name} loved your crowd. They'd like a weekly residency every {Content.DayNames[Math.Max(0, g.S.residencyOfferDay)]}, for their usual £{g.S.residencyOffer.fee} a night. Their following grows every time it goes well.",
                 Options =

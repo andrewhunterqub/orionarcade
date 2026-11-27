@@ -857,12 +857,71 @@ namespace Loab.Sim
             Svc = svc;
             Phase = Phase.Report;
 
-            if (S.cash < 0 && S.difficulty > 0)
-            {
-                if (S.loansTaken == 0) S.pendingCard = "loan";
-                else if (S.cash < -1500) { S.bankrupt = true; }
-            }
+            if (S.difficulty > 0) CashCrisis(rec);
             Changed?.Invoke();
+        }
+
+        // ---- Cash crisis (task T8) --------------------------------------------------------------------
+        // A struggling bar gets a story before game over: a warning about rent, the bank's emergency loan,
+        // then a final demand with a deadline and a bailiff card offering ways out. Only then is it bankrupt.
+
+        /// Days to get back in the black after a final demand.
+        public int FinalDemandDays => S.difficulty == 2 ? 3 : 7;
+        /// Debt beyond which the bar closes immediately.
+        public const float HardDebtLimit = 6000f;
+        /// Day the final demand runs out, or -1 if there isn't one.
+        public int FinalDemandDeadline => S.GetFlag("final_demand") > 0 ? S.GetFlag("final_demand") - 1 + FinalDemandDays : -1;
+
+        void CashCrisis(NightRecord rec)
+        {
+            int demand = S.GetFlag("final_demand"); // issue day + 1, 0 = none
+            if (S.cash >= 0)
+            {
+                if (demand > 0)
+                {
+                    S.SetFlag("final_demand", 0);
+                    rec.moments.Add("Back in the black. The bailiffs' letter goes in the bin.");
+                }
+                float rent = Economy.WeeklyRent(S);
+                if (S.DayOfWeek >= 3 && S.DayOfWeek <= 5 && S.cash < rent)
+                    rec.moments.Add($"Heads up: Sunday's rent is £{rent:#,0} and there's £{S.cash:#,0} in the bank.");
+                return;
+            }
+            if (S.loansTaken == 0) { S.pendingCard = "loan"; return; }
+            if (S.cash < -HardDebtLimit) { S.bankrupt = true; return; }
+            if (demand == 0)
+            {
+                S.SetFlag("final_demand", S.day + 1);
+                if (S.pendingCard == null) S.pendingCard = "bailiff";
+                rec.moments.Add($"A final demand from the bank: get back above £0 within {FinalDemandDays} days or the bailiffs come.");
+            }
+            else if (S.day >= FinalDemandDeadline) S.bankrupt = true;
+            else rec.moments.Add($"Still overdrawn. {FinalDemandDeadline - S.day} days left on the final demand.");
+        }
+
+        /// The most valuable thing you could sell without breaking the bar (keeps one counter and the toilets).
+        public PlacedItem BestToSell()
+        {
+            PlacedItem best = null; float bestValue = 0;
+            int counters = S.items.FindAll(i => Content.Item(i.id).Fn == ItemFn.BarCounter).Count;
+            foreach (var it in S.items)
+            {
+                var d = Content.Item(it.id);
+                if (d.Fn == ItemFn.Toilet || (d.Fn == ItemFn.BarCounter && counters <= 1)) continue;
+                float v = SellValue(it);
+                if (v > bestValue) { best = it; bestValue = v; }
+            }
+            return best;
+        }
+
+        public string SecondLoanBlocker() => S.difficulty == 2 ? "The bank won't lend twice on Hardcore" : S.loansTaken >= 2 ? "The bank has said no" : null;
+
+        public void TakeSecondLoan()
+        {
+            S.loansTaken++;
+            S.cash += 2000;
+            S.loanBalance += 3000;
+            S.loanDaily = Math.Max(S.loanDaily, 110);
         }
 
         public void CheckGoals()

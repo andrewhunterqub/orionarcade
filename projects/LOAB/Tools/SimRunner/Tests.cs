@@ -24,6 +24,7 @@ public static class Tests
         Test("save round trip: reloaded game continues identically", SaveRoundTrip);
         Test("migration: an old, incomplete save loads and plays", OldSaveLoads);
         Test("weekly statement: the lines add up to the profit", WeeklyStatementAddsUp);
+        Test("cash crisis: loan, then final demand, then bankrupt only after the deadline", CashCrisisArc);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -120,6 +121,49 @@ public static class Tests
             Assert(Math.Abs(lines - w.Profit) < 1f, $"day {g.S.day}: lines {lines:0.00} vs profit {w.Profit:0.00}");
             if (g.S.DayOfWeek == 0) Assert(w.Rent > 0, $"day {g.S.day}: no rent in the week just ended");
         }
+    }
+
+    static void CashCrisisArc()
+    {
+        var g = Game.NewCareer(77, 1);
+        // First time in the red: the bank's emergency loan.
+        Night(g, -4000);
+        Assert(g.S.pendingCard == "loan", $"expected the loan offer, got '{g.S.pendingCard}'");
+        g.NextDay(); g.TakeEmergencyLoan();
+        // Back in the red after the loan: a final demand and the bailiff card, not instant bankruptcy.
+        Night(g, -4000);
+        Assert(!g.S.bankrupt, "went bankrupt without a final demand");
+        Assert(g.S.pendingCard == "bailiff", $"expected the bailiff card, got '{g.S.pendingCard}'");
+        int deadline = g.FinalDemandDeadline;
+        Assert(deadline > g.S.day, $"deadline {deadline} isn't after day {g.S.day}");
+        g.NextDay();
+        Assert(g.ChooseCard(0) == null, "couldn't sell something");
+        // Stay in the red: bankrupt only once the deadline passes.
+        for (int guard = 0; !g.S.bankrupt && guard < 20; guard++)
+        {
+            Night(g, -3500);
+            if (!g.S.bankrupt) { Assert(g.S.day < deadline, $"still trading on day {g.S.day}, past the deadline {deadline}"); g.NextDay(); }
+        }
+        Assert(g.S.bankrupt && g.S.day >= deadline, $"bankrupt={g.S.bankrupt} on day {g.S.day}, deadline {deadline}");
+        // Recovering clears the demand.
+        var h = Game.NewCareer(78, 1);
+        h.S.loansTaken = 1;
+        Night(h, -4000);
+        Assert(h.S.GetFlag("final_demand") > 0, "no final demand issued");
+        h.NextDay(); h.ChooseCard(2);
+        Night(h, 5000);
+        Assert(h.S.GetFlag("final_demand") == 0 && !h.S.bankrupt, "final demand not cleared after recovering");
+    }
+
+    /// Plays one night starting from the given cash, skipping any unrelated morning card.
+    static void Night(Game g, float cash)
+    {
+        if (g.S.pendingCard != null && g.S.pendingCard != "bailiff" && g.S.pendingCard != "loan") g.S.pendingCard = null;
+        g.S.cash = cash;
+        var err = g.OpenDoors();
+        if (err != null) throw new Exception($"couldn't open on day {g.S.day}: {err}");
+        int ticks = 0;
+        while (g.Phase == Phase.Service && ticks++ < 20000) { g.Svc.Step(); g.EndServiceIfDone(); }
     }
 
     static void OldSaveLoads()
