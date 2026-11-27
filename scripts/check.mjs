@@ -32,12 +32,15 @@ for (const [i, g] of (manifest.games || []).entries()) {
   if (!g.title) errors.push(`${where}: missing title`);
   if (g.tags && !Array.isArray(g.tags)) errors.push(`${where}: tags must be an array`);
 
-  const b = g.build || {};
-  for (const key of ["loader", "framework", "data", "code"]) {
-    if (!b[key]) errors.push(`${where}: build.${key} is missing (run: npm run add-game -- ${g.slug})`);
+  const isHtml = g.type === "html";
+  const b = isHtml ? {} : g.build || {};
+  if (!isHtml) {
+    for (const key of ["loader", "framework", "data", "code"]) {
+      if (!b[key]) errors.push(`${where}: build.${key} is missing (run: npm run add-game -- ${g.slug})`);
+    }
   }
 
-  const files = [...Object.values(b), g.thumbnail].filter(Boolean);
+  const files = [...Object.values(b), isHtml ? g.entry || "index.html" : null, g.thumbnail].filter(Boolean);
   for (const rel of files) {
     const abs = path.resolve(GAMES, g.slug, rel);
     if (!abs.startsWith(path.join(GAMES, g.slug) + path.sep)) {

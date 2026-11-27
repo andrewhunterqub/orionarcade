@@ -85,7 +85,7 @@ function renderTags() {
 search.addEventListener("input", render);
 
 try {
-  games = await loadGames();
+  games = (await loadGames()).filter((g) => !g.hidden);
   // Newest first, then alphabetical.
   games.sort((a, b) => String(b.added || "").localeCompare(String(a.added || "")) || a.title.localeCompare(b.title));
   renderTags();

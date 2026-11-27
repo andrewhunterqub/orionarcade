@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pythle - Python based Wordle Solver</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="topbar" aria-labelledby="app-title">
+        <div>
+          <p class="eyebrow">Wordle solver</p>
+          <h1 id="app-title">Pythle</h1>
+        </div>
+        <div class="metric-strip" aria-label="Solver metrics">
+          <div>
+            <span id="candidate-count">0</span>
+            <small>candidates</small>
+          </div>
+          <div>
+            <span id="guess-count">0</span>
+            <small>guesses</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="solver-grid">
+        <div class="workspace">
+          <div class="panel current-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="section-label">Current guess</p>
+                <h2 id="current-word">-----</h2>
+              </div>
+              <button class="plain-button" id="reset-button" type="button" title="Start over" aria-label="Start over">
+                Reset
+              </button>
+            </div>
+
+            <div class="letter-row" id="letter-row" aria-label="Feedback for current guess"></div>
+
+            <div class="legend" aria-label="Feedback legend">
+              <span><i class="legend-swatch absent"></i>Absent</span>
+              <span><i class="legend-swatch present"></i>Present</span>
+              <span><i class="legend-swatch correct"></i>Correct</span>
+            </div>
+
+            <form class="guess-form" id="guess-form">
+              <label for="guess-input">Use a different 5-letter guess</label>
+              <div class="input-line">
+                <input id="guess-input" name="guess" maxlength="5" autocomplete="off" spellcheck="false" inputmode="latin" pattern="[A-Za-z]{5}">
+                <button id="submit-button" class="primary-button" type="submit">Submit feedback</button>
+              </div>
+            </form>
+
+            <p class="status" id="status-message" role="status"></p>
+          </div>
+
+          <div class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="section-label">Known constraints</p>
+                <h2>Board state</h2>
+              </div>
+            </div>
+            <div class="constraint-board" id="constraint-board"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="section-label" id="position-source">Current candidates</p>
+                <h2>Likely letters</h2>
+              </div>
+            </div>
+            <div class="position-stats" id="position-stats"></div>
+          </div>
+
+          <div class="panel history-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="section-label">Submitted feedback</p>
+                <h2>History</h2>
+              </div>
+            </div>
+            <div id="history-list" class="history-list"></div>
+          </div>
+        </div>
+
+        <aside class="panel suggestions-panel" aria-labelledby="suggestions-title">
+          <div class="panel-heading">
+            <div>
+              <p class="section-label" id="suggestion-method">Ice-Man</p>
+              <h2 id="suggestions-title">Recommended guesses</h2>
+            </div>
+          </div>
+          <div class="algorithm-switch" role="group" aria-label="Guessing algorithm">
+            <button type="button" class="algorithm-option active" data-algorithm="ice-man" aria-pressed="true">Ice-Man</button>
+            <button type="button" class="algorithm-option" data-algorithm="maverick" aria-pressed="false">Maverick</button>
+          </div>
+          <div id="suggestions-list" class="suggestions-list"></div>
+
+          <div class="side-section">
+            <div class="panel-heading compact-heading">
+              <div>
+                <p class="section-label" id="candidate-browser-summary">0 shown</p>
+                <h2>All matching words</h2>
+              </div>
+            </div>
+            <input id="candidate-search" class="candidate-search" type="search" maxlength="5" autocomplete="off" spellcheck="false" inputmode="latin" placeholder="Search candidates" aria-label="Search matching candidate words">
+            <div id="candidate-browser-list" class="candidate-list"></div>
+            <button id="candidate-show-more" class="plain-button candidate-more" type="button">Show more</button>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="data.js"></script>
+    <script src="solver.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

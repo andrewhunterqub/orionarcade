@@ -1,0 +1,4 @@
+# Unity WebGL build output is binary
+*.unityweb binary
+*.data binary
+*.wasm binary

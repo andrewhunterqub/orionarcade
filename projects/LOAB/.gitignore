@@ -1,0 +1,14 @@
+# Unity project-local ignores (paths relative to projects/LOAB)
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/Tools/*/bin/
+/Tools/*/obj/
+*.csproj
+*.sln
+*.slnx
+.vs/

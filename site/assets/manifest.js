@@ -6,7 +6,8 @@ export async function loadGames() {
   const res = await fetch(`${GAMES_ROOT}/games.json`, { cache: "no-cache" });
   if (!res.ok) throw new Error(`Could not load game list (HTTP ${res.status})`);
   const data = await res.json();
-  return (data.games || []).filter((g) => g && g.slug && g.title && !g.hidden);
+  // Hidden games stay playable by direct link; the library filters them out.
+  return (data.games || []).filter((g) => g && g.slug && g.title);
 }
 
 /** Resolve a path inside a game's folder, e.g. gameUrl(game, "Build/x.loader.js"). */

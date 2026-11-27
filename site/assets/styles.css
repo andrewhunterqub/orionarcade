@@ -226,6 +226,21 @@ a { color: var(--accent-2); }
   overflow: hidden;
 }
 
+.stage.stage-fill {
+  aspect-ratio: auto;
+  height: calc(100vh - 170px);
+  min-height: 480px;
+  max-height: none;
+}
+
+.game-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: #fff;
+}
+
 #unity-canvas {
   width: 100%;
   height: 100%;

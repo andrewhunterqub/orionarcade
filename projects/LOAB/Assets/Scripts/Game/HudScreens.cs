@@ -1,0 +1,277 @@
+using System.Linq;
+using Loab.Sim;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+namespace Loab.Game
+{
+    public sealed partial class Hud
+    {
+        string _overlayKind;
+
+        VisualElement Modal(string title, string body, bool wide = false)
+        {
+            _overlay.Clear();
+            _overlay.style.display = DisplayStyle.Flex;
+            _overlayKind = "modal";
+            var panel = El("panel", wide ? "modal-wide" : "modal");
+            var scroll = new ScrollView(ScrollViewMode.Vertical);
+            scroll.style.flexShrink = 1;
+            panel.Add(scroll);
+            if (title != null) scroll.Add(Lbl(title, "modal-title"));
+            if (body != null) scroll.Add(Lbl(body, "body"));
+            _overlay.Add(panel);
+            return scroll;
+        }
+
+        public void CloseOverlay()
+        {
+            _overlay.Clear();
+            _overlay.style.display = DisplayStyle.None;
+            _overlayKind = null;
+            SetMode();
+            FlushPendingTip();
+        }
+
+        // =====================================================================================
+        //  Title
+        // =====================================================================================
+
+        public void ShowTitle()
+        {
+            _overlay.Clear();
+            _overlay.style.display = DisplayStyle.Flex;
+            _overlayKind = "title";
+            SetMode();
+            var col = El("col");
+            col.style.alignItems = Align.Center;
+            col.Add(Lbl("Let's Own A Bar!", "title-logo"));
+            col.Add(Lbl("Build the bar you've always talked about,\nand find out if you'd actually be any good at running it.", "title-tag"));
+            if (_run.HasSave)
+                col.Add(Btn("Continue", () => { if (!_run.Continue()) Flash("Couldn't load your save"); }, "btn-primary", "title-btn"));
+            col.Add(Btn("New career", () => ShowNewCareer(), _run.HasSave ? "btn" : "btn-primary", "title-btn"));
+            col.Add(Btn("Sandbox (unlimited cash)", () => _run.NewSandbox(), "title-btn"));
+            col.Add(Btn("How to play", () => ShowHelp(true), "title-btn"));
+            var foot = Lbl("An Orion Arcade original. Progress saves automatically in your browser.", "hint");
+            foot.style.marginTop = 24;
+            col.Add(foot);
+            _overlay.Add(col);
+        }
+
+        void ShowNewCareer()
+        {
+            var m = Modal("New career", "You've quit the day job and taken the lease on The Crooked Anchor, a tired old bar in the Docklands. Maggie, the retired landlady, will show you the ropes.");
+            var nameRow = Row(Lbl("Bar name", "slider-label"));
+            var field = new TextField { value = "The Crooked Anchor", maxLength = 28 };
+            field.style.flexGrow = 1;
+            nameRow.Add(field);
+            m.Add(nameRow);
+            void Start(int diff)
+            {
+                _run.NewCareer(diff);
+                G.Rename(field.value);
+                _run.Save();
+            }
+            var relaxed = Btn("", () => Start(0), "option");
+            relaxed.Add(Lbl("Relaxed", "option-label")); relaxed.Add(Lbl("Patient customers, fewer incidents, no bankruptcy. Just build and enjoy.", "option-detail"));
+            m.Add(relaxed);
+            var standard = Btn("", () => Start(1), "option", "btn-primary");
+            standard.Add(Lbl("Standard", "option-label")); standard.Add(Lbl("The intended challenge. Bills are real. Run out of cash and the bank gets involved.", "option-detail"));
+            m.Add(standard);
+            var hard = Btn("", () => Start(2), "option");
+            hard.Add(Lbl("Hardcore", "option-label")); hard.Add(Lbl("Impatient punters, rowdier nights, no mercy.", "option-detail"));
+            m.Add(hard);
+            m.Add(Btn("Back", () => ShowTitle(), "option"));
+        }
+
+        void ShowHelp(bool fromTitle)
+        {
+            var m = Modal("How to play", null, true);
+            void H(string head, string text) { m.Add(Lbl(head, "section")); m.Add(Lbl(text, "body")); }
+            H("THE DAY", "Each day has a PREP phase (time stands still: build, set prices, hire, book events) and a SERVICE phase (6pm to midnight, in real time). Then you read the nightly report and do it all again.");
+            H("BUILDING", "Open the Build tab, pick an item and click the floor to place it. R rotates. Click a placed item to move, rotate or sell it. Customers must be able to reach the bar, seats, toilets and games.");
+            H("VIBE", "Everything you choose (furniture, floor, walls, music, lighting, prices) shapes your bar's Vibe across five axes. Each type of customer has a Vibe they love. Collect enough matching items to get a theme recognised.");
+            H("SERVICE", "Watch people come in, queue, drink and chat. Click spills, blocked toilets and rowdy customers (red !) to deal with them. Click anyone to see what they're thinking. Use Happy Hour, Help behind the bar and Emergency delivery when it gets hectic.");
+            H("GROWING", "Good nights earn good BarHopper reviews, which build reputation and bring bigger crowds and better staff. Book quizzes and comedy nights, keep regulars happy, and work through Maggie's goals.");
+            H("CONTROLS", "Drag or WASD to pan, scroll or pinch to zoom, Q/E to rotate the view. Space pauses service, 1/2/3 change speed. Ctrl+Z undoes building. Enter moves on from the nightly report. H hides the interface for photos.");
+            m.Add(Btn("Close", () => { if (fromTitle) ShowTitle(); else CloseOverlay(); }, "btn-primary", "option"));
+        }
+
+        void ShowPause()
+        {
+            var m = Modal("Paused", null);
+            bool wasPaused = _run.Paused;
+            _run.Paused = true;
+            m.Add(Btn("Resume", () => { _run.Paused = wasPaused; CloseOverlay(); }, "btn-primary", "option"));
+            m.Add(Btn("How to play", () => ShowHelp(false), "option"));
+            m.Add(Btn(_run.Audio.Muted ? "Sound: OFF" : "Sound: ON", () => { _run.Audio.Muted = !_run.Audio.Muted; ShowPause(); }, "option"));
+            m.Add(Btn("Save and quit to title", () => { _run.Save(); _run.Paused = false; ShowTitle(); }, "option"));
+            if (G.Phase == Phase.Service) m.Add(Lbl("Your progress is saved at the start of each day.", "hint"));
+        }
+
+        // =====================================================================================
+        //  Director cards
+        // =====================================================================================
+
+        public void ShowCard()
+        {
+            if (G.S.pendingCard == "loan") { ShowLoan(); return; }
+            var card = Director.Get(G.S.pendingCard);
+            if (card == null) { G.S.pendingCard = null; return; }
+            var m = Modal(card.Title, card.Format != null ? card.Format(G) : card.Text);
+            _overlayKind = "card";
+            for (int i = 0; i < card.Options.Count; i++)
+            {
+                int idx = i;
+                var o = card.Options[i];
+                var b = Btn("", () =>
+                {
+                    var err = G.ChooseCard(idx);
+                    if (err != null) { Flash(err); return; }
+                    _run.Audio.Play("click");
+                    CloseOverlay();
+                    Tip("card");
+                    MarkDirty();
+                }, "option", i == 0 ? "btn-primary" : "btn");
+                b.Add(Lbl(o.Label, "option-label"));
+                b.Add(Lbl(o.Detail, "option-detail"));
+                var why = o.CanChoose?.Invoke(G);
+                if (why != null) { b.SetEnabled(false); b.Add(Lbl(why, "option-detail")); }
+                m.Add(b);
+            }
+        }
+
+        void ShowLoan()
+        {
+            var m = Modal("The bank is calling", $"You're {Money(-G.S.cash)} overdrawn. The bank will offer one emergency loan: £3,000 now, repaid at £90 a night until £3,600 is paid back. Say no, and it's over.");
+            var take = Btn("", () => { G.TakeEmergencyLoan(); _run.Save(); CloseOverlay(); MarkDirty(); }, "option", "btn-primary");
+            take.Add(Lbl("Take the loan", "option-label")); take.Add(Lbl("A second chance. Don't waste it.", "option-detail"));
+            m.Add(take);
+            var no = Btn("", () => { G.S.bankrupt = true; G.Phase = Phase.GameOver; ShowGameOver(); }, "option");
+            no.Add(Lbl("Hand back the keys", "option-label")); no.Add(Lbl("Close the bar for good.", "option-detail"));
+            m.Add(no);
+        }
+
+        public void ShowGameOver()
+        {
+            var s = G.S;
+            var m = Modal("Last orders", $"{s.barName} has closed its doors after {s.day + 1} nights. You served {s.history.Sum(h => h.customers):#,0} customers and earned {s.reviewCount} reviews along the way. Every great landlord has a failed bar somewhere in their past.");
+            m.Add(Btn("Start a new career", () => { _run.DeleteSave(); ShowNewCareer(); }, "btn-primary", "option"));
+            m.Add(Btn("Back to title", () => { _run.DeleteSave(); ShowTitle(); }, "option"));
+        }
+
+        // =====================================================================================
+        //  Nightly report
+        // =====================================================================================
+
+        public void ShowReport()
+        {
+            var n = G.LastNight;
+            if (n == null) return;
+            var s = G.S;
+            var m = Modal($"{Content.DayNames[n.day % 7]} night at {s.barName}", null, true);
+            _run.Audio.Play(n.profit > 0 ? "fanfare" : "error", 0.4f);
+
+            var kpis = Row();
+            kpis.Add(Kpi(n.customers.ToString(), "customers"));
+            kpis.Add(Kpi(n.servedDrinks.ToString(), "drinks served"));
+            kpis.Add(Kpi(Money(n.takings), "takings"));
+            var profit = Kpi(Money(n.profit), "profit");
+            profit.Q<Label>().AddToClassList(n.profit >= 0 ? "cash" : "neg");
+            kpis.Add(profit);
+            kpis.Add(Kpi($"{n.satisfaction:0}%", "satisfaction"));
+            var rt = Kpi($"{s.rating:0.0}", "BarHopper");
+            rt.Q<Label>().AddToClassList("stars");
+            kpis.Add(rt);
+            m.Add(kpis);
+
+            var cols = Row();
+            cols.style.alignItems = Align.FlexStart;
+            var left = El("col"); left.style.width = Length.Percent(50); left.style.paddingRight = 10;
+            var right = El("col"); right.style.width = Length.Percent(50);
+            cols.Add(left); cols.Add(right);
+            m.Add(cols);
+
+            if (G.GoalsDoneLastNight.Count > 0)
+            {
+                left.Add(Lbl("GOALS COMPLETE", "section"));
+                foreach (var gi in G.GoalsDoneLastNight)
+                {
+                    var g = Goals.Career[int.Parse(gi)];
+                    var c = El("card");
+                    c.Add(Lbl($"{g.Text}" + (g.Reward > 0 ? $"   +£{g.Reward}" : ""), "card-title"));
+                    c.Add(Lbl($"{Mentor.Name}: \"{g.Mentor}\"", "card-sub"));
+                    left.Add(c);
+                }
+            }
+            if (n.eventName != null)
+            {
+                left.Add(Lbl("EVENT", "section"));
+                left.Add(Lbl($"{n.eventName}: {n.eventOutcome}", "body"));
+            }
+            left.Add(Lbl("WHAT PEOPLE THOUGHT", "section"));
+            if (n.thoughts.Count == 0) left.Add(Lbl("Nobody came, so nobody thought anything.", "hint"));
+            foreach (var t in n.thoughts) left.Add(Lbl("- " + t, "body"));
+            if (n.moments.Count > 0)
+            {
+                left.Add(Lbl("MOMENTS", "section"));
+                foreach (var mo in n.moments.Take(8)) left.Add(Lbl("- " + mo, "body"));
+            }
+            if (n.stockOuts.Count > 0) left.Add(Lbl("Ran out of: " + string.Join(", ", n.stockOuts), "chip-bad"));
+            if (n.turnedAway > 0) left.Add(Lbl($"{n.turnedAway} people were turned away because you were full.", "chip-bad"));
+
+            right.Add(Lbl("MONEY", "section"));
+            void Line(string a, float v) { var r = Row(Lbl(a, "body"), Spacer(), Lbl(Money(v), "body")); r.style.marginBottom = -6; right.Add(r); }
+            Line("Takings (inc. tickets)", n.takings);
+            Line("Cost of drinks sold", -n.cogs);
+            Line("Wages", -n.wages);
+            Line("Rent, bills & other", -(n.costs - n.cogs - n.wages));
+            Line("Profit", n.profit);
+
+            right.Add(Lbl("WHO CAME", "section"));
+            if (n.segCounts.Count == 5 && n.customers > 0)
+            {
+                for (int i = 0; i < 5; i++)
+                {
+                    var d = Content.Segments[i];
+                    right.Add(Row(Lbl(d.Plural, "slider-label"), Bar(n.segCounts[i] / (float)Mathf.Max(1, n.customers), Col(d.Color)), Lbl($" {n.segCounts[i]}", "card-sub")));
+                }
+            }
+            right.Add(Lbl("NEW REVIEWS ON BARHOPPER", "section"));
+            if (n.reviews.Count == 0) right.Add(Lbl("No new reviews tonight.", "hint"));
+            foreach (var r in n.reviews.Take(6)) right.Add(ReviewCard(r));
+
+            if (s.tags.Count > 0)
+            {
+                var tags = Row(); tags.AddToClassList("wrap");
+                foreach (var t in s.tags) tags.Add(Lbl(t, "chip", IsBadTag(t) ? "chip-bad" : "chip-good"));
+                right.Add(Lbl("YOUR REPUTATION TAGS", "section"));
+                right.Add(tags);
+            }
+
+            var next = Btn(s.pendingCard == "loan" ? "Talk to the bank" : $"Next day: {Content.DayNames[(n.day + 1) % 7]}", () => { _run.NextDay(); }, "btn-primary", "option");
+            next.style.marginTop = 12;
+            m.Add(next);
+            Tip("report");
+        }
+
+        static bool IsBadTag(string t) => t == "Overpriced" || t == "Slow Service" || t == "Sticky Tables" || t == "Rough on a Saturday";
+
+        VisualElement Kpi(string value, string label)
+        {
+            var k = El("card", "kpi");
+            k.Add(Lbl(value, "big-num"));
+            k.Add(Lbl(label, "stat-label"));
+            return k;
+        }
+
+        VisualElement ReviewCard(Review r)
+        {
+            var c = El("card", "review");
+            var head = Row(Lbl(Stars(r.stars), "stars"), Lbl($"  {r.author}  -  {r.segment}", "review-head"));
+            c.Add(head);
+            c.Add(Lbl(r.text, "review-text"));
+            return c;
+        }
+    }
+}
