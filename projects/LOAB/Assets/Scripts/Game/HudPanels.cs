@@ -365,6 +365,15 @@ namespace Loab.Game
                 rc.Add(Row(Lbl($"£{G.S.residencyAct.fee} a night  -  following {G.S.residencyAct.following}", "card-sub"), Spacer(), Btn("End residency", () => G.EndResidency(), "btn-small", "btn-bad")));
                 p.Add(rc);
             }
+            // The next four weeks of special nights (task C3). Those within a week can be picked for booking.
+            var upcoming = Calendar.Upcoming(G.S, 28);
+            var today = Calendar.Today(G.S);
+            if (today != null || upcoming.Count > 0)
+            {
+                p.Add(Lbl("COMING UP", "section"));
+                if (today != null) p.Add(CalendarCard(0, today));
+                foreach (var (day, def) in upcoming.Take(5)) p.Add(CalendarCard(day - G.S.day, def));
+            }
             if (G.S.events.Count > 0)
             {
                 p.Add(Lbl("BOOKED", "section"));
@@ -393,7 +402,9 @@ namespace Loab.Game
             {
                 int off = i;
                 bool taken = G.S.events.Exists(e => e.day == G.S.day + off);
-                var b = Toggle(i == 0 ? "Tonight" : Content.DayShort[(G.S.day + i) % 7], _eventDay == i, () => { _eventDay = off; MarkDirty(); });
+                var special = Calendar.On(G.S.day + i);
+                var b = Toggle((i == 0 ? "Tonight" : Content.DayShort[(G.S.day + i) % 7]) + (special != null ? " *" : ""), _eventDay == i, () => { _eventDay = off; MarkDirty(); });
+                if (special != null) b.tooltip = special.Name;
                 b.SetEnabled(!taken);
                 days.Add(b);
             }
@@ -429,6 +440,25 @@ namespace Loab.Game
                 }, "btn-primary"));
                 p.Add(c);
             }
+        }
+
+        VisualElement CalendarCard(int offset, CalendarDef def)
+        {
+            var c = El("card");
+            string when = offset == 0 ? "TONIGHT" : offset == 1 ? "TOMORROW" : offset < 7 ? Content.DayNames[(G.S.day + offset) % 7].ToUpperInvariant() : $"IN {offset} DAYS";
+            c.Add(Row(Lbl(def.Name, "card-title"), Spacer(), Lbl(when, "chip", "chip-good")));
+            c.Add(Lbl(def.Blurb, "card-sub"));
+            if (offset < 7 && !G.S.events.Exists(e => e.day == G.S.day + offset))
+            {
+                string suggest = def.SuggestEvent >= 0 ? $"Plan a {Economy.EventName(def.SuggestEvent)} for it" : "Book something for it";
+                c.Add(Btn(suggest, () =>
+                {
+                    _eventDay = offset;
+                    if (def.SuggestEvent >= 0) { _eventKind = def.SuggestEvent; _eventTicket = def.SuggestEvent == 1 ? 5 : 0; }
+                    MarkDirty();
+                }, "btn-small"));
+            }
+            return c;
         }
 
         Button Toggle(string text, bool on, Action click)
