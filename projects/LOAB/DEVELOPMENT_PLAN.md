@@ -105,7 +105,7 @@ Sizes: S (under 1 session), M (1–2 sessions), L (3 or more sessions).
 
 ### T: Balance and economy (P1)
 
-- [ ] **T1 · Balance targets and metrics (S).** Define target bands in code (`Tools/SimRunner/Balance.cs`), measured over 5 seeds × 3 difficulties × 84 nights:
+- [x] **T1 · Balance targets and metrics (S).** Define target bands in code (`Tools/SimRunner/Balance.cs`), measured over 5 seeds × 3 difficulties × 84 nights:
   - Act 1 finished by week 4–6 on Standard.
   - Cash at week 12, Standard: £15k–£35k.
   - Bankruptcy, scripted "careless" player: Relaxed 0%, Standard 20–60%, Hardcore over 60%.
@@ -288,3 +288,4 @@ _To be written by the final session._
 | Fri 27 Nov 17:00 | Rename | The owner renamed the game to **Let's Open A Bar!** (the LOAB acronym stays the same). Updated the in-game title, Unity product name (`ProjectSettings` and `LoabBuild`), arcade listing, READMEs, both briefs and workflow comments. Use the new name in all new text. | `npm run check`, UnityCheck 0 errors | Rebuilt by CI |
 | Fri 27 Nov 17:05 | E5 | Added `Sim/SaveMigration.cs`, run from the `Game` constructor. It fills every missing list, resizes `awareness` and the nightly vibe arrays, adds drinks introduced later to the menu, and drops unknown items. `GameState.version` now starts at `SaveMigration.Current` (2). | New test loads a faked v1 save (missing lists, 3 awareness values, missing drink, retired item) and plays 5 nights. 18/18 pass, UnityCheck 0 errors | Yes (CI) |
 | Fri 27 Nov 17:05 | E6 | Already done: `GameRunner.Save()` calls `PlayerPrefs.Save()`, so the arcade copies saves out within 10 seconds and syncs them for signed-in players. The plugin isn't needed for now. | Code review | No |
+| Fri 27 Nov 17:25 | T1 | Added `Tools/SimRunner/Balance.cs` with `dotnet run -c Release -- balance [nights] [seeds]`. It plays sensible and idle careers on all 3 difficulties (5 seeds × 84 nights, about 45 s) and checks 11 target bands, reading complaint shares from `Service.NoteCounts`. **Baseline: 3/11 in range.** Act 1 finishes in week 3.9 (target 4–6). Cash at week 12 on Standard is £91.5k (target £15–35k). Hardcore cash is 82% of Relaxed's (target under 60%). "Dirty" is 84% of customers (target under 40%) and the top complaint every night. Stock-outs are 26% (target under 5%). Slow service is 47%. Event flops are 15% (target 20–35%) and viral hits 25% (target 5–12%). Idle bankruptcy is already right: Standard 5/5, Relaxed 0/5. | `balance 84 5` | No |

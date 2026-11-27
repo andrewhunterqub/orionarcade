@@ -49,7 +49,7 @@ public static class Tests
     // ---------------------------------------------------------------------------------------
 
     /// Plays one full day (Prep + Service + Close) with an optional scripted player. Returns false once the game is over.
-    public static bool PlayDay(Game g, bool sensible, Action<Game, int> duringService = null)
+    public static bool PlayDay(Game g, bool sensible, Action<Game, int> duringService = null, Action<Game> afterService = null)
     {
         if (g.S.pendingCard != null)
         {
@@ -66,6 +66,7 @@ public static class Tests
             g.EndServiceIfDone();
             if (ticks > 20000) throw new Exception($"service never ended on day {g.S.day}");
         }
+        afterService?.Invoke(g);
         if (g.Phase == Phase.GameOver || g.S.bankrupt) return false;
         g.NextDay();
         return true;

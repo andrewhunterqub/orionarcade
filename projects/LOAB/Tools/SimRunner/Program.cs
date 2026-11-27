@@ -8,6 +8,7 @@ public static class Program
 {
     public static void Main(string[] args)
     {
+        if (args.Length > 0 && args[0] == "balance") { Environment.Exit(Balance.Report(args.Length > 1 ? int.Parse(args[1]) : 84, args.Length > 2 ? int.Parse(args[2]) : 5)); return; }
         if (args.Length > 0 && args[0] == "test") { Environment.Exit(Tests.Run()); return; }
         int days = args.Length > 0 ? int.Parse(args[0]) : 28;
         ulong seed = args.Length > 1 ? ulong.Parse(args[1]) : 42;

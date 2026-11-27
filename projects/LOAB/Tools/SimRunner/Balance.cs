@@ -1,0 +1,154 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Loab.Sim;
+
+// Balance report: plays many careers with scripted players and checks the numbers against target bands.
+//   dotnet run -c Release -- balance [nights=84] [seeds=5]
+// Bands come from DEVELOPMENT_PLAN.md task T1 and brief section 20.2. `test` runs a lighter version as warnings.
+public static class Balance
+{
+    public sealed class Run
+    {
+        public string Strategy; public int Diff; public ulong Seed;
+        public int Nights;                 // nights actually played
+        public bool Bankrupt; public int BankruptDay = -1;
+        public int Act1Day = -1;           // day Act 1 (first 10 goals) was completed
+        public float CashWeek4, CashWeek8, CashWeek12;
+        public float RatingEnd, RepEnd;
+        public double DirtyShare, TopNoteShare, StockOutShare, SlowShare; // averages over nights with customers
+        public string TopNote;
+        public Dictionary<string, int> Outcomes = new Dictionary<string, int>();
+    }
+
+    public sealed class Band
+    {
+        public string Name, Target; public Func<List<Run>, double> Measure; public double Lo, Hi; public bool Percent;
+        public double Value; public bool Ok => Value >= Lo && Value <= Hi;
+        public string Show(double v) => Percent ? $"{v * 100:0}%" : Name.Contains("£") ? $"£{v:0}" : $"{v:0.0}";
+    }
+
+    public static readonly string[] Strategies = { "sensible", "idle" };
+
+    public static Run Play(string strategy, int diff, ulong seed, int nights)
+    {
+        var g = Game.NewCareer(seed, diff);
+        var r = new Run { Strategy = strategy, Diff = diff, Seed = seed };
+        var noteTotals = new double[(int)Note.Count];
+        double dirty = 0, stock = 0, slow = 0, top = 0; int counted = 0;
+        for (int d = 0; d < nights; d++)
+        {
+            Service svc = null;
+            bool going = Tests.PlayDay(g, strategy == "sensible", null, game => svc = game.Svc);
+            r.Nights = d + 1;
+            var n = g.LastNight;
+            if (svc != null && svc.Arrivals > 0)
+            {
+                double a = svc.Arrivals;
+                dirty += svc.NoteCounts[(int)Note.Dirty] / a;
+                stock += svc.NoteCounts[(int)Note.OutOfStock] / a;
+                slow += svc.NoteCounts[(int)Note.WaitedLong] / a;
+                double best = 0;
+                for (int i = 0; i < (int)Note.Count; i++)
+                {
+                    noteTotals[i] += svc.NoteCounts[i] / a;
+                    // Only complaints count towards saturation; love for the dog is fine.
+                    if (IsComplaint((Note)i)) best = Math.Max(best, svc.NoteCounts[i] / a);
+                }
+                top += best; counted++;
+            }
+            if (n != null && !string.IsNullOrEmpty(n.eventOutcome))
+                r.Outcomes[n.eventOutcome] = r.Outcomes.TryGetValue(n.eventOutcome, out var c) ? c + 1 : 1;
+            if (r.Act1Day < 0 && g.S.goalIndex >= 10) r.Act1Day = g.S.day;
+            if (d == 27) r.CashWeek4 = g.S.cash;
+            if (d == 55) r.CashWeek8 = g.S.cash;
+            if (d == 83) r.CashWeek12 = g.S.cash;
+            if (!going) { r.Bankrupt = true; r.BankruptDay = g.S.day; break; }
+        }
+        if (counted > 0) { r.DirtyShare = dirty / counted; r.StockOutShare = stock / counted; r.SlowShare = slow / counted; r.TopNoteShare = top / counted; }
+        int topIdx = Enumerable.Range(0, (int)Note.Count).Where(i => IsComplaint((Note)i)).OrderByDescending(i => noteTotals[i]).First();
+        r.TopNote = ((Note)topIdx).ToString();
+        r.RatingEnd = g.S.rating; r.RepEnd = g.S.reputation;
+        if (r.Bankrupt) { if (r.Nights <= 28) r.CashWeek4 = 0; if (r.Nights <= 56) r.CashWeek8 = 0; r.CashWeek12 = 0; }
+        return r;
+    }
+
+    static bool IsComplaint(Note n) => n == Note.WaitedLong || n == Note.GaveUpQueue || n == Note.BadDrink || n == Note.OutOfStock
+        || n == Note.Pricey || n == Note.Dirty || n == Note.NoSeat || n == Note.HatedVibe || n == Note.ToiletQueue || n == Note.NoToilet
+        || n == Note.GrumpyStaff || n == Note.RowdyNearby || n == Note.HatedMusic || n == Note.Crowded;
+
+    static double Mean(IEnumerable<double> xs) { var l = xs.ToList(); return l.Count == 0 ? double.NaN : l.Average(); }
+    static double Share(IEnumerable<Run> rs, Func<Run, bool> f) { var l = rs.ToList(); return l.Count == 0 ? double.NaN : l.Count(f) / (double)l.Count; }
+
+    static double OutcomeShare(List<Run> rs, string outcome)
+    {
+        int total = rs.Sum(r => r.Outcomes.Where(kv => kv.Key != "Didn't happen").Sum(kv => kv.Value));
+        int hit = rs.Sum(r => r.Outcomes.TryGetValue(outcome, out var c) ? c : 0);
+        return total == 0 ? double.NaN : hit / (double)total;
+    }
+
+    /// The T1 target bands. Bands for strategies that don't exist yet (careless) are added with T2.
+    public static List<Band> Bands() => new List<Band>
+    {
+        new Band { Name = "Act 1 done (week), Standard, sensible", Target = "4-6", Lo = 4, Hi = 6,
+            Measure = rs => Mean(rs.Where(r => r.Strategy == "sensible" && r.Diff == 1).Select(r => r.Act1Day < 0 ? 99.0 : r.Act1Day / 7.0 + 1)) },
+        new Band { Name = "Cash at week 12 (£), Standard, sensible", Target = "£15k-£35k", Lo = 15000, Hi = 35000,
+            Measure = rs => Mean(rs.Where(r => r.Strategy == "sensible" && r.Diff == 1).Select(r => (double)r.CashWeek12)) },
+        new Band { Name = "Bankrupt by week 12, Hardcore, sensible", Target = "0-20%", Lo = 0, Hi = 0.2, Percent = true,
+            Measure = rs => Share(rs.Where(r => r.Strategy == "sensible" && r.Diff == 2), r => r.Bankrupt) },
+        new Band { Name = "Bankrupt by week 12, Standard, idle", Target = "20-100%", Lo = 0.2, Hi = 1, Percent = true,
+            Measure = rs => Share(rs.Where(r => r.Strategy == "idle" && r.Diff == 1), r => r.Bankrupt) },
+        new Band { Name = "Bankrupt by week 12, Relaxed, idle", Target = "0-40%", Lo = 0, Hi = 0.4, Percent = true,
+            Measure = rs => Share(rs.Where(r => r.Strategy == "idle" && r.Diff == 0), r => r.Bankrupt) },
+        new Band { Name = "Hardcore cash vs Relaxed at week 12, sensible", Target = "under 60%", Lo = 0, Hi = 0.6, Percent = true,
+            Measure = rs => Mean(rs.Where(r => r.Strategy == "sensible" && r.Diff == 2).Select(r => (double)r.CashWeek12))
+                          / Mean(rs.Where(r => r.Strategy == "sensible" && r.Diff == 0).Select(r => (double)r.CashWeek12)) },
+        new Band { Name = "Top complaint share per night, sensible", Target = "under 60%", Lo = 0, Hi = 0.6, Percent = true,
+            Measure = rs => Mean(rs.Where(r => r.Strategy == "sensible").Select(r => r.TopNoteShare)) },
+        new Band { Name = "'Dirty' share per night, sensible", Target = "under 40%", Lo = 0, Hi = 0.4, Percent = true,
+            Measure = rs => Mean(rs.Where(r => r.Strategy == "sensible").Select(r => r.DirtyShare)) },
+        new Band { Name = "Stock-out share per night, sensible", Target = "under 5%", Lo = 0, Hi = 0.05, Percent = true,
+            Measure = rs => Mean(rs.Where(r => r.Strategy == "sensible").Select(r => r.StockOutShare)) },
+        new Band { Name = "Event flops, all", Target = "20-35%", Lo = 0.2, Hi = 0.35, Percent = true, Measure = rs => OutcomeShare(rs, "Flop") },
+        new Band { Name = "Event viral hits, all", Target = "5-12%", Lo = 0.05, Hi = 0.12, Percent = true, Measure = rs => OutcomeShare(rs, "Viral hit") },
+    };
+
+    public static List<Run> RunAll(int nights, int seeds)
+    {
+        var runs = new List<Run>();
+        foreach (var strat in Strategies)
+            foreach (int diff in new[] { 0, 1, 2 })
+                for (int s = 1; s <= seeds; s++)
+                    runs.Add(Play(strat, diff, (ulong)(1000 + s), nights));
+        return runs;
+    }
+
+    public static List<Band> Evaluate(List<Run> runs)
+    {
+        var bands = Bands();
+        foreach (var b in bands) b.Value = b.Measure(runs);
+        return bands;
+    }
+
+    public static int Report(int nights, int seeds)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var console = Console.Out; Console.SetOut(System.IO.TextWriter.Null); // the scripted player prints; keep the report clean
+        List<Run> runs;
+        try { runs = RunAll(nights, seeds); } finally { Console.SetOut(console); }
+        Console.WriteLine($"Balance report: {Strategies.Length} strategies x 3 difficulties x {seeds} seeds x {nights} nights ({sw.ElapsedMilliseconds / 1000.0:0.0}s)\n");
+        Console.WriteLine("strategy  diff  bankrupt  act1wk  cash@4   cash@8   cash@12  rating  rep  dirty  stockout  slow  top complaint");
+        foreach (var grp in runs.GroupBy(r => (r.Strategy, r.Diff)))
+        {
+            var l = grp.ToList();
+            string act1 = l.All(r => r.Act1Day < 0) ? "  -  " : $"{l.Where(r => r.Act1Day >= 0).Average(r => r.Act1Day / 7.0 + 1),5:0.0}";
+            Console.WriteLine($"{grp.Key.Strategy,-9} {grp.Key.Diff,4}  {l.Count(r => r.Bankrupt),3}/{l.Count,-3}  {act1}  £{l.Average(r => r.CashWeek4),6:0}  £{l.Average(r => r.CashWeek8),6:0}  £{l.Average(r => r.CashWeek12),6:0}  {l.Average(r => r.RatingEnd),5:0.00}  {l.Average(r => r.RepEnd),3:0}  {l.Average(r => r.DirtyShare) * 100,4:0}%  {l.Average(r => r.StockOutShare) * 100,6:0.0}%  {l.Average(r => r.SlowShare) * 100,3:0}%  {l.GroupBy(r => r.TopNote).OrderByDescending(x => x.Count()).First().Key}");
+        }
+        Console.WriteLine();
+        var bands = Evaluate(runs);
+        foreach (var b in bands)
+            Console.WriteLine($"{(b.Ok ? "IN " : "OUT")}  {b.Name,-48} {b.Show(b.Value),8}   target {b.Target}");
+        Console.WriteLine($"\n{bands.Count(b => b.Ok)}/{bands.Count} bands in range");
+        return 0;
+    }
+}
