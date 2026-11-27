@@ -417,6 +417,12 @@ namespace Loab.Game
                         Audio.Play("click");
                         return;
                     }
+                    if (ag != null && ag.Staff != null && !ag.Staff.IsOwner)
+                    {
+                        var err = G.Svc.SwitchDuty(ag.Staff);
+                        if (err != null) Ui.Flash(err); else Audio.Play("click");
+                        return;
+                    }
                     var itag = h.collider.GetComponentInParent<ItemTag>();
                     if (itag != null && G.Svc.ToiletBlocked(itag.Uid))
                     {
@@ -458,6 +464,11 @@ namespace Loab.Game
                 {
                     var c = ag.Customer;
                     Ui.SetCursorHint(c.rowdy ? c.name + " is getting rowdy. Click to have a word." : c.name + " (" + c.def.Name.ToLowerInvariant() + "). Click for details.", pos);
+                    return;
+                }
+                if (ag != null && ag.Staff != null && !ag.Staff.IsOwner && ag.Staff.m != null)
+                {
+                    Ui.SetCursorHint($"{ag.Staff.m.name} ({(ag.Staff.Duty == 0 ? "on the bar" : "on the floor")}): click to move them {(ag.Staff.Duty == 0 ? "onto the floor" : "behind the bar")}", pos);
                     return;
                 }
                 if (hit.collider.GetComponentInParent<IncidentTag>() != null) Ui.SetCursorHint("Click to sort this out (collect, mop or fix)", pos);

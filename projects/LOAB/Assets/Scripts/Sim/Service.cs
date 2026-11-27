@@ -866,7 +866,7 @@ namespace Loab.Sim
             foreach (var bp in BarPoints) longest = Math.Max(longest, bp.queue.Count);
             if (longest >= 5 && T - _queueMsgAt > 40)
             {
-                int bartenders = 0; foreach (var a in Staff) if (a.present && (a.m.role == 0 || (a.IsOwner && OwnerBehindBar))) bartenders++;
+                int bartenders = 0; foreach (var a in Staff) if (a.present && ((!a.IsOwner && a.Duty == 0) || (a.IsOwner && OwnerBehindBar))) bartenders++;
                 Say(bartenders >= BarPoints.Count ? "Every serving point is busy. You need another bar counter to serve more people at once."
                     : "The bar queue is getting long. More bartenders, or step in yourself?", 2);
                 _queueMsgAt = T;
@@ -963,7 +963,7 @@ namespace Loab.Sim
                 }
                 else return;
             }
-            if (a.m.role == 0 || a.IsOwner) UpdateBartender(a); else UpdateFloor(a);
+            if (a.IsOwner || a.Duty == 0) UpdateBartender(a); else UpdateFloor(a);
         }
 
         void UpdateBartender(StaffAgent a)
@@ -1285,7 +1285,7 @@ namespace Loab.Sim
                     _heckled = true;
                     if (R.Chance(0.35))
                     {
-                        bool staffHelp = Staff.Exists(s => s.present && s.m != null && s.m.role == 1);
+                        bool staffHelp = Staff.Exists(s => s.present && !s.IsOwner && s.Duty == 1);
                         if (EventPerf > 62) { Say($"A heckler pipes up... and {Event.act.name} turns it into the best bit of the night!", 1); EventPerf = Math.Min(100, EventPerf + 6); Moments.Add("A heckler got destroyed by the headliner. The room erupted."); }
                         else if (staffHelp) Say("A heckler starts up. Your floor staff have a quiet word.", 0);
                         else { Say("A heckler derails the set. Awkward.", 2); EventPerf -= 8; }
@@ -1353,6 +1353,29 @@ namespace Loab.Sim
             foreach (var c in Customers) if (c.Inside && c.rowdy) { c.rowdy = false; c.mood -= 6; }
             Say($"Last orders! Doors close at {Clock(CloseAt)}.", 1);
             Moments.Add($"You called last orders early, at {Clock(T)}.");
+            return null;
+        }
+
+        /// Move a staff member between the bar and the floor for the rest of tonight (task L3).
+        public string SwitchDuty(StaffAgent a)
+        {
+            if (a == null || a.IsOwner) return "Use \"Help behind the bar\" for yourself";
+            if (!a.present) return $"{a.m.name} isn't in yet";
+            if (a.serving != null) return $"{a.m.name} is mid-pour. Try again in a moment";
+            if (a.Duty == 0)
+            {
+                if (a.barPoint >= 0 && a.barPoint < BarPoints.Count && BarPoints[a.barPoint].bartender == a) BarPoints[a.barPoint].bartender = null;
+                a.barPoint = -1;
+                a.duty = 1;
+                Say($"{a.m.name} heads out onto the floor.", 0);
+            }
+            else
+            {
+                if (a.task != null) { a.task.claimed = false; a.task = null; }
+                a.path = null;
+                a.duty = 0;
+                Say($"{a.m.name} jumps behind the bar.", 0);
+            }
             return null;
         }
 

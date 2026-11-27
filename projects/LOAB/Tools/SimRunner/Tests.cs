@@ -26,6 +26,7 @@ public static class Tests
         Test("weekly statement: the lines add up to the profit", WeeklyStatementAddsUp);
         Test("cash crisis: loan, then final demand, then bankrupt only after the deadline", CashCrisisArc);
         Test("last orders early: the night ends sooner and can't be called before 9pm", LastOrdersEarly);
+        Test("switch duty: a bartender can move to the floor and back mid-service", SwitchDuty);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -137,6 +138,26 @@ public static class Tests
         Assert(g.Phase == Phase.Report, "night didn't finish");
         Assert(g.Svc.T < Service.Close, $"night ran until {Service.Clock(g.Svc.T)}");
         Assert(g.LastNight.moments.Exists(m => m.Contains("last orders early")), "no moment recorded");
+    }
+
+    static void SwitchDuty()
+    {
+        var g = Game.NewCareer(92, 1);
+        g.OpenDoors();
+        while (g.Svc.T < 60) g.Svc.Step();
+        var a = g.Svc.Staff.Find(x => !x.IsOwner && x.present);
+        Assert(a != null, "no staff on shift");
+        Assert(a.Duty == 0, "starting bartender isn't on the bar");
+        for (int i = 0; i < 200 && a.serving != null; i++) g.Svc.Step();
+        Assert(g.Svc.SwitchDuty(a) == null, "couldn't move to the floor");
+        Assert(a.Duty == 1 && a.barPoint == -1, "didn't leave the bar");
+        for (int i = 0; i < 300; i++) g.Svc.Step();
+        Assert(g.Svc.SwitchDuty(a) == null, "couldn't move back behind the bar");
+        Assert(a.Duty == 0 && a.task == null, "didn't return to the bar");
+        int ticks = 0;
+        while (g.Phase == Phase.Service && ticks++ < 20000) { g.Svc.Step(); g.EndServiceIfDone(); }
+        Assert(g.Phase == Phase.Report, "night didn't finish");
+        Assert(g.Svc.SwitchDuty(g.Svc.Staff.Find(x => x.IsOwner)) != null, "owner shouldn't be switchable");
     }
 
     static void CashCrisisArc()

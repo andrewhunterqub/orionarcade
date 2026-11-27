@@ -76,6 +76,9 @@ namespace Loab.Sim
         public Incident task;
         public float taskTimer;
         public bool IsOwner;
+        /// Tonight's job: -1 = their usual role, 0 = behind the bar, 1 = on the floor (task L3).
+        public int duty = -1;
+        public int Duty => duty >= 0 ? duty : (m != null ? m.role : 0);
     }
 
     public enum IncidentKind { Spill, Glasses, Toilet, Rowdy }
