@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Play | Orion Arcade</title>
+  <meta name="theme-color" content="#0b1026">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="play">
+  <div class="stars" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="brand" href="./">
+      <img src="assets/favicon.svg" alt="" width="36" height="36">
+      <span>Orion <strong>Arcade</strong></span>
+    </a>
+    <a class="back" href="./">&larr; All games</a>
+  </header>
+
+  <main class="wrap player-wrap">
+    <div class="player-head">
+      <h1 id="title">Loading…</h1>
+      <button id="fullscreen" class="btn" type="button" hidden>Fullscreen</button>
+    </div>
+
+    <div id="stage" class="stage">
+      <canvas id="unity-canvas" tabindex="-1"></canvas>
+      <div id="loading" class="loading">
+        <div class="bar"><div id="progress" class="fill"></div></div>
+        <span id="progress-label">Loading…</span>
+      </div>
+      <div id="error" class="error" role="alert" hidden></div>
+    </div>
+
+    <div class="game-info">
+      <p id="description"></p>
+      <p id="controls" class="controls" hidden></p>
+      <div id="warning" class="warning" hidden></div>
+    </div>
+  </main>
+
+  <script src="assets/play.js" type="module"></script>
+</body>
+</html>

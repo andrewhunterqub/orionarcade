@@ -1,0 +1,14 @@
+{
+  "name": "orionarcade",
+  "private": true,
+  "description": "Orion Arcade - free, fun Unity WebGL games at arcade.oriondesign.xyz",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "serve": "node scripts/serve.mjs",
+    "check": "node scripts/check.mjs",
+    "add-game": "node scripts/add-game.mjs"
+  }
+}
