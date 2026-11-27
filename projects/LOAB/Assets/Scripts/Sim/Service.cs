@@ -1328,8 +1328,8 @@ namespace Loab.Sim
             }
             string what = Event.kind == 0 ? "quiz" : Event.kind == 1 ? "comedy night" : "open mic";
             // Going viral needs a great show AND people there to film and share it: promotion and a full room help (task T7).
-            float viralChance = 0.2f + Math.Min(0.35f, Event.promo / 600f) + Math.Min(0.25f, Inside / (float)Capacity * 0.4f);
-            if (EventPerf >= 88 && R.Next() < viralChance) { EventOutcome = "Viral hit"; Say($"Incredible {what}! Clips are flying round social media.", 1); }
+            float viralChance = 0.16f + Math.Min(0.35f, Event.promo / 600f) + Math.Min(0.25f, Inside / (float)Capacity * 0.4f);
+            if (EventPerf >= 90 && R.Next() < viralChance) { EventOutcome = "Viral hit"; Say($"Incredible {what}! Clips are flying round social media.", 1); }
             else if (EventPerf >= 66) { EventOutcome = "Hit"; Say($"The {what} went down a storm.", 1); }
             else if (EventPerf >= 48) { EventOutcome = "Decent"; Say($"A decent {what}. Nobody's complaining.", 0); }
             else { EventOutcome = "Flop"; Say(Event.kind == 0 ? "The quiz was a shambles. Two teams walked out." : Event.kind == 1 ? $"{Event.act.name} died on stage. Tumbleweed." : "The open mic was... brave. Very brave.", 2); }
