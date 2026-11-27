@@ -459,6 +459,66 @@ a { color: var(--accent-2); }
   .stage { max-height: none; }
 }
 
+/* Fullscreen: native (Fullscreen API) and "fill the screen" for iPhone Safari (see fullscreen.js) */
+.stage:fullscreen,
+.stage:-webkit-full-screen {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  aspect-ratio: auto;
+  border: 0;
+  border-radius: 0;
+}
+.stage.pseudo-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  max-height: none;
+  aspect-ratio: auto;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background: #000;
+  touch-action: none;
+}
+html.pseudo-fullscreen-page,
+html.pseudo-fullscreen-page body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.fs-exit {
+  display: none;
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 10px);
+  right: calc(env(safe-area-inset-right) + 10px);
+  z-index: 5;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid #ffffff55;
+  background: #0b1026cc;
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.stage.pseudo-fullscreen .fs-exit,
+.stage:fullscreen .fs-exit { display: block; }
+.stage:-webkit-full-screen .fs-exit { display: block; }
+.ios-tip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  margin: 12px 0 0;
+  font-size: .9rem;
+}
+.ios-tip[hidden] { display: none; }
+
 /* Narrow phones: on pages with a nav, keep just the logo so the header stays on one line. */
 @media (max-width: 420px) {
   .site-header:has(.header-nav) .brand span { display: none; }

@@ -1,5 +1,6 @@
 import { loadGames, gameUrl, aspectRatio } from "./manifest.js";
 import { prepareSaves } from "./saves.js";
+import { setupFullscreen, isIPhone, isStandalone } from "./fullscreen.js";
 
 const $ = (id) => document.getElementById(id);
 const canvas = $("unity-canvas");
@@ -45,6 +46,41 @@ function showSyncStatus(status) {
   syncStatus.replaceChildren(Object.assign(document.createElement("span"), { textContent: status.text }), ...buttons);
   syncStatus.dataset.tone = status.tone || "muted";
   syncStatus.hidden = false;
+}
+
+// Fullscreen on every browser, including iPhone Safari (which only gets "fill the screen"; see fullscreen.js).
+function enableFullscreen() {
+  const fs = setupFullscreen($("stage"), {
+    onChange: (on) => {
+      fullscreenBtn.textContent = on ? "Exit fullscreen" : "Fullscreen";
+      if (!on) canvas.focus?.();
+    },
+  });
+  fullscreenBtn.hidden = false;
+  fullscreenBtn.addEventListener("click", () => fs.toggle());
+  showIPhoneTip();
+}
+
+const TIP_KEY = "orion:ios-fullscreen-tip";
+
+function showIPhoneTip() {
+  if (!isIPhone() || isStandalone()) return;
+  try {
+    if (localStorage.getItem(TIP_KEY)) return;
+  } catch {}
+  const tip = $("ios-tip");
+  const close = Object.assign(document.createElement("button"), { type: "button", className: "link-btn", textContent: "Got it" });
+  close.addEventListener("click", () => {
+    tip.hidden = true;
+    try { localStorage.setItem(TIP_KEY, "1"); } catch {}
+  });
+  tip.replaceChildren(
+    Object.assign(document.createElement("span"), {
+      textContent: "On iPhone, Fullscreen fills the screen but Safari keeps its bars. For true fullscreen, tap Share, then Add to Home Screen, and open the arcade from there.",
+    }),
+    close,
+  );
+  tip.hidden = false;
 }
 
 function loadScript(src) {
@@ -119,8 +155,7 @@ async function start() {
     });
     loading.hidden = true;
     saves.start();
-    fullscreenBtn.hidden = false;
-    fullscreenBtn.addEventListener("click", () => instance.SetFullscreen(1));
+    enableFullscreen();
     canvas.focus();
   } catch (err) {
     console.error(err);
@@ -142,8 +177,7 @@ function startHtml(game) {
   }, { once: true });
   canvas.replaceWith(frame);
   if (!game.aspect) $("stage").classList.add("stage-fill");
-  fullscreenBtn.hidden = false;
-  fullscreenBtn.addEventListener("click", () => $("stage").requestFullscreen?.());
+  enableFullscreen();
 }
 
 start();
