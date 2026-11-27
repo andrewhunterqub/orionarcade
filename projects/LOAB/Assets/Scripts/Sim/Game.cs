@@ -111,6 +111,7 @@ namespace Loab.Sim
         public Game(GameState s)
         {
             S = s;
+            SaveMigration.Migrate(s);
             if (string.IsNullOrEmpty(s.pendingCard)) s.pendingCard = null; // JsonUtility saves null strings as ""
             if (string.IsNullOrEmpty(s.scenario)) s.scenario = null;
             s.agency ??= new List<Act>();

@@ -22,6 +22,7 @@ public static class Tests
         var sw = System.Diagnostics.Stopwatch.StartNew();
         Test("determinism: same seed gives the same 14 nights", Determinism);
         Test("save round trip: reloaded game continues identically", SaveRoundTrip);
+        Test("migration: an old, incomplete save loads and plays", OldSaveLoads);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -101,6 +102,26 @@ public static class Tests
                 throw new Exception($"reloaded game diverged on night {7 + d}, near: ...{sa.Substring(from, Math.Min(160, sa.Length - from))}");
             }
         }
+    }
+
+    static void OldSaveLoads()
+    {
+        var a = Game.NewCareer(21, 1);
+        for (int d = 0; d < 3; d++) PlayDay(a, true);
+        // Fake a version-1 save: missing lists, a short awareness array, a drink and an item that don't exist.
+        var node = System.Text.Json.Nodes.JsonNode.Parse(Snapshot(a)).AsObject();
+        node["version"] = 1;
+        foreach (var k in new[] { "flags", "seenTips", "cardHistory", "unlockedItems", "residencyOffer" }) node.Remove(k);
+        node["awareness"] = new System.Text.Json.Nodes.JsonArray(0.3f, 0.2f, 0.4f);
+        node["menu"].AsArray().RemoveAt(0);
+        node["items"].AsArray().Add(System.Text.Json.Nodes.JsonNode.Parse("{\"uid\":999,\"id\":\"retired_item\",\"x\":0,\"y\":0,\"rot\":0,\"wear\":0}"));
+        var s = JsonSerializer.Deserialize<GameState>(node.ToJsonString(), Json);
+        var g = new Game(s);
+        Assert(g.S.version == SaveMigration.Current, $"version is {g.S.version}, expected {SaveMigration.Current}");
+        Assert(g.S.awareness.Length == Content.Segments.Count, "awareness not resized to the segment count");
+        Assert(g.S.menu.Count == Content.Drinks.Count, "missing drink not restored to the menu");
+        Assert(!g.S.items.Exists(i => i.id == "retired_item"), "unknown item not removed");
+        Invariants(g, 5, true);
     }
 
     static void Invariants(Game g, int nights, bool sensible)

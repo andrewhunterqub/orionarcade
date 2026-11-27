@@ -115,7 +115,7 @@ namespace Loab.Sim
     [Serializable]
     public class GameState
     {
-        public int version = 1;
+        public int version = SaveMigration.Current;
         public int mode;            // 0 career, 1 sandbox, 2 scenario
         public string scenario;     // scenario id when mode == 2
         public int scenarioResult;  // 0 running, 1 won, 2 out of time
