@@ -182,35 +182,37 @@ namespace Loab.Sim
             Themes.Add(new ThemeDef { Id = "sports", Name = "Sports Bar", Blurb = "Big screens, pints and match-day noise." });
             Themes.Add(new ThemeDef { Id = "dive", Name = "Dive Bar", Blurb = "Sticky floors, neon, a jukebox and zero pretension." });
             Themes.Add(new ThemeDef { Id = "arcade", Name = "Retro Arcade Bar", Blurb = "Cabinets, chiptunes and neon flamingos." });
+            Themes.Add(new ThemeDef { Id = "craft", Name = "Craft Beer Hall", Blurb = "Bare brick, long benches, a wall of taps and beer that tastes of grapefruit." });
+            Themes.Add(new ThemeDef { Id = "lounge", Name = "Wine & Cocktail Lounge", Blurb = "Low velvet, candlelight, a serious wine list and a bartender who shakes." });
 
             // ---- Bar counters -------------------------------------------------------------------------
             Add("bar_counter", "Bar Counter", ItemFn.BarCounter, 3, 2, 1500, 3, 0, 0, V(0, 0, 0, 0, 0), T(), "bar", 0xA8573A, 0x5a2a1a,
                 blurb: "Three serving points. Your bartenders work behind it.");
             Add("bar_neon", "Neon Dive Bar", ItemFn.BarCounter, 3, 2, 1900, 3, 0, 0, V(5, -4, 4, -2, 6), T("dive", "arcade"), "bar", 0x2a2a35, 0xff3fa4,
                 unlock: 10, blurb: "A battered counter with a pink neon underglow.");
-            Add("bar_deco", "Art Deco Bar", ItemFn.BarCounter, 3, 2, 3400, 3, 0, 0, V(0, 9, -3, 2, 2), T("speakeasy"), "bar", 0x2b1d14, 0xd4a64a,
+            Add("bar_deco", "Art Deco Bar", ItemFn.BarCounter, 3, 2, 3400, 3, 0, 0, V(0, 9, -3, 2, 2), T("speakeasy", "lounge"), "bar", 0x2b1d14, 0xd4a64a,
                 unlock: 30, blurb: "Brass rails and a mirrored back bar. Very 1920s.");
 
             // ---- Seating ------------------------------------------------------------------------------
             Add("pub_table", "Pub Table & Stools", ItemFn.Seat, 2, 2, 260, 4, 4, 0, V(0, 0, -4, 2, 0), T("pub", "sports"), "pubtable", 0x7a4e2c, 0x4a2e18,
                 blurb: "Seats 4. Solid, sensible, slightly wobbly.");
-            Add("long_table", "Long Bench Table", ItemFn.Seat, 3, 1, 380, 6, 3, 0, V(3, -1, -2, -3, 0), T("pub", "sports"), "longtable", 0x8a5a33, 0x5a3a22,
+            Add("long_table", "Long Bench Table", ItemFn.Seat, 3, 1, 380, 6, 3, 0, V(3, -1, -2, -3, 0), T("pub", "sports", "craft"), "longtable", 0x8a5a33, 0x5a3a22,
                 blurb: "Seats 6. Great for groups and quiz teams.");
             Add("bar_stool", "Bar Stool", ItemFn.Seat, 1, 1, 60, 1, 2, 0, V(1, 0, 0, 0, 0), T(), "stool", 0x3a3a3a, 0xa33a2a,
                 blurb: "Seats 1. Cheap perch.");
-            Add("high_table", "Poseur Table", ItemFn.Seat, 1, 1, 140, 2, 2, 0, V(3, 1, 3, -1, 0), T("sports"), "hightable", 0x222222, 0xbbbbbb,
+            Add("high_table", "Poseur Table", ItemFn.Seat, 1, 1, 140, 2, 2, 0, V(3, 1, 3, -1, 0), T("sports", "craft"), "hightable", 0x222222, 0xbbbbbb,
                 blurb: "Seats 2. Standing-room chic.");
-            Add("barrel_table", "Barrel Table", ItemFn.Seat, 1, 1, 120, 2, 2, 0, V(1, -1, -4, 1, 3), T("pub"), "barrel", 0x6b4226, 0x333333,
+            Add("barrel_table", "Barrel Table", ItemFn.Seat, 1, 1, 120, 2, 2, 0, V(1, -1, -4, 1, 3), T("pub", "craft"), "barrel", 0x6b4226, 0x333333,
                 blurb: "Seats 2. An old ale cask with ambitions.");
             Add("plastic_set", "Plastic Garden Set", ItemFn.Seat, 1, 1, 40, 2, 1, 0, V(0, -6, 0, -2, 2), T("dive"), "plastic", 0xf2f2f2, 0x2e86de,
                 blurb: "Seats 2. Nobody has ever chosen these on purpose.");
             Add("beanbags", "Beanbags", ItemFn.Seat, 1, 1, 90, 2, 6, 0, V(-2, -3, 4, 2, 6), T("arcade"), "beanbag", 0xff9f1c, 0x9b5de5,
                 blurb: "Seats 2. Getting up is the hard part.");
-            Add("booth", "Leather Booth", ItemFn.Seat, 2, 2, 650, 4, 8, 0, V(-2, 4, -2, 7, 0), T("speakeasy", "pub"), "booth", 0xFF6B6B, 0x6b3a26,
+            Add("booth", "Leather Booth", ItemFn.Seat, 2, 2, 650, 4, 8, 0, V(-2, 4, -2, 7, 0), T("speakeasy", "pub", "lounge"), "booth", 0xFF6B6B, 0x6b3a26,
                 unlock: 5, blurb: "Seats 4. Date-night magnet.");
-            Add("armchair", "Velvet Armchair", ItemFn.Seat, 1, 1, 300, 1, 8, 0, V(-3, 6, -3, 5, 1), T("speakeasy"), "armchair", 0x1f5f4a, 0x2b1b10,
+            Add("armchair", "Velvet Armchair", ItemFn.Seat, 1, 1, 300, 1, 8, 0, V(-3, 6, -3, 5, 1), T("speakeasy", "lounge"), "armchair", 0x1f5f4a, 0x2b1b10,
                 unlock: 10, blurb: "Seats 1. Sink in and stay a while.");
-            Add("chesterfield", "Chesterfield Sofa", ItemFn.Seat, 2, 1, 850, 3, 9, 0, V(-3, 6, -5, 5, 0), T("speakeasy"), "sofa", 0x5a2a16, 0x3a1a0c,
+            Add("chesterfield", "Chesterfield Sofa", ItemFn.Seat, 2, 1, 850, 3, 9, 0, V(-3, 6, -5, 5, 0), T("speakeasy", "lounge"), "sofa", 0x5a2a16, 0x3a1a0c,
                 unlock: 20, blurb: "Seats 3. Buttoned leather, very serious.");
 
             // ---- Toilets ------------------------------------------------------------------------------
@@ -250,9 +252,9 @@ namespace Loab.Sim
                 unlock: 15, blurb: "Match day, but massive.", glow: true);
 
             // ---- Lighting -----------------------------------------------------------------------------
-            Add("edison", "Edison Bulbs", ItemFn.Decor, 1, 1, 120, 0, 0, 0, V(0, 2, -1, 4, 2), T("speakeasy"), "edison", 0xFFD27A, 0xFFD27A,
+            Add("edison", "Edison Bulbs", ItemFn.Decor, 1, 1, 120, 0, 0, 0, V(0, 2, -1, 4, 2), T("speakeasy", "craft"), "edison", 0xFFD27A, 0xFFD27A,
                 blurb: "Warm filament glow.", glow: true);
-            Add("candles", "Candle Cluster", ItemFn.Decor, 1, 1, 40, 0, 0, 0, V(-4, 3, -2, 7, 0), T("speakeasy"), "candles", 0xfff1c1, 0xffb347,
+            Add("candles", "Candle Cluster", ItemFn.Decor, 1, 1, 40, 0, 0, 0, V(-4, 3, -2, 7, 0), T("speakeasy", "lounge"), "candles", 0xfff1c1, 0xffb347,
                 blurb: "Instant intimacy.", glow: true);
             Add("neon_open", "Neon 'OPEN' Sign", ItemFn.Decor, 1, 1, 180, 0, 0, 0, V(3, -2, 3, -1, 5), T("dive", "arcade"), "neon", 0xff3fa4, 0xff3fa4,
                 blurb: "Buzzes faintly.", glow: true);
@@ -260,7 +262,7 @@ namespace Loab.Sim
                 blurb: "Strings of bulbs. Everyone likes these.", glow: true);
             Add("discoball", "Disco Ball", ItemFn.Decor, 1, 1, 250, 0, 0, 1, V(8, -1, -2, -3, 7), T("arcade"), "discoball", 0xdddddd, 0xffffff,
                 blurb: "Ironically or not.", glow: true);
-            Add("chandelier", "Chandelier", ItemFn.Decor, 1, 1, 900, 0, 0, 0, V(0, 8, -4, 2, 2), T("speakeasy"), "chandelier", 0xd4a64a, 0xfff1c1,
+            Add("chandelier", "Chandelier", ItemFn.Decor, 1, 1, 900, 0, 0, 0, V(0, 8, -4, 2, 2), T("speakeasy", "lounge"), "chandelier", 0xd4a64a, 0xfff1c1,
                 unlock: 20, blurb: "Crystal drops and delusions of grandeur.", glow: true);
 
             // ---- Decor --------------------------------------------------------------------------------
@@ -273,39 +275,69 @@ namespace Loab.Sim
             Add("records", "Vinyl Wall", ItemFn.Decor, 1, 1, 180, 0, 0, 0, V(2, 1, 1, 1, 4), T(), "frames", 0x111111, 0xffd166, blurb: "Crate-digger credibility.");
             Add("flamingo", "Neon Flamingo", ItemFn.Decor, 1, 1, 220, 0, 0, 0, V(3, -1, 3, 0, 8), T("arcade", "dive"), "flamingo", 0xff6fb5, 0xff6fb5, blurb: "Tasteful? No. Iconic? Yes.", glow: true);
             Add("bookshelf", "Bookshelf", ItemFn.Decor, 1, 1, 200, 0, 0, 0, V(-3, 4, -3, 5, 2), T("speakeasy"), "bookshelf", 0x4a2e18, 0x9b2226, blurb: "Mostly unread. Very cosy.");
-            Add("curtains", "Velvet Curtains", ItemFn.Decor, 1, 1, 220, 0, 0, 0, V(-2, 5, -3, 5, 1), T("speakeasy"), "curtains", 0x7b1e3a, 0xd4a64a, blurb: "Theatrical and plush.");
-            Add("pipes", "Exposed Pipe Art", ItemFn.Decor, 1, 1, 150, 0, 0, 0, V(1, 0, 7, -1, 3), T(), "pipes", 0x9a9a9a, 0xb87333, blurb: "Industrial chic.");
-            Add("chalkboard", "Chalkboard Specials", ItemFn.Decor, 1, 1, 50, 0, 0, 0, V(1, 0, -1, 1, 1), T("pub"), "chalkboard", 0x222222, 0xffffff, blurb: "Today: ambition.");
+            Add("curtains", "Velvet Curtains", ItemFn.Decor, 1, 1, 220, 0, 0, 0, V(-2, 5, -3, 5, 1), T("speakeasy", "lounge"), "curtains", 0x7b1e3a, 0xd4a64a, blurb: "Theatrical and plush.");
+            Add("pipes", "Exposed Pipe Art", ItemFn.Decor, 1, 1, 150, 0, 0, 0, V(1, 0, 7, -1, 3), T("craft"), "pipes", 0x9a9a9a, 0xb87333, blurb: "Industrial chic.");
+            Add("chalkboard", "Chalkboard Specials", ItemFn.Decor, 1, 1, 50, 0, 0, 0, V(1, 0, -1, 1, 1), T("pub", "craft"), "chalkboard", 0x222222, 0xffffff, blurb: "Today: ambition.");
             Add("fishtank", "Fish Tank", ItemFn.Decor, 2, 1, 700, 0, 0, 1, V(-2, 3, 2, 3, 6), T(), "fishtank", 0x3a86ff, 0x222222, unlock: 8, blurb: "Hypnotic. The fish have opinions.", glow: true);
             Add("fireplace", "Fireplace", ItemFn.Decor, 2, 1, 1400, 0, 6, 0, V(-3, 4, -6, 8, 1), T("pub", "speakeasy"), "fireplace", 0x6b4a3a, 0xff7b00, unlock: 10, blurb: "The cosiest thing you can buy.", glow: true);
             Add("rug", "Persian Rug", ItemFn.Decor, 2, 2, 300, 0, 1, 0, V(-1, 3, -3, 3, 1), T("speakeasy"), "rug", 0x9b2226, 0xe9c46a, blurb: "Walkable. Hides a multitude of sins.", walkable: true);
+
+            // ---- Craft Beer Hall (task K1) -------------------------------------------------------------
+            Add("bar_craft", "Steel & Ply Bar", ItemFn.BarCounter, 3, 2, 2600, 3, 0, 0, V(2, 2, 6, -1, 3), T("craft"), "bar", 0x6b6f73, 0xc89b5c,
+                unlock: 15, blurb: "Brushed steel, birch ply and a row of shiny taps.");
+            Add("beer_bench", "Beer Hall Bench", ItemFn.Seat, 3, 1, 420, 6, 3, 0, V(4, -1, 3, -3, 1), T("craft"), "longtable", 0xc9a26b, 0x8a6a42,
+                blurb: "Seats 6. Pale pine, made for sharing a table with strangers.");
+            Add("tap_wall", "Tap Wall", ItemFn.Decor, 2, 1, 1600, 0, 0, 0, V(2, 3, 6, -1, 4), T("craft"), "tapwall", 0x2b2b2b, 0xc0c0c0,
+                unlock: 15, blurb: "Twenty taps, twenty chalk labels, one very proud bar manager.");
+            Add("keg_stack", "Keg Stack", ItemFn.Decor, 1, 1, 240, 0, 0, 0, V(1, -2, 3, -1, 3), T("craft"), "kegs", 0xb8bcc2, 0x2a6f97,
+                blurb: "Empty kegs, artfully piled. Mostly empty.");
+            Add("hop_garland", "Hop Garland", ItemFn.Decor, 1, 1, 90, 0, 0, 0, V(0, 1, -1, 2, 3), T("craft", "pub"), "festoon", 0x7fb069, 0x7fb069,
+                blurb: "Dried hops strung across the beams. Smells like a brewery.");
+            Add("growler_shelf", "Growler Shelf", ItemFn.Decor, 1, 1, 260, 0, 0, 0, V(0, 2, 4, 0, 4), T("craft"), "bookshelf", 0x8a6a42, 0xb5651d,
+                blurb: "Glass growlers for takeaway refills. Very on trend.");
+
+            // ---- Wine & Cocktail Lounge (task K1) ------------------------------------------------------
+            Add("bar_marble", "Marble Cocktail Bar", ItemFn.BarCounter, 3, 2, 3800, 3, 0, 0, V(-1, 10, 1, 4, 2), T("lounge"), "bar", 0xe8e4dc, 0xc9a24a,
+                unlock: 35, blurb: "White marble, brass footrail and a back bar lit like a jewellery shop.");
+            Add("banquette", "Velvet Banquette", ItemFn.Seat, 3, 1, 980, 3, 9, 0, V(-3, 7, -1, 7, 1), T("lounge"), "sofa", 0x4a1f3d, 0x2b1b10,
+                unlock: 20, blurb: "Seats 3. Deep plum velvet along the wall.");
+            Add("cocktail_table", "Marble Cocktail Table", ItemFn.Seat, 1, 1, 220, 2, 4, 0, V(-1, 6, 1, 4, 0), T("lounge"), "hightable", 0xe8e4dc, 0xc9a24a,
+                blurb: "Seats 2. Small, round and very elegant.");
+            Add("wine_wall", "Wine Wall", ItemFn.Decor, 2, 1, 1500, 0, 0, 0, V(-2, 8, -1, 5, 2), T("lounge"), "winerack", 0x3a2418, 0x6b1a2a,
+                unlock: 20, blurb: "Floor-to-ceiling bottles. Customers assume you know what they all are.");
+            Add("brass_lamps", "Brass Table Lamps", ItemFn.Decor, 1, 1, 180, 0, 0, 0, V(-3, 5, -2, 6, 1), T("lounge", "speakeasy"), "candles", 0xffc46b, 0xc9a24a,
+                blurb: "Warm pools of light. Everyone looks better.");
+            Add("gallery_prints", "Gallery Prints", ItemFn.Decor, 1, 1, 200, 0, 0, 0, V(-1, 5, 3, 2, 4), T("lounge"), "frames", 0x222222, 0xe76f51,
+                blurb: "Abstract prints from a local artist. Prices on request.");
             Add("dog_bed", "Biscuit's Bed", ItemFn.Decor, 1, 1, 0, 0, 0, 1, V(0, 0, 0, 3, 6), T("pub"), "dogbed", 0x8a5a33, 0xd9a066, blurb: "Home of the bar's unofficial mascot.", hidden: true);
 
             // ---- Floors & walls -----------------------------------------------------------------------
             Floors.Add(new StyleDef { Id = "boards", Name = "Honey Oak Boards", Cost = 0, Vibe = V(0, -3, -3, 1, 0), Themes = T("pub", "dive"), Color = 0xB9805A, Color2 = 0xAE7650 });
-            Floors.Add(new StyleDef { Id = "oak", Name = "Polished Oak", Cost = 1200, Vibe = V(0, 5, -2, 2, 0), Themes = T("pub", "speakeasy"), Color = 0x9a6a3b, Color2 = 0x8a5d33 });
+            Floors.Add(new StyleDef { Id = "oak", Name = "Polished Oak", Cost = 1200, Vibe = V(0, 5, -2, 2, 0), Themes = T("pub", "speakeasy", "lounge"), Color = 0x9a6a3b, Color2 = 0x8a5d33 });
             Floors.Add(new StyleDef { Id = "checker", Name = "Checker Tile", Cost = 900, Vibe = V(2, 2, 1, -1, 3), Themes = T("dive", "arcade"), Color = 0xe8e8e8, Color2 = 0x222222 });
-            Floors.Add(new StyleDef { Id = "concrete", Name = "Polished Concrete", Cost = 800, Vibe = V(1, 2, 7, -3, 1), Themes = T("sports"), Color = 0x8c8c8c, Color2 = 0x828282 });
-            Floors.Add(new StyleDef { Id = "carpet", Name = "Plush Carpet", Cost = 1000, Vibe = V(-3, 3, -3, 5, 0), Themes = T("speakeasy"), Color = 0x6a1e2a, Color2 = 0x601a26 });
+            Floors.Add(new StyleDef { Id = "concrete", Name = "Polished Concrete", Cost = 800, Vibe = V(1, 2, 7, -3, 1), Themes = T("sports", "craft"), Color = 0x8c8c8c, Color2 = 0x828282 });
+            Floors.Add(new StyleDef { Id = "carpet", Name = "Plush Carpet", Cost = 1000, Vibe = V(-3, 3, -3, 5, 0), Themes = T("speakeasy", "lounge"), Color = 0x6a1e2a, Color2 = 0x601a26 });
+            Floors.Add(new StyleDef { Id = "parquet", Name = "Herringbone Parquet", Cost = 1400, Vibe = V(-2, 7, -2, 4, 1), Themes = T("lounge"), Color = 0x7a4a2a, Color2 = 0x6a3f22 });
             Floors.Add(new StyleDef { Id = "sticky", Name = "Sticky Carpet", Cost = 300, Vibe = V(1, -8, -4, 1, 4), Themes = T("dive", "pub"), Color = 0x5a2a4a, Color2 = 0x4e2440 });
 
             Walls.Add(new StyleDef { Id = "cream", Name = "Peach Plaster", Cost = 0, Vibe = V(0, -4, -3, 0, 0), Themes = T("pub", "dive"), Color = 0xF2B38A });
             Walls.Add(new StyleDef { Id = "panelling", Name = "Terracotta Panelling", Cost = 1500, Vibe = V(-2, 5, -4, 5, 0), Themes = T("pub", "speakeasy"), Color = 0xD98A63 });
-            Walls.Add(new StyleDef { Id = "brick", Name = "Exposed Brick", Cost = 1000, Vibe = V(1, 1, 4, 1, 2), Themes = T(), Color = 0x9c4a32 });
-            Walls.Add(new StyleDef { Id = "green", Name = "Midnight Green", Cost = 700, Vibe = V(-2, 4, 1, 4, 1), Themes = T("speakeasy"), Color = 0x1b3b33 });
+            Walls.Add(new StyleDef { Id = "brick", Name = "Exposed Brick", Cost = 1000, Vibe = V(1, 1, 4, 1, 2), Themes = T("craft"), Color = 0x9c4a32 });
+            Walls.Add(new StyleDef { Id = "green", Name = "Midnight Green", Cost = 700, Vibe = V(-2, 4, 1, 4, 1), Themes = T("speakeasy", "lounge"), Color = 0x1b3b33 });
             Walls.Add(new StyleDef { Id = "pink", Name = "Hot Pink & Neon", Cost = 700, Vibe = V(6, -1, 4, -2, 7), Themes = T("arcade", "dive"), Color = 0xc2185b });
+            Walls.Add(new StyleDef { Id = "plum", Name = "Velvet Plum", Cost = 900, Vibe = V(-3, 6, 0, 6, 2), Themes = T("lounge"), Color = 0x4a1f3d });
             Walls.Add(new StyleDef { Id = "navy", Name = "Club Navy", Cost = 700, Vibe = V(3, 1, 2, -1, -1), Themes = T("sports"), Color = 0x1d3557 });
 
             // ---- Music ------------------------------------------------------------------------------
             //                                                                          Stu   YP    Loc   Spt   Cre
             Music.Add(new MusicDef { Id = "radio", Name = "Telly & Radio", Vibe = V(0, -1, 0, 0, -2), Themes = T("sports"), SegLikes = new[] { -0.3f, -0.3f, 0.2f, 0.4f, -0.4f } });
-            Music.Add(new MusicDef { Id = "jazz", Name = "Jazz", Vibe = V(-3, 6, -5, 5, 2), Themes = T("speakeasy"), SegLikes = new[] { -0.3f, 0.5f, 0.1f, -0.4f, 0.4f } });
-            Music.Add(new MusicDef { Id = "indie", Name = "Indie", Vibe = V(3, 0, 3, 0, 3), Themes = T(), SegLikes = new[] { 0.6f, 0.2f, -0.2f, 0.0f, 0.6f } });
+            Music.Add(new MusicDef { Id = "jazz", Name = "Jazz", Vibe = V(-3, 6, -5, 5, 2), Themes = T("speakeasy", "lounge"), SegLikes = new[] { -0.3f, 0.5f, 0.1f, -0.4f, 0.4f } });
+            Music.Add(new MusicDef { Id = "indie", Name = "Indie", Vibe = V(3, 0, 3, 0, 3), Themes = T("craft"), SegLikes = new[] { 0.6f, 0.2f, -0.2f, 0.0f, 0.6f } });
             Music.Add(new MusicDef { Id = "rock", Name = "Classic Rock", Vibe = V(5, -3, -3, -1, 1), Themes = T("dive", "sports"), SegLikes = new[] { 0.3f, -0.1f, 0.3f, 0.5f, 0.0f } });
             Music.Add(new MusicDef { Id = "pop", Name = "Pop Hits", Vibe = V(6, 0, 4, -3, -2), Themes = T(), SegLikes = new[] { 0.6f, 0.3f, -0.3f, 0.2f, -0.4f } });
             Music.Add(new MusicDef { Id = "electronic", Name = "Electronic", Vibe = V(7, 2, 7, -3, 3), Themes = T("arcade"), SegLikes = new[] { 0.5f, 0.4f, -0.6f, -0.2f, 0.4f } });
             Music.Add(new MusicDef { Id = "folk", Name = "Folk & Trad", Vibe = V(-2, 0, -7, 4, 2), Themes = T("pub"), SegLikes = new[] { -0.4f, -0.2f, 0.6f, 0.0f, 0.3f } });
-            Music.Add(new MusicDef { Id = "soul", Name = "Soul & Funk", Vibe = V(4, 3, -3, 1, 2), Themes = T(), SegLikes = new[] { 0.2f, 0.5f, 0.3f, 0.1f, 0.4f } });
+            Music.Add(new MusicDef { Id = "soul", Name = "Soul & Funk", Vibe = V(4, 3, -3, 1, 2), Themes = T("lounge"), SegLikes = new[] { 0.2f, 0.5f, 0.3f, 0.1f, 0.4f } });
             Music.Add(new MusicDef { Id = "chiptune", Name = "Retro Chiptunes", Vibe = V(3, -1, 1, 0, 8), Themes = T("arcade"), SegLikes = new[] { 0.3f, -0.2f, -0.3f, -0.2f, 0.6f } });
 
             // ---- Suppliers & drinks -----------------------------------------------------------------
@@ -314,21 +346,21 @@ namespace Loab.Sim
             Suppliers.Add(new SupplierDef { Id = "velvet", Name = "Velvet & Vine Merchants", Quality = 76, Reliability = 0.93f, Blurb = "Wines, spirits and cocktail kit." });
 
             Drink("lager", "Hopkins Lager", DrinkCat.Lager, "barrel", 1.10f, 4.60f, 1.1f, "sports", "dive");
-            Drink("pils", "Kessler Pils", DrinkCat.Lager, "docklands", 1.55f, 5.40f, 1.1f);
+            Drink("pils", "Kessler Pils", DrinkCat.Lager, "docklands", 1.55f, 5.40f, 1.1f, "craft");
             Drink("bitter", "Old Anchor Bitter", DrinkCat.Ale, "barrel", 1.15f, 4.40f, 1.3f, "pub");
             Drink("stout", "Midnight Stout", DrinkCat.Stout, "barrel", 1.30f, 4.90f, 1.6f, "pub");
-            Drink("ipa", "Docklands IPA", DrinkCat.Craft, "docklands", 1.90f, 6.20f, 1.2f);
-            Drink("sour", "Wonky Sour", DrinkCat.Craft, "docklands", 2.20f, 6.50f, 1.2f, "arcade");
+            Drink("ipa", "Docklands IPA", DrinkCat.Craft, "docklands", 1.90f, 6.20f, 1.2f, "craft");
+            Drink("sour", "Wonky Sour", DrinkCat.Craft, "docklands", 2.20f, 6.50f, 1.2f, "arcade", "craft");
             Drink("cider", "Orchard Gold Cider", DrinkCat.Cider, "barrel", 1.20f, 4.70f, 1.1f, "pub");
-            Drink("house_red", "House Red", DrinkCat.Wine, "barrel", 1.40f, 5.50f, 0.8f);
-            Drink("house_white", "House White", DrinkCat.Wine, "barrel", 1.40f, 5.50f, 0.8f);
-            Drink("fizz", "Fizz (glass)", DrinkCat.Wine, "velvet", 2.10f, 7.20f, 0.9f, "speakeasy");
-            Drink("gin_tonic", "Gin & Tonic", DrinkCat.Spirit, "velvet", 1.60f, 7.00f, 1.4f, "speakeasy");
+            Drink("house_red", "House Red", DrinkCat.Wine, "barrel", 1.40f, 5.50f, 0.8f, "lounge");
+            Drink("house_white", "House White", DrinkCat.Wine, "barrel", 1.40f, 5.50f, 0.8f, "lounge");
+            Drink("fizz", "Fizz (glass)", DrinkCat.Wine, "velvet", 2.10f, 7.20f, 0.9f, "speakeasy", "lounge");
+            Drink("gin_tonic", "Gin & Tonic", DrinkCat.Spirit, "velvet", 1.60f, 7.00f, 1.4f, "speakeasy", "lounge");
             Drink("rum_cola", "Rum & Cola", DrinkCat.Spirit, "barrel", 1.30f, 5.80f, 1.2f, "dive");
             Drink("whisky", "Single Malt", DrinkCat.Spirit, "velvet", 2.80f, 7.50f, 0.9f, "speakeasy", "pub");
-            Drink("espresso_martini", "Espresso Martini", DrinkCat.Cocktail, "velvet", 2.40f, 10.00f, 3.0f, "speakeasy");
-            Drink("mojito", "Mojito", DrinkCat.Cocktail, "velvet", 2.10f, 9.00f, 3.2f);
-            Drink("old_fashioned", "Old Fashioned", DrinkCat.Cocktail, "velvet", 2.60f, 10.50f, 2.6f, "speakeasy");
+            Drink("espresso_martini", "Espresso Martini", DrinkCat.Cocktail, "velvet", 2.40f, 10.00f, 3.0f, "speakeasy", "lounge");
+            Drink("mojito", "Mojito", DrinkCat.Cocktail, "velvet", 2.10f, 9.00f, 3.2f, "lounge");
+            Drink("old_fashioned", "Old Fashioned", DrinkCat.Cocktail, "velvet", 2.60f, 10.50f, 2.6f, "speakeasy", "lounge");
             Drink("zero_lager", "Zero Lager", DrinkCat.AlcoholFree, "barrel", 0.90f, 4.20f, 0.8f);
             Drink("mocktail", "Virgin Colada", DrinkCat.AlcoholFree, "velvet", 1.10f, 6.00f, 2.4f);
             Drink("soft", "Cola & Lemonade", DrinkCat.AlcoholFree, "barrel", 0.40f, 2.80f, 0.5f);
@@ -343,7 +375,7 @@ namespace Loab.Sim
                 DrinkPrefs = new[] { .30f, .03f, .03f, .06f, .18f, .05f, .17f, .09f, .08f, .01f },
                 DayWeights = new[] { .9f, .8f, 1.0f, 1.3f, 1.0f, .9f, .5f }, Share = .24f,
                 Games = 1.0f, Screens = 0.4f, Stage = 0.5f, Jukebox = 0.7f, Quiz = 0.9f, Comedy = 0.6f, RowdyBase = 1.4f,
-                ThemeAffinity = new Dictionary<string, float> { { "dive", .8f }, { "arcade", .9f }, { "sports", .3f } }, Color = 0x2ec4b6,
+                ThemeAffinity = new Dictionary<string, float> { { "dive", .8f }, { "arcade", .9f }, { "sports", .3f }, { "craft", .4f } }, Color = 0x2ec4b6,
             });
             Segments.Add(new SegmentDef
             {
@@ -352,7 +384,7 @@ namespace Loab.Sim
                 DrinkPrefs = new[] { .08f, .02f, .03f, .12f, .04f, .25f, .12f, .27f, .06f, .01f },
                 DayWeights = new[] { .5f, .7f, .9f, 1.3f, 1.5f, 1.0f, .4f }, Share = .22f,
                 Games = 0.3f, Screens = 0.2f, Stage = 0.5f, Jukebox = 0.1f, Quiz = 0.4f, Comedy = 0.85f, RowdyBase = 0.6f,
-                ThemeAffinity = new Dictionary<string, float> { { "speakeasy", 1.0f } }, Color = 0x3a4fa0,
+                ThemeAffinity = new Dictionary<string, float> { { "speakeasy", 1.0f }, { "lounge", 1.0f }, { "craft", .6f } }, Color = 0x3a4fa0,
             });
             Segments.Add(new SegmentDef
             {
@@ -361,7 +393,7 @@ namespace Loab.Sim
                 DrinkPrefs = new[] { .25f, .28f, .14f, .04f, .08f, .08f, .07f, .01f, .04f, .01f },
                 DayWeights = new[] { 1.0f, 1.0f, 1.0f, 1.0f, 1.1f, 1.1f, 1.2f }, Share = .24f,
                 Games = 0.7f, Screens = 0.5f, Stage = 0.2f, Jukebox = 0.6f, Quiz = 0.85f, Comedy = 0.3f, RowdyBase = 0.7f,
-                ThemeAffinity = new Dictionary<string, float> { { "pub", 1.0f } }, Color = 0x7a6a3a,
+                ThemeAffinity = new Dictionary<string, float> { { "pub", 1.0f }, { "craft", .3f } }, Color = 0x7a6a3a,
             });
             Segments.Add(new SegmentDef
             {
@@ -370,7 +402,7 @@ namespace Loab.Sim
                 DrinkPrefs = new[] { .48f, .12f, .08f, .05f, .10f, .02f, .08f, .01f, .05f, .01f },
                 DayWeights = new[] { .6f, .7f, 1.3f, .8f, 1.0f, 1.6f, 1.2f }, Share = .14f,
                 Games = 0.6f, Screens = 1.6f, Stage = 0.1f, Jukebox = 0.3f, Quiz = 0.5f, Comedy = 0.3f, RowdyBase = 1.2f,
-                ThemeAffinity = new Dictionary<string, float> { { "sports", 1.2f }, { "pub", .4f } }, Color = 0xd62828,
+                ThemeAffinity = new Dictionary<string, float> { { "sports", 1.2f }, { "pub", .4f }, { "craft", .2f } }, Color = 0xd62828,
             });
             Segments.Add(new SegmentDef
             {
@@ -379,7 +411,7 @@ namespace Loab.Sim
                 DrinkPrefs = new[] { .06f, .04f, .04f, .25f, .08f, .15f, .08f, .18f, .11f, .01f },
                 DayWeights = new[] { .6f, .7f, .9f, 1.3f, 1.3f, 1.1f, .8f }, Share = .16f,
                 Games = 0.6f, Screens = 0.0f, Stage = 1.0f, Jukebox = 0.5f, Quiz = 0.6f, Comedy = 0.9f, RowdyBase = 0.6f,
-                ThemeAffinity = new Dictionary<string, float> { { "arcade", .6f }, { "speakeasy", .4f }, { "dive", .4f } }, Color = 0x9b5de5,
+                ThemeAffinity = new Dictionary<string, float> { { "arcade", .6f }, { "speakeasy", .4f }, { "dive", .4f }, { "craft", .7f }, { "lounge", .3f } }, Color = 0x9b5de5,
             });
 
             // ---- Staff traits -------------------------------------------------------------------------

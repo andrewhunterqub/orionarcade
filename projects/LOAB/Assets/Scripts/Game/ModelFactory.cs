@@ -237,6 +237,9 @@ namespace Loab.Game
                 case "fireplace": Fireplace(t, def); break;
                 case "rug": Rug(t, def); break;
                 case "dogbed": DogBed(t, def); break;
+                case "tapwall": TapWall(t, def); break;
+                case "kegs": Kegs(t, def); break;
+                case "winerack": WineRack(t, def); break;
                 default:
                     Box(t, 0, 0.4f, 0, Mathf.Max(0.1f, def.W - 0.1f), 0.8f, Mathf.Max(0.1f, def.H - 0.1f), M(def.Color));
                     break;
@@ -980,6 +983,11 @@ namespace Loab.Game
                         BoxR(t, V(i * 0.14f, 1.3f, fz), V(0.1f, 0.1f, 0.005f), M(i == 0 ? White : 0xffd166), V(0, 0, 45));
                     Box(t, 0, 1.4f, fz, 0.44f, 0.015f, 0.005f, M(White));
                     break;
+                case "gallery_prints":
+                    Box(t, -0.1f, 1.36f, fz, 0.18f, 0.22f, 0.005f, M(0xe76f51));
+                    Box(t, 0.08f, 1.24f, fz, 0.2f, 0.14f, 0.005f, M(0x2a9d8f));
+                    Sph(t, 0.12f, 1.42f, fz, 0.12f, 0.12f, 0.005f, M(0xe9c46a));
+                    break;
                 case "records":
                     for (int s = -1; s <= 1; s += 2)
                     {
@@ -987,6 +995,65 @@ namespace Loab.Game
                         CylR(t, V(s * 0.12f, 1.3f, fz - 0.007f), 0.07f, 0.006f, M(s < 0 ? 0xd62828u : 0x2e86deu), V(90, 0, 0));
                     }
                     break;
+            }
+        }
+
+        // ---- Craft Beer Hall and Lounge pieces (task K1) ----------------------------------------------
+
+        // A dark board against the wall with a row of chrome taps and chalk labels.
+        static void TapWall(Transform t, Loab.Sim.ItemDef d)
+        {
+            var board = M(d.Color);
+            var chrome = M(d.Color2);
+            var chalk = M(0xf1f1f1);
+            const float z = 0.38f;
+            Box(t, 0, 1.2f, z, 1.86f, 1.5f, 0.06f, board);
+            Box(t, 0, 0.45f, z - 0.12f, 1.86f, 0.9f, 0.3f, M(Shade(d.Color, 1.4f)));       // drip tray cabinet
+            Box(t, 0, 0.91f, z - 0.14f, 1.8f, 0.03f, 0.34f, chrome);
+            for (int i = 0; i < 8; i++)
+            {
+                float x = -0.77f + i * 0.22f;
+                Rod(t, V(x, 1.0f, z - 0.04f), V(x, 1.0f, z - 0.2f), 0.035f, chrome);
+                Box(t, x, 1.12f, z - 0.2f, 0.03f, 0.16f, 0.03f, M(i % 3 == 0 ? 0xe9c46au : i % 3 == 1 ? 0xb5651du : 0x2a2a2au)); // tap handles
+                Box(t, x, 1.45f, z - 0.035f, 0.16f, 0.07f, 0.005f, chalk);
+            }
+            Box(t, 0, 1.82f, z - 0.035f, 1.2f, 0.12f, 0.005f, M(0xffd166));
+        }
+
+        // A pyramid of steel kegs.
+        static void Kegs(Transform t, Loab.Sim.ItemDef d)
+        {
+            var steel = M(d.Color);
+            var band = M(d.Color2);
+            Vector3[] at = { V(-0.2f, 0.25f, -0.15f), V(0.2f, 0.25f, -0.15f), V(0, 0.25f, 0.22f), V(0, 0.75f, 0.0f) };
+            foreach (var p in at)
+            {
+                Cyl(t, p.x, p.y, p.z, 0.38f, 0.5f, steel);
+                Cyl(t, p.x, p.y + 0.17f, p.z, 0.395f, 0.04f, band);
+                Cyl(t, p.x, p.y - 0.17f, p.z, 0.395f, 0.04f, band);
+            }
+        }
+
+        // Floor-to-ceiling wine shelving: a wooden frame with rows of bottle ends.
+        static void WineRack(Transform t, Loab.Sim.ItemDef d)
+        {
+            var wood = M(d.Color);
+            var wine = M(d.Color2);
+            var white = M(0xe9e2c8);
+            const float z = 0.3f;
+            Box(t, 0, 1.1f, z + 0.12f, 1.86f, 2.2f, 0.05f, wood);
+            for (int s = -1; s <= 1; s += 2) Box(t, s * 0.91f, 1.1f, z, 0.05f, 2.2f, 0.3f, wood);
+            Box(t, 0, 2.18f, z, 1.86f, 0.05f, 0.3f, wood);
+            for (int row = 0; row < 6; row++)
+            {
+                float y = 0.25f + row * 0.34f;
+                Box(t, 0, y - 0.11f, z, 1.78f, 0.03f, 0.3f, wood);
+                for (int i = 0; i < 9; i++)
+                {
+                    float x = -0.8f + i * 0.2f;
+                    var m = (i + row) % 4 == 0 ? white : wine;
+                    CylR(t, V(x, y, z - 0.14f), 0.08f, 0.06f, m, V(90, 0, 0));
+                }
             }
         }
 

@@ -33,6 +33,7 @@ public static class Tests
         Test("door security: fewer rowdy customers, and Hardcore weekends without it get fined", DoorSecurity);
         Test("cleaner: works after close and raises tomorrow's cleanliness", Cleaner);
         Test("rota: staff off tonight aren't there or paid; long streaks wear them down", Rota);
+        Test("themes: a Craft Beer Hall and a Wine & Cocktail Lounge can be recognised", NewThemes);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -300,6 +301,32 @@ public static class Tests
         for (int d = 0; d < 8; d++) { PlayDay(h, false); warned |= h.S.history[h.S.history.Count - 1].moments.Exists(m => m.Contains("seven nights straight")); }
         Assert(warned, "no warning after seven straight nights");
         Assert(h.S.staff[0].streak >= 7, "streak not counted");
+    }
+
+    static void NewThemes()
+    {
+        void Build(string theme, string floor, string wall, string music, string bar, string[] items, string[] drinks)
+        {
+            var g = Game.NewSandbox(3);
+            g.S.items.RemoveAll(i => Content.Item(i.id).Fn != ItemFn.Toilet);
+            g.S.unlockedItems.AddRange(items); g.S.reputation = 60;
+            g.Recompute();
+            Program.TryPlace(g, bar);
+            foreach (var id in items) { Program.TryPlace(g, id); Program.TryPlace(g, id); }
+            g.Execute(new StyleCmd { Kind = 0, Id = floor });
+            g.Execute(new StyleCmd { Kind = 1, Id = wall });
+            g.SetMusic(music);
+            foreach (var m in g.S.menu) m.onMenu = Array.IndexOf(drinks, m.id) >= 0;
+            g.Recompute();
+            var ts = g.V.Themes.Find(t => t.Def.Id == theme);
+            Assert(g.V.ActiveTheme?.Def.Id == theme, $"{theme}: active theme is {g.V.ActiveTheme?.Def.Id ?? "none"} (count {ts?.Count}, share {ts?.Share:0.00}, items {g.S.items.Count})");
+        }
+        Build("craft", "concrete", "brick", "indie", "bar_craft",
+            new[] { "beer_bench", "tap_wall", "keg_stack", "hop_garland", "growler_shelf", "edison", "pipes" },
+            new[] { "ipa", "sour", "pils", "soft", "zero_lager" });
+        Build("lounge", "parquet", "plum", "jazz", "bar_marble",
+            new[] { "banquette", "cocktail_table", "wine_wall", "brass_lamps", "gallery_prints", "candles", "armchair" },
+            new[] { "house_red", "house_white", "fizz", "gin_tonic", "espresso_martini", "mocktail" });
     }
 
     static void CashCrisisArc()
