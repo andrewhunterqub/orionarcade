@@ -102,6 +102,31 @@ namespace Loab.Sim
             return t;
         }
 
+        // ---- Weekly statement (task T6) ----------------------------------------------------------------
+
+        public sealed class WeekStatement
+        {
+            public int Nights;
+            public float Takings, Drinks, Wages, Utilities, Rent, Loan, Other, Profit;
+            public float PrevProfit; public bool HasPrev;
+        }
+
+        /// The week ending with the most recent night in history (up to 7 nights), plus last week's profit for comparison.
+        public static WeekStatement LastWeek(GameState s)
+        {
+            var w = new WeekStatement();
+            int end = s.history.Count - 1;
+            for (int i = end; i >= 0 && i > end - 7; i--)
+            {
+                var h = s.history[i];
+                w.Nights++;
+                w.Takings += h.takings; w.Drinks += h.cogs; w.Wages += h.wages; w.Utilities += h.utilities;
+                w.Rent += h.rent; w.Loan += h.loan; w.Other += h.other; w.Profit += h.profit;
+            }
+            for (int i = end - 7; i >= 0 && i > end - 14; i--) { w.PrevProfit += s.history[i].profit; w.HasPrev = true; }
+            return w;
+        }
+
         // ---- Staff -------------------------------------------------------------------------------------
 
         static readonly uint[] Shirts = { 0x264653, 0x2a9d8f, 0xe76f51, 0x6d597a, 0x355070, 0xb56576, 0x1d3557, 0x588157 };

@@ -23,6 +23,7 @@ public static class Tests
         Test("determinism: same seed gives the same 14 nights", Determinism);
         Test("save round trip: reloaded game continues identically", SaveRoundTrip);
         Test("migration: an old, incomplete save loads and plays", OldSaveLoads);
+        Test("weekly statement: the lines add up to the profit", WeeklyStatementAddsUp);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -105,6 +106,19 @@ public static class Tests
                 int from = Math.Max(0, i - 80);
                 throw new Exception($"reloaded game diverged on night {7 + d}, near: ...{sa.Substring(from, Math.Min(160, sa.Length - from))}");
             }
+        }
+    }
+
+    static void WeeklyStatementAddsUp()
+    {
+        var g = Game.NewCareer(33, 1);
+        for (int d = 0; d < 14; d++)
+        {
+            PlayDay(g, true);
+            var w = Economy.LastWeek(g.S);
+            float lines = w.Takings - w.Drinks - w.Wages - w.Rent - w.Utilities - w.Loan - w.Other;
+            Assert(Math.Abs(lines - w.Profit) < 1f, $"day {g.S.day}: lines {lines:0.00} vs profit {w.Profit:0.00}");
+            if (g.S.DayOfWeek == 0) Assert(w.Rent > 0, $"day {g.S.day}: no rent in the week just ended");
         }
     }
 

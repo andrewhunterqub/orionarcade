@@ -199,6 +199,37 @@ namespace Loab.Game
         //  Nightly report
         // =====================================================================================
 
+        // Sunday's report: where the week's money went (task T6).
+        VisualElement WeeklyStatementCard(GameState s)
+        {
+            var w = Economy.LastWeek(s);
+            var c = El("card");
+            c.Add(Lbl("WEEKLY STATEMENT", "section"));
+            void Line(string label, float amount, bool cost)
+            {
+                if (cost && amount < 0.5f) return;
+                var r = Row(Lbl(label, "body"), Spacer(), Lbl(cost ? "-" + Money(amount) : Money(amount), "body"));
+                c.Add(r);
+            }
+            Line("Takings", w.Takings, false);
+            Line("Drinks from suppliers", w.Drinks, true);
+            Line("Wages", w.Wages, true);
+            Line("Rent", w.Rent, true);
+            Line("Utilities", w.Utilities, true);
+            Line("Loan repayments", w.Loan, true);
+            Line("Other (fines, emergency deliveries, the dog)", w.Other, true);
+            var total = Lbl(Money(w.Profit), "card-title");
+            total.AddToClassList(w.Profit >= 0 ? "cash" : "neg");
+            c.Add(Row(Lbl($"Profit over {w.Nights} nights", "card-title"), Spacer(), total));
+            if (w.HasPrev)
+            {
+                float diff = w.Profit - w.PrevProfit;
+                c.Add(Lbl(diff >= 0 ? $"Up {Money(diff)} on last week." : $"Down {Money(-diff)} on last week.", "card-sub"));
+            }
+            c.Add(Lbl("Rent is paid on Sunday nights, so Sunday's own profit often looks low.", "hint"));
+            return c;
+        }
+
         public void ShowReport()
         {
             var n = G.LastNight;
@@ -248,6 +279,7 @@ namespace Loab.Game
                 left.Add(c);
                 if (won) _run.Audio.Play("cheer", 0.8f);
             }
+            if (n.rent > 0) left.Add(WeeklyStatementCard(s));
             if (G.GoalsDoneLastNight.Count > 0)
             {
                 left.Add(Lbl("GOALS COMPLETE", "section"));

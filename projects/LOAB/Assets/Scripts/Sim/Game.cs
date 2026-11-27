@@ -751,6 +751,7 @@ namespace Loab.Sim
             float loan = 0;
             if (S.loanBalance > 0) { loan = Math.Min(S.loanDaily, S.loanBalance); S.loanBalance -= loan; }
             float extra = fines + (svc != null ? svc.EmergencySpend : 0); // already paid during the night
+            rec.rent = rent; rec.utilities = utilities; rec.loan = loan; rec.other = dog + extra;
             rec.costs = wages + utilities + rent + dog + loan + rec.cogs + extra;
             rec.profit = rec.takings - rec.costs;
             S.cash += rec.takings - (wages + utilities + rent + dog + loan);
