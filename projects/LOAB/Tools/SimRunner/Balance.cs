@@ -28,7 +28,34 @@ public static class Balance
         public string Show(double v) => Percent ? $"{v * 100:0}%" : Name.Contains("£") ? $"£{v:0}" : $"{v:0.0}";
     }
 
-    public static readonly string[] Strategies = { "sensible", "idle" };
+    public static readonly string[] Strategies = { "sensible", "idle", "careless", "cheap", "premium" };
+
+    /// Scripted players (task T2). "sensible" is Program.Play; the others vary one thing about it.
+    public static Action<Game> Strategy(string name)
+    {
+        switch (name)
+        {
+            case "sensible": return Program.Play;
+            case "idle": return null;
+            case "cheap": return g => { if (g.S.day == 0) Prices(g, 0.8f); Program.Play(g); };
+            case "premium": return g => { if (g.S.day == 0) Prices(g, 1.3f); Program.Play(g); };
+            case "careless": return Careless;
+            default: throw new ArgumentException("unknown strategy " + name);
+        }
+    }
+
+    static void Prices(Game g, float k) { foreach (var m in g.S.menu) g.SetPrice(m.id, (float)Math.Round(Content.Drink(m.id).DefaultPrice * k, 1)); }
+
+    // Spends on looks, not on running the place: splurges on décor on day one, restocks every few days,
+    // never cleans the lines, never hires, never books events.
+    static void Careless(Game g)
+    {
+        var s = g.S;
+        if (s.day == 0)
+            foreach (var id in new[] { "fireplace", "chandelier", "pinball", "fishtank", "booth", "rug", "jukebox", "piano" })
+                if (s.cash > 1200) Program.TryPlace(g, id);
+        if (s.day % 3 == 0) g.RestockAll();
+    }
 
     public static Run Play(string strategy, int diff, ulong seed, int nights)
     {
@@ -39,7 +66,7 @@ public static class Balance
         for (int d = 0; d < nights; d++)
         {
             Service svc = null;
-            bool going = Tests.PlayDay(g, strategy == "sensible", null, game => svc = game.Svc);
+            bool going = Tests.PlayDay(g, Strategy(strategy), null, game => svc = game.Svc);
             r.Nights = d + 1;
             var n = g.LastNight;
             if (svc != null && svc.Arrivals > 0)
@@ -109,6 +136,15 @@ public static class Balance
             Measure = rs => Mean(rs.Where(r => r.Strategy == "sensible").Select(r => r.DirtyShare)) },
         new Band { Name = "Stock-out share per night, sensible", Target = "under 5%", Lo = 0, Hi = 0.05, Percent = true,
             Measure = rs => Mean(rs.Where(r => r.Strategy == "sensible").Select(r => r.StockOutShare)) },
+        new Band { Name = "Bankrupt by week 12, Relaxed, careless", Target = "0-20%", Lo = 0, Hi = 0.2, Percent = true,
+            Measure = rs => Share(rs.Where(r => r.Strategy == "careless" && r.Diff == 0), r => r.Bankrupt) },
+        new Band { Name = "Bankrupt by week 12, Standard, careless", Target = "20-60%", Lo = 0.2, Hi = 0.6, Percent = true,
+            Measure = rs => Share(rs.Where(r => r.Strategy == "careless" && r.Diff == 1), r => r.Bankrupt) },
+        new Band { Name = "Bankrupt by week 12, Hardcore, careless", Target = "over 60%", Lo = 0.6, Hi = 1, Percent = true,
+            Measure = rs => Share(rs.Where(r => r.Strategy == "careless" && r.Diff == 2), r => r.Bankrupt) },
+        new Band { Name = "Premium vs cheap pricing cash at week 12, Standard", Target = "70-140% (both viable)", Lo = 0.7, Hi = 1.4, Percent = true,
+            Measure = rs => Mean(rs.Where(r => r.Strategy == "premium" && r.Diff == 1).Select(r => (double)r.CashWeek12))
+                          / Mean(rs.Where(r => r.Strategy == "cheap" && r.Diff == 1).Select(r => (double)r.CashWeek12)) },
         new Band { Name = "Event flops, all", Target = "20-35%", Lo = 0.2, Hi = 0.35, Percent = true, Measure = rs => OutcomeShare(rs, "Flop") },
         new Band { Name = "Event viral hits, all", Target = "5-12%", Lo = 0.05, Hi = 0.12, Percent = true, Measure = rs => OutcomeShare(rs, "Viral hit") },
     };

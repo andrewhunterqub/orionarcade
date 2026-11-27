@@ -50,13 +50,16 @@ public static class Tests
 
     /// Plays one full day (Prep + Service + Close) with an optional scripted player. Returns false once the game is over.
     public static bool PlayDay(Game g, bool sensible, Action<Game, int> duringService = null, Action<Game> afterService = null)
+        => PlayDay(g, sensible ? Program.Play : (Action<Game>)null, duringService, afterService);
+
+    public static bool PlayDay(Game g, Action<Game> prep, Action<Game, int> duringService = null, Action<Game> afterService = null)
     {
         if (g.S.pendingCard != null)
         {
             if (g.S.pendingCard == "loan") g.TakeEmergencyLoan();
             else if (g.ChooseCard(0) != null) g.ChooseCard(1);
         }
-        if (sensible) Program.Play(g);
+        prep?.Invoke(g);
         g.OpenDoors();
         int ticks = 0;
         while (g.Phase == Phase.Service)
