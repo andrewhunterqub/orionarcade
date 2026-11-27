@@ -8,6 +8,7 @@ public static class Program
 {
     public static void Main(string[] args)
     {
+        if (args.Length > 0 && args[0] == "test") { Environment.Exit(Tests.Run()); return; }
         int days = args.Length > 0 ? int.Parse(args[0]) : 28;
         ulong seed = args.Length > 1 ? ulong.Parse(args[1]) : 42;
         string strategy = args.Length > 2 ? args[2] : "sensible";
@@ -67,7 +68,7 @@ public static class Program
     }
 
     // A basic player: keeps stock up, hires when queues are long, books a weekly quiz, buys some furniture.
-    static void Play(Game g)
+    internal static void Play(Game g)
     {
         var s = g.S;
         if (s.lineQuality < 70) g.CleanLines();
@@ -173,7 +174,7 @@ public static class Program
         if (s.DayOfWeek == 1 && !s.events.Any()) { var q = s.agency.FirstOrDefault(a => a.kind == 0 && a.fee > 0); if (q != null) g.BookEvent(q.uid, 2, 150, 0); }
     }
 
-    static void TryPlace(Game g, string id)
+    internal static void TryPlace(Game g, string id)
     {
         for (int y = 1; y < g.S.gridH; y++)
             for (int x = 0; x < g.S.gridW; x++)

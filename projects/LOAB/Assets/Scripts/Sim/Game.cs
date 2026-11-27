@@ -117,6 +117,8 @@ namespace Loab.Sim
             if (!s.agency.Exists(a => a.kind == 2)) Economy.AddOpenMicActs(s, new Rng(s.seed + 99)); // saves from before Open Mic
             s.menu ??= new List<MenuEntry>(); s.staff ??= new List<StaffMember>(); s.events ??= new List<BookedEvent>();
             L = new Layout(s);
+            // LastNight isn't saved separately: restore it from history so a loaded game behaves like one that never left.
+            LastNight = s.history != null && s.history.Count > 0 ? s.history[s.history.Count - 1] : null;
             _r = new Rng(s.seed + (ulong)s.day * 31UL + 7UL);
             Recompute();
             Phase = s.bankrupt ? Phase.GameOver : Phase.Prep;

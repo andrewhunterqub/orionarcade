@@ -55,12 +55,15 @@ Assets/Scripts/Game/   Unity presentation: reads the sim, sends commands
   Sfx.cs               Synthesised sound effects
 Assets/Editor/LoabBuild.cs   Command-line WebGL build
 Tools/SimRunner/       Headless balance runner (dotnet), compiles the Sim folder directly
-Tools/UnityCheck/      Fast compile check of all runtime scripts against Unity's DLLs
+Tools/UnityCheck/      Fast compile check of all runtime scripts against Unity reference DLLs (NuGet, 2021.3)
 ```
 
 ## Working on it
 
 ```sh
+# Tests: determinism, save round trip, invariants, scenario smoke tests (also run in CI)
+dotnet run -c Release --project projects/LOAB/Tools/SimRunner -- test
+
 # Balance: simulate 28 nights with a scripted player and print nightly numbers
 dotnet run --project projects/LOAB/Tools/SimRunner -- 28 42 sensible
 

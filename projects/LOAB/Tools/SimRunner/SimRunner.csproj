@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="Tests.cs" />
     <Compile Include="../../Assets/Scripts/Sim/*.cs" />
   </ItemGroup>
 </Project>

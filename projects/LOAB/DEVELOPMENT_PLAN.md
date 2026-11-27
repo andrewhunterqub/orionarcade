@@ -90,13 +90,13 @@ Sizes: S (under 1 session), M (1–2 sessions), L (3 or more sessions).
 
 - [x] **E1 · Commit the tool project files (S).** `*.csproj` is gitignored. Add exceptions in `projects/LOAB/.gitignore` for `Tools/*/*.csproj`, commit `SimRunner.csproj` and `UnityCheck.csproj`, and update the README commands.
   *Done when:* a fresh clone runs `dotnet run --project projects/LOAB/Tools/SimRunner` and `dotnet build projects/LOAB/Tools/UnityCheck`.
-- [ ] **E2 · Automated simulation tests (M).** Add a `test` mode to SimRunner (no new dependencies), exiting non-zero on failure:
+- [x] **E2 · Automated simulation tests (M).** Add a `test` mode to SimRunner (no new dependencies), exiting non-zero on failure:
   - Determinism: same seed, same 14-night result, bit for bit.
   - Save round trip: serialise `GameState` with `System.Text.Json`, set to include fields as JsonUtility does, reload it, and check the simulation continues identically.
   - Invariants every night: cash finite, no negative stock, reachability holds, no agent stuck past closing, rating within 1–5, reputation within 0–100.
   - Smoke-test every scenario and every difficulty for 28 nights, with no exceptions.
   - Balance bands (T1), which start as warnings and become failures once B1–B4 are fixed.
-- [ ] **E3 · CI workflow `loab-ci.yml` (S).** On every push or pull request touching `projects/LOAB/**`: set up .NET 8, run SimRunner `test`, and build UnityCheck.
+- [x] **E3 · CI workflow `loab-ci.yml` (S).** On every push or pull request touching `projects/LOAB/**`: set up .NET 8, run SimRunner `test`, and build UnityCheck.
   *Done when:* it's green on `main`.
 - [ ] **E4 · Automatic WebGL builds in CI (M, needs the owner).** Add a GameCI (`game-ci/unity-builder`) workflow. It runs when the owner adds the `UNITY_LICENSE` (or `UNITY_EMAIL` and `UNITY_PASSWORD`) secrets; without them it skips with a clear message. It builds WebGL with the same settings as `LoabBuild.cs`, then commits the output to `site/games/loab/Build`. The commit uses `[skip loab-build]` so it doesn't trigger itself. Then it runs `npm run add-game -- loab`.
   *Done when:* the YAML lints and skips cleanly without secrets. A real build can only be confirmed after the owner adds the secrets.
@@ -278,3 +278,7 @@ _To be written by the final session._
 |---|---|---|---|---|
 | Fri 27 Nov 16:30 | Plan | Wrote this plan from the brief, a code review and a balance baseline (section 3.2) | `SimRunner` 56 nights × 5 seeds × 3 difficulties; UnityCheck 0 errors | No |
 | Fri 27 Nov 16:40 | E1 | Committed `SimRunner.csproj` (net8.0, compiles `Assets/Scripts/Sim`) and `UnityCheck.csproj` (netstandard2.1 against `UnityEngine.Modules` 2021.3.33); `.gitignore` exception for `Tools/*/*.csproj` | Both build from a clean checkout; UnityCheck catches a planted type error | No |
+| Fri 27 Nov 16:45 | E2 | `SimRunner -- test`: 17 tests covering determinism, save round trip (System.Text.Json with fields, like JsonUtility), per-night invariants on 3 difficulties × 3 seeds, idle player, every scenario, sandbox, and fuzzed service actions | 17/17 pass in about 11 s | No |
+| Fri 27 Nov 16:45 | Bug fix | **The round-trip test found a real bug:** `Game.LastNight` wasn't restored on load, so a reloaded game made different decisions and the report and tips lost the previous night. It's now restored from `history` in the `Game` constructor. | Round trip now identical over 7 nights | Yes (fix is in the sim; the live game needs a rebuild) |
+| Fri 27 Nov 16:45 | E3 | `.github/workflows/loab-ci.yml` runs the sim tests and UnityCheck on pushes and pull requests touching `projects/LOAB` | Runs locally; check CI on `main` next session | No |
+| Fri 27 Nov 16:45 | Note | Several plan items already exist in part: owner behind the bar, happy hour now, emergency delivery, `ParLevel`, `Train` and `DeepClean`. L1, L2, T4 and S4 should **extend** these, not rebuild them. | n/a | n/a |

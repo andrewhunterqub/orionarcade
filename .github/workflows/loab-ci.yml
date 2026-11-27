@@ -1,0 +1,30 @@
+name: LOAB checks
+
+# Headless checks for Let's Own A Bar! (see projects/LOAB/DEVELOPMENT_PLAN.md, tasks E2 and E3):
+# simulation tests with dotnet, and a compile check of every runtime script against Unity reference assemblies.
+on:
+  push:
+    branches: [main]
+    paths: ["projects/LOAB/**", ".github/workflows/loab-ci.yml"]
+  pull_request:
+    paths: ["projects/LOAB/**", ".github/workflows/loab-ci.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sim-and-compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: projects/LOAB
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Simulation tests
+        run: dotnet run -c Release --project projects/LOAB/Tools/SimRunner -- test
+      - name: Unity script compile check
+        run: dotnet build projects/LOAB/Tools/UnityCheck -nologo
