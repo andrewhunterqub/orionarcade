@@ -12,3 +12,6 @@
 *.sln
 *.slnx
 .vs/
+
+# Tool projects are source, not Unity-generated (see DEVELOPMENT_PLAN.md E1)
+!/Tools/*/*.csproj
