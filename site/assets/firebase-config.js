@@ -17,4 +17,4 @@ export const firebaseConfig = {
 // Sign-in options shown to players, in this order. Each one must also be enabled in the
 // Firebase console under Authentication > Sign-in method.
 // Available: "google", "facebook", "microsoft", "github", "apple", "email".
-export const signInMethods = ["google", "facebook", "microsoft", "github", "email"];
+export const signInMethods = ["google", "email"];
