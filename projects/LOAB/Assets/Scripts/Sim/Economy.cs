@@ -311,7 +311,7 @@ namespace Loab.Sim
             // Two bartenders, then bar or floor, then floor or (once you're known) door security.
             for (int i = 0; i < 4; i++)
             {
-                int role = i < 2 ? Roles.Bartender : i == 2 ? (r.Chance(0.5) ? Roles.Bartender : Roles.Floor) : (r.Chance(0.5) ? Roles.Floor : (s.reputation >= 15 ? Roles.Door : Roles.Floor));
+                int role = i < 2 ? Roles.Bartender : i == 2 ? (r.Chance(0.5) ? Roles.Bartender : Roles.Floor) : (r.Chance(0.5) ? Roles.Floor : (s.reputation >= 15 ? (s.Week % 2 == 0 ? Roles.Door : Roles.Cleaner) : Roles.Floor));
                 s.applicants.Add(MakeApplicant(s, r, role, baseQ + r.Range(-2, 4)));
             }
         }

@@ -346,7 +346,7 @@ namespace Loab.Game
                 var me = m;
                 var roleBtn = Btn("Hire as " + Roles.Names[me.role].ToLowerInvariant(), () => { var e = G.Hire(me.uid); if (e != null) Flash(e); else _run.Audio.Play("coin"); }, "btn-primary");
                 var swap = Btn("Switch role", () => { me.role = Roles.Next(me.role); MarkDirty(); }, "btn-small");
-                swap.tooltip = "Bartenders serve, floor staff clean and collect, door security keeps the peace.";
+                swap.tooltip = "Bartenders serve, floor staff tidy up during service, door security keeps the peace, cleaners work after closing.";
                 c.Add(Row(roleBtn, swap));
             }
             return c;

@@ -114,6 +114,7 @@ namespace Loab.Sim
             // Staff
             foreach (var m in s.staff)
             {
+                if (!Roles.WorksService(m.role)) continue;
                 var a = new StaffAgent { m = m, x = L.Door.x, y = L.Door.y, arriveAt = 0 };
                 if (m.HasTrait("always_late") && R.Chance(0.3)) a.arriveAt = 45;
                 Staff.Add(a);

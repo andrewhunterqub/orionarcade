@@ -21,8 +21,10 @@ namespace Loab.Sim
     /// Staff roles (StaffMember.role). Door security added in task S1.
     public static class Roles
     {
-        public const int Bartender = 0, Floor = 1, Door = 2, Count = 3;
-        public static readonly string[] Names = { "Bartender", "Floor staff", "Door security" };
+        public const int Bartender = 0, Floor = 1, Door = 2, Cleaner = 3, Count = 4;
+        public static readonly string[] Names = { "Bartender", "Floor staff", "Door security", "Cleaner" };
+        /// Cleaners work after closing (task S2), so they don't appear during service.
+        public static bool WorksService(int role) => role != Cleaner;
         public static int Next(int role) => (role + 1) % Count;
     }
 

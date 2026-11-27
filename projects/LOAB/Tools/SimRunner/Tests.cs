@@ -31,6 +31,7 @@ public static class Tests
         Test("seasons: hot drinks sell more in winter than in summer", SeasonalDrinks);
         Test("calendar: no overlapping nights, and St Patrick's Day draws a crowd", CalendarNights);
         Test("door security: fewer rowdy customers, and Hardcore weekends without it get fined", DoorSecurity);
+        Test("cleaner: works after close and raises tomorrow's cleanliness", Cleaner);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -260,6 +261,21 @@ public static class Tests
         Assert(with.rowdy < without.rowdy, $"rowdy with door staff {with.rowdy} vs without {without.rowdy}");
         Assert(with.fines == 0, "fined despite door staff");
         Assert(without.fines > 0, $"no licensing fines on rowdy Hardcore Saturdays without door staff (rowdy {without.rowdy})");
+    }
+
+    static void Cleaner()
+    {
+        float Morning(bool cleaner)
+        {
+            var g = Game.NewCareer(44, 1);
+            if (cleaner) g.S.staff.Add(Economy.MakeApplicant(g.S, new Rng(44), Roles.Cleaner, 12));
+            g.OpenDoors();
+            Assert(!g.Svc.Staff.Exists(a => a.m != null && a.m.role == Roles.Cleaner), "cleaner turned up during service");
+            int t = 0; while (g.Phase == Phase.Service && t++ < 20000) { g.Svc.Step(); g.EndServiceIfDone(); }
+            return g.S.cleanliness;
+        }
+        float without = Morning(false), with = Morning(true);
+        Assert(with > without + 5, $"tomorrow's cleanliness: with cleaner {with:0}, without {without:0}");
     }
 
     static void CashCrisisArc()

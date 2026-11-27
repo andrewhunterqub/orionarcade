@@ -827,9 +827,18 @@ namespace Loab.Sim
             // Wear & upkeep
             foreach (var it in S.items) it.wear = Math.Min(100, it.wear + (Content.Item(it.id).Fn == ItemFn.Games ? 0.8f : 0.35f));
             S.lineQuality = Math.Max(20, S.lineQuality - 4);
-            bool hasFloorStaff = S.staff.Exists(m => m.role == 1);
+            bool hasFloorStaff = S.staff.Exists(m => m.role == Roles.Floor);
+            var cleaner = S.staff.Find(m => m.role == Roles.Cleaner);
             S.cleanliness = hasFloorStaff ? 85 : 74;
-            if (svc != null) S.cleanliness -= Math.Min(15, svc.Spills + svc.RowdyCount * 2);
+            float mess = svc != null ? Math.Min(15, svc.Spills + svc.RowdyCount * 2) : 0;
+            if (cleaner != null)
+            {
+                // A cleaner after close (task S2): a better starting point, and last night's mess mostly gone.
+                S.cleanliness = Math.Min(97, S.cleanliness + 8 + cleaner.stamina * 0.3f);
+                mess *= 0.4f;
+                cleaner.nightsWorked++;
+            }
+            S.cleanliness -= mess;
 
             // Awareness decays slowly towards a floor
             for (int i = 0; i < 5; i++) S.awareness[i] = Math.Max(0.05f, Math.Min(1f, 0.12f + (S.awareness[i] - 0.12f) * 0.985f));
