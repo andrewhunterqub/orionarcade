@@ -240,6 +240,7 @@ There are about 64 hourly sessions. Times are UK time. If something runs over, c
    - `npm run check` passes.
    - For balance work, run the balance report and paste the key numbers into the log.
 6. **Push** to `main`. If the push is rejected, run `git pull --no-rebase`, rerun the gate, then push again.
+6b. **Visual check** (since the CI build works): when a push changes the Unity project, wait for the "LOAB WebGL build" run (about 11 minutes; it commits `LOAB: WebGL build from <sha>`). Then load `https://arcade.oriondesign.xyz/play.html?game=loab` in Playwright (Chromium with `--use-gl=swiftshader --enable-unsafe-swiftshader`), check there are no console errors, and screenshot the screens you changed. If the build fails, fixing it comes before any new task.
 7. **Log:** tick the task in section 4 and add one line to the progress log: time, task, what changed, verification, and whether it needs a Unity build to be visible.
 8. **Stop** at Monday 08:00 UK time: finish the current commit, write the handover in section 9, and cancel the scheduled task.
 
@@ -283,3 +284,4 @@ _To be written by the final session._
 | Fri 27 Nov 16:45 | E3 | `.github/workflows/loab-ci.yml` runs the sim tests and UnityCheck on pushes and pull requests touching `projects/LOAB` | Runs locally; check CI on `main` next session | No |
 | Fri 27 Nov 16:45 | Note | Several plan items already exist in part: owner behind the bar, happy hour now, emergency delivery, `ParLevel`, `Train` and `DeepClean`. L1, L2, T4 and S4 should **extend** these, not rebuild them. | n/a | n/a |
 | Fri 27 Nov 17:05 | E4 | Added `.github/workflows/loab-build.yml`. It uses GameCI `unity-builder@v4` with the `unityci/editor:6000.2.9f1-webgl` image and runs `LoabBuild.BuildWebGL`. It checks for the four build files, commits them to `main` as `github-actions[bot]`, then dispatches `deploy.yml`, because pushes made with GITHUB_TOKEN don't trigger workflows. It only runs when Unity project files change; a newer push cancels an older build. | First CI run follows this push | Builds automatically from now on |
+| Fri 27 Nov 16:45 | E4 verified | The first CI build succeeded in about 11 minutes. The bot committed `97109e1`, the arcade redeployed, and the live game loads with no console errors (Playwright screenshot of the title screen). Added step 6b, visual checks against the live build. | Live smoke test | Done automatically |
