@@ -36,6 +36,7 @@ public static class Tests
         Test("themes: a Craft Beer Hall and a Wine & Cocktail Lounge can be recognised", NewThemes);
         Test("cocktail lab: signatures go on the menu, sell, and are capped at three", CocktailLab);
         Test("events: live music, karaoke and the big match run end to end", NewEvents);
+        Test("director: every option of every card applies cleanly on a mid-game bar", AllCards);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -382,6 +383,36 @@ public static class Tests
         h.S.agency.RemoveAll(a => a.kind >= EventKinds.LiveMusic);
         var reloaded = new Game(JsonSerializer.Deserialize<GameState>(JsonSerializer.Serialize(h.S, Json), Json));
         Assert(reloaded.S.agency.Exists(a => a.kind == EventKinds.Match), "old save didn't get the new acts");
+    }
+
+    static void AllCards()
+    {
+        var baseGame = Game.NewCareer(19, 1);
+        for (int d = 0; d < 28; d++) PlayDay(baseGame, true);
+        baseGame.S.volume = 80; // so the noise card qualifies
+        baseGame.S.SetFlag("quiz_hosted", 3);
+        var json = JsonSerializer.Serialize(baseGame.S, Json);
+        int applied = 0;
+        foreach (var card in Director.Cards)
+        {
+            if (card.Id == "residency" || card.Id == "bailiff") continue; // special flows, tested elsewhere
+            for (int o = 0; o < card.Options.Count; o++)
+            {
+                var g = new Game(JsonSerializer.Deserialize<GameState>(json, Json));
+                g.S.cash = 20000;
+                if (card.When != null && !card.When(g.S)) { g.S.day = 28 + 3; g.S.weather = "Rain"; } // try the winter cards anyway
+                g.S.pendingCard = card.Id;
+                string text = card.Format != null ? card.Format(g) : card.Text;
+                Assert(!string.IsNullOrWhiteSpace(text), $"{card.Id}: no text");
+                var err = g.ChooseCard(o);
+                Assert(err == null, $"{card.Id} option {o}: {err}");
+                applied++;
+                if (!PlayDay(g, true)) continue;
+                Check(g);
+            }
+        }
+        Assert(Director.Cards.Count >= 30, $"only {Director.Cards.Count} cards");
+        Assert(applied >= 60, $"only {applied} card options applied");
     }
 
     static void CashCrisisArc()

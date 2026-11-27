@@ -138,8 +138,11 @@ public static class Balance
             Measure = rs => Mean(rs.Where(r => r.Strategy == "sensible").Select(r => r.StockOutShare)) },
         new Band { Name = "Bankrupt by week 12, Relaxed, careless", Target = "0-20%", Lo = 0, Hi = 0.2, Percent = true,
             Measure = rs => Share(rs.Where(r => r.Strategy == "careless" && r.Diff == 0), r => r.Bankrupt) },
-        new Band { Name = "Bankrupt by week 12, Standard, careless", Target = "20-60%", Lo = 0.2, Hi = 0.6, Percent = true,
-            Measure = rs => Share(rs.Where(r => r.Strategy == "careless" && r.Diff == 1), r => r.Bankrupt) },
+        // Since T8 a struggling bar gets a way back, so a careless Standard bar should be visibly struggling by week 12
+        // rather than necessarily bust (the brief's "low but non-zero bankruptcy" is over a whole year). Changed in K7.
+        new Band { Name = "Careless vs sensible cash at week 12, Standard", Target = "under 35%", Lo = -1, Hi = 0.35, Percent = true,
+            Measure = rs => Mean(rs.Where(r => r.Strategy == "careless" && r.Diff == 1).Select(r => (double)r.CashWeek12))
+                          / Mean(rs.Where(r => r.Strategy == "sensible" && r.Diff == 1).Select(r => (double)r.CashWeek12)) },
         new Band { Name = "Bankrupt by week 12, Hardcore, careless", Target = "over 60%", Lo = 0.6, Hi = 1, Percent = true,
             Measure = rs => Share(rs.Where(r => r.Strategy == "careless" && r.Diff == 2), r => r.Bankrupt) },
         new Band { Name = "Premium vs cheap pricing cash at week 12, Standard", Target = "70-140% (both viable)", Lo = 0.7, Hi = 1.4, Percent = true,

@@ -116,7 +116,7 @@ namespace Loab.Sim
                 When = s => s.day >= 6,
                 Options =
                 {
-                    Opt("Deep clean (£80)", "Spotless tonight. The inspector will be impressed.", g => { g.Spend(80, "Deep clean"); g.S.cleanliness = 100; g.S.SetFlag("inspector", g.S.day + 1); }, Afford(80)),
+                    Opt("Deep clean", "Spotless tonight. The inspector will be impressed.", g => { g.Spend(g.DeepCleanCost, "Deep clean"); g.S.cleanliness = 100; g.S.SetFlag("inspector", g.S.day + 1); }, g => g.S.cash >= g.DeepCleanCost || g.S.difficulty == 0 ? null : "Not enough cash"),
                     Opt("Wing it", "If it's grubby or rowdy, expect a fine.", g => g.S.SetFlag("inspector", g.S.day + 1)),
                 },
             });
@@ -179,6 +179,208 @@ namespace Loab.Sim
                     Opt("Ignore it", "You'll start tonight with far fewer clean glasses.", g => g.S.SetFlag("glasswasher", g.S.day + 1)),
                 },
             });
+            // ---- More stories (task K7) ---------------------------------------------------------------
+            Cards.Add(new CardDef
+            {
+                Id = "power_cut", Title = "Power cut", Art = "pipe", Weight = 0.7f,
+                Text = "The electrics trip at five o'clock. The whole street's dark.",
+                When = s => s.day >= 4,
+                Options =
+                {
+                    Opt("Emergency electrician (£180)", "Lights back on in time to open.", g => g.Spend(180, "Electrician"), Afford(180)),
+                    Opt("Candlelit opening", "Open an hour late by candlelight. Couples love it; everyone else is confused.", g => { g.S.SetFlag("late_open", g.S.day + 1); g.S.awareness[(int)Seg.Couples] += 0.03f; }),
+                },
+            });
+            Cards.Add(new CardDef
+            {
+                Id = "burst_keg", Title = "Burst keg", Art = "keg", Weight = 0.8f,
+                Format = g => $"A keg of {BurstName(g)} has split in the cellar. It's all over the floor.",
+                When = s => s.day >= 4 && s.menu.Exists(m => m.onMenu && m.stock > 0 && Content.Drink(m.id).CaseSize == 88),
+                Options =
+                {
+                    Opt("Order a replacement (£150)", "Back in stock tonight.", g => { g.Spend(150, "Replacement keg"); }, Afford(150)),
+                    Opt("Do without", "It's off tonight. Mop and move on.", g => { var m = BurstEntry(g); if (m != null) m.stock = 0; }),
+                },
+            });
+            Cards.Add(new CardDef
+            {
+                Id = "stag", Title = "Stag do", Art = "hen", Weight = 0.7f,
+                Text = "A stag party of twelve, matching T-shirts and all, wants to make your bar their first stop tonight.",
+                When = s => s.day >= 5 && s.DayOfWeek >= 3,
+                Options =
+                {
+                    Opt("Welcome them", "Big spenders. Also big singers. Expect a rowdier night.", g => { g.S.SetFlag("hen_day", g.S.day + 1); g.S.SetFlag("stag", g.S.day + 1); }),
+                    Opt("Politely decline", "A quieter night for your regulars.", g => g.S.reputation += 0.5f),
+                },
+            });
+            Cards.Add(new CardDef
+            {
+                Id = "scout", Title = "Location scout", Art = "film", Weight = 0.5f, Once = true,
+                Text = "A TV drama wants to film a scene at your bar tomorrow morning. They'll be gone by opening.",
+                When = s => s.reputation >= 25,
+                Options =
+                {
+                    Opt("Roll camera", "£400, and the bar's on telly. They'll leave a bit of a mess.", g => { g.S.cash += 400; g.S.cleanliness = Math.Max(0, g.S.cleanliness - 12); g.S.reputation += 2; g.AddTagPublic("As Seen on TV"); }),
+                    Opt("No thanks", "Peace and quiet.", g => { }),
+                },
+            });
+            Cards.Add(new CardDef
+            {
+                Id = "licensing", Title = "Licensing review", Art = "clipboard", Weight = 0.6f,
+                Text = "The council is reviewing late licences in the area, and yours is on the list.",
+                When = s => s.day >= 14,
+                Options =
+                {
+                    Opt("Show them your policies", "If responsible service is on, you'll sail through. If not, a £400 fine.", g =>
+                    {
+                        if (g.S.responsibleService) g.S.reputation += 2;
+                        else g.Spend(400, "Licensing fine");
+                    }),
+                    Opt("Hire a licensing consultant (£250)", "Expensive, but guaranteed to pass.", g => g.Spend(250, "Licensing consultant"), Afford(250)),
+                },
+            });
+            Cards.Add(new CardDef
+            {
+                Id = "romance", Title = "Behind-the-bar romance", Art = "heart", Weight = 0.5f,
+                Format = g => { var p = Pair(g); return p == null ? "Love is in the air." : $"{p.Item1.name} and {p.Item2.name} have started seeing each other. Everyone knows. They think nobody knows."; },
+                When = s => s.staff.Count >= 2,
+                Options =
+                {
+                    Opt("Wish them well", "Morale up for both, for now.", g => { var p = Pair(g); if (p != null) { p.Item1.morale = Math.Min(100, p.Item1.morale + 10); p.Item2.morale = Math.Min(100, p.Item2.morale + 10); } }),
+                    Opt("Keep it professional", "Different shifts where you can. A little grumbling.", g => { var p = Pair(g); if (p != null) { p.Item1.morale = Math.Max(0, p.Item1.morale - 5); p.Item2.morale = Math.Max(0, p.Item2.morale - 5); } }),
+                },
+            });
+            Cards.Add(new CardDef
+            {
+                Id = "poach", Title = "Poaching attempt", Art = "rival", Weight = 0.6f,
+                Format = g => { var m = Best(g); return m == null ? "A rival is sniffing around your staff." : $"The bar across town has offered {m.name} a job, and more money."; },
+                When = s => s.staff.Count >= 2 && s.day >= 10,
+                Options =
+                {
+                    Opt("Match it (+£15 a night)", "They stay, and they're touched you fought for them.", g => { var m = Best(g); if (m != null) { m.wage += 15; m.morale = Math.Min(100, m.morale + 12); } }),
+                    Opt("Let them decide", "If they're happy here, they'll stay. If not...", g =>
+                    {
+                        var m = Best(g);
+                        if (m != null && m.morale < 60) { g.S.staff.Remove(m); g.S.reputation -= 1; }
+                        else if (m != null) m.morale = Math.Min(100, m.morale + 5);
+                    }),
+                },
+            });
+            Cards.Add(new CardDef
+            {
+                Id = "quiz_vote", Title = "Best Quiz in Town?", Art = "phone", Weight = 0.6f, Once = true,
+                Text = "The local paper is running a reader vote for the best pub quiz in the city. You're on the shortlist.",
+                When = s => s.GetFlag("quiz_hosted") >= 3,
+                Options =
+                {
+                    Opt("Campaign for votes (£100)", "Posters, social posts, shameless begging. You'll probably win.", g => { g.Spend(100, "Quiz campaign"); g.AddTagPublic("Best Quiz in Town"); g.S.awareness[(int)Seg.Locals] += 0.05f; }, Afford(100)),
+                    Opt("Let the quiz speak for itself", "If your quizzes have been hits, you'll win anyway.", g => { if (g.S.GetFlag("quiz_hits") >= 2) g.AddTagPublic("Best Quiz in Town"); }),
+                },
+            });
+            Cards.Add(new CardDef
+            {
+                Id = "snow", Title = "Snow forecast", Art = "phone", Weight = 1.2f,
+                Text = "Heavy snow is forecast for tonight. Most people will stay home.",
+                When = s => s.Season == 1,
+                Options =
+                {
+                    Opt("Snow night special (£60)", "Light the fire, post a cosy photo, mulled wine on the board. The locals will trudge in.", g => { g.Spend(60, "Snow night promo"); g.S.weather = "Storm"; g.S.socialPostBoost += 0.4f; g.S.awareness[(int)Seg.Locals] += 0.02f; }, Afford(60)),
+                    Opt("Batten down the hatches", "A quiet night.", g => g.S.weather = "Storm"),
+                },
+            });
+            Cards.Add(new CardDef
+            {
+                Id = "heatwave", Title = "Heatwave", Art = "keg", Weight = 1.2f,
+                Text = "It's going to be scorching tonight. Everyone will want something cold.",
+                When = s => s.Season == 3,
+                Options =
+                {
+                    Opt("Stock up on cold ones (£200)", "An extra keg of lager and one of cider.", g =>
+                    {
+                        g.Spend(200, "Heatwave stock");
+                        g.S.weather = "Sunny";
+                        foreach (var id in new[] { "lager", "cider" }) { var m = g.S.Menu(id); if (m != null) { m.onMenu = true; m.stock += 88; } }
+                    }, Afford(200)),
+                    Opt("Hope for the best", "Sunny and hot. Staff will tire fast.", g => g.S.weather = "Sunny"),
+                },
+            });
+            Cards.Add(new CardDef
+            {
+                Id = "ring", Title = "Lost and found", Art = "heart", Weight = 0.5f, Once = true,
+                Text = "Your cleaner found a wedding ring under a booth. Someone, somewhere, is in a lot of trouble.",
+                When = s => s.day >= 6,
+                Options =
+                {
+                    Opt("Track down the owner", "A grateful couple and a lovely story in the local paper.", g => { g.S.reputation += 2.5f; g.S.awareness[(int)Seg.Couples] += 0.04f; }),
+                    Opt("Put up a notice", "They'll find it eventually. Probably.", g => g.S.reputation += 0.5f),
+                },
+            });
+            Cards.Add(new CardDef
+            {
+                Id = "food_truck", Title = "Street-food van", Art = "keg", Weight = 0.5f, Once = true,
+                Text = "A street-food van wants to park outside on Fridays and Saturdays. Hungry people are thirsty people.",
+                When = s => s.day >= 10,
+                Options =
+                {
+                    Opt("Let them park", "They pay you £50 a week, and weekends get busier.", g => g.S.SetFlag("food_truck", 1)),
+                    Opt("No thanks", "Your bar, your rules.", g => { }),
+                },
+            });
+            Cards.Add(new CardDef
+            {
+                Id = "noise", Title = "Noise complaint", Art = "clipboard", Weight = 1.1f,
+                Text = "The flat upstairs has complained about the music again. They've mentioned the council.",
+                When = s => s.volume >= 70 && s.day >= 5,
+                Options =
+                {
+                    Opt("Turn it down", "Volume to 50. Peace with the neighbours.", g => g.SetVolume(50)),
+                    Opt("It's a bar", "Keep it loud. The council sends a warning letter and a £150 fine.", g => { g.Spend(150, "Noise fine"); g.S.reputation -= 1; }),
+                },
+            });
+            Cards.Add(new CardDef
+            {
+                Id = "radio", Title = "On the radio", Art = "mic", Weight = 0.6f,
+                Text = "Local radio wants you on the breakfast show to talk about the bar.",
+                When = s => s.reputation >= 20,
+                Options =
+                {
+                    Opt("Do the interview", "Everyone in town hears about you.", g => { for (int i = 0; i < g.S.awareness.Length; i++) g.S.awareness[i] += 0.025f; }),
+                    Opt("Too early for me", "You need your sleep.", g => { }),
+                },
+            });
+            Cards.Add(new CardDef
+            {
+                Id = "beer_fest", Title = "Beer festival", Art = "keg", Weight = 0.5f,
+                Text = "The city beer festival has offered you a stall this weekend.",
+                When = s => s.day >= 12,
+                Options =
+                {
+                    Opt("Take a stall (£150)", "Craft fans and creatives get to know you.", g => { g.Spend(150, "Beer festival stall"); g.S.awareness[(int)Seg.Creatives] += 0.05f; g.S.awareness[(int)Seg.Tourists] += 0.04f; g.S.reputation += 1; }, Afford(150)),
+                    Opt("Skip it", "Not this year.", g => { }),
+                },
+            });
+            Cards.Add(new CardDef
+            {
+                Id = "student_union", Title = "Student union deal", Art = "phone", Weight = 0.6f, Once = true,
+                Text = "The student union wants to list you as a 'partner bar' in their freshers' guide.",
+                When = s => s.Season == 0 || s.day >= 20,
+                Options =
+                {
+                    Opt("Sign up", "Students hear about you. Expect them to want the cheap stuff.", g => g.S.awareness[(int)Seg.Students] += 0.1f),
+                    Opt("Not our crowd", "Keep it grown-up.", g => g.S.awareness[(int)Seg.YoungPros] += 0.02f),
+                },
+            });
+            Cards.Add(new CardDef
+            {
+                Id = "mystery_shopper", Title = "Mystery shopper", Art = "glass", Weight = 0.6f,
+                Text = "Word is the brewery is sending a mystery shopper to check how their beer is kept.",
+                When = s => s.day >= 7,
+                Options =
+                {
+                    Opt("Clean the lines now (£40)", "Perfect pints. They'll be impressed.", g => { g.Spend(40, "Line clean"); g.S.lineQuality = 100; g.S.reputation += 1; }, Afford(40)),
+                    Opt("Leave it", "If your lines are clean, no harm done.", g => { if (g.S.lineQuality >= 70) g.S.reputation += 1; else g.S.reputation -= 1; }),
+                },
+            });
             Cards.Add(new CardDef
             {
                 Id = "bailiff", Title = "Final demand", Art = "letter", Weight = 0, When = s => false,
@@ -221,6 +423,17 @@ namespace Loab.Sim
                     Opt("Not tonight", "Keep your usual music.", g => { }),
                 },
             });
+        }
+
+        // Helpers for the K7 cards. Deterministic, so a card's text and effect agree.
+        static MenuEntry BurstEntry(Game g) => g.S.menu.Find(m => m.onMenu && m.stock > 0 && Content.Drink(m.id).CaseSize == 88);
+        static string BurstName(Game g) { var m = BurstEntry(g); return m != null ? Content.Drink(m.id).Name : "beer"; }
+        static Tuple<StaffMember, StaffMember> Pair(Game g) => g.S.staff.Count >= 2 ? Tuple.Create(g.S.staff[0], g.S.staff[1]) : null;
+        static StaffMember Best(Game g)
+        {
+            StaffMember best = null;
+            foreach (var m in g.S.staff) if (best == null || m.speed + m.charm + m.skill > best.speed + best.charm + best.skill) best = m;
+            return best;
         }
 
         public static void Roll(Game g, Rng r)

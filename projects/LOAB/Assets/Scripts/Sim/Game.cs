@@ -816,6 +816,7 @@ namespace Loab.Sim
             rec.costs = wages + utilities + rent + dog + loan + rec.cogs + extra;
             rec.profit = rec.takings - rec.costs;
             S.cash += rec.takings - (wages + utilities + rent + dog + loan);
+            if (rent > 0 && S.GetFlag("food_truck") == 1) { S.cash += 50; rec.moments.Add("The street-food van paid its £50 pitch fee."); }
             if (rent > 0)
             {
                 float week = rec.profit;
@@ -1024,6 +1025,7 @@ namespace Loab.Sim
         public GoalDef CurrentGoal => S.mode == 0 && S.goalIndex < Goals.Career.Count ? Goals.Career[S.goalIndex] : null;
 
         void AddTag(string t) { if (!S.tags.Contains(t)) S.tags.Add(t); }
+        public void AddTagPublic(string t) => AddTag(t);
         void RemoveTag(string t) { S.tags.Remove(t); }
 
         static string ThoughtText(Note n, int count, int total)

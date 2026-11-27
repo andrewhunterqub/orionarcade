@@ -10,7 +10,7 @@ namespace Loab.Sim
         /// <summary>How much a segment wants to come to / join in with this kind of event.</summary>
         public static float EventAffinity(SegmentDef d, int kind) => EventKinds.Affinity(d, kind);
 
-        public const float RentPerWeek = 1500f;
+        public const float RentPerWeek = 1650f;
         public const float UtilitiesPerNight = 60f;
         /// How strongly footfall falls as prices rise above normal (times each segment's price sensitivity).
         public const float PriceElasticity = 4.0f;
@@ -118,6 +118,7 @@ namespace Loab.Sim
                 if (v.ActiveTheme != null && d.ThemeAffinity.TryGetValue(v.ActiveTheme.Def.Id, out float aff)) theme += aff * 0.25f;
                 float sports = (s.DayOfWeek == 2 || s.DayOfWeek == 5) && i == (int)Seg.SportsFans && v.Screens > 0 ? 1.5f : 1f; // match days
                 if (i == (int)Seg.Tourists) sports *= s.Season == 3 ? 1.8f : s.Season == 1 ? 0.6f : 1f; // tourist season
+                if (s.GetFlag("food_truck") == 1 && (s.DayOfWeek == 4 || s.DayOfWeek == 5)) sports *= 1.08f;   // the street-food van
                 float appeal = (0.15f + 0.85f * v.SegMatch[i]) * rep * price * ent * theme * sports * Calendar.SegmentMult(s, v, i);
                 float social = 1f + s.socialPostBoost;
                 outExpected[i] = canServe ? foot * d.Share * s.awareness[i] * appeal * day * social : 0;

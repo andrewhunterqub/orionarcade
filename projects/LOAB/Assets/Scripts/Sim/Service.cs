@@ -244,6 +244,7 @@ namespace Loab.Sim
         void SpawnArrivals()
         {
             if (T >= LastOrdersAt) return;
+            if (S.GetFlag("late_open") == S.day + 1 && T < 60) return; // power cut: opening an hour late
             if (_henAt >= 0 && T >= _henAt)
             {
                 _henAt = -1;
@@ -834,6 +835,7 @@ namespace Loab.Sim
                 float p = 0.00022f * (c.alcoholic - 2) * d.RowdyBase * (V.Axes[Axis.Energy] / 55f)
                           * (S.responsibleService ? 0.5f : 1f) * (S.difficulty == 0 ? 0.5f : S.difficulty == 2 ? 1.5f : 1f)
                           * (DoorStaffOn ? 0.55f : 1f) // a visible bouncer keeps people in line
+                          * (S.GetFlag("stag") == S.day + 1 ? 1.5f : 1f) // the stag do
                           * (Event != null && Event.kind == EventKinds.Karaoke && EventPhase >= 1 && EventPhase <= 3 ? 1.4f : 1f); // karaoke gets lively
                 if (R.Chance(p)) MakeRowdy(c);
             }
