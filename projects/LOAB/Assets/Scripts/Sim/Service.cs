@@ -298,6 +298,7 @@ namespace Loab.Sim
 
             // Regulars
             var pool = S.regulars.FindAll(r => r.seg == (int)seg);
+            int friendsToBring = 0;
             if (pool.Count > 0 && R.Chance(0.12 + 0.03 * Math.Min(pool.Count, 8)))
             {
                 var r = pool[R.Range(0, pool.Count)];
@@ -307,9 +308,8 @@ namespace Loab.Sim
                     r.visits++;
                     if (R.Chance(0.18 * r.loyalty))
                     {
-                        int friends = R.Range(1, 3);
-                        Moments.Add($"{r.name} brought {friends} friend{(friends > 1 ? "s" : "")} along.");
-                        for (int i = 0; i < friends; i++) Spawn(seg, false);
+                        friendsToBring = R.Range(1, 3);
+                        Moments.Add($"{r.name} brought {friendsToBring} friend{(friendsToBring > 1 ? "s" : "")} along.");
                     }
                 }
             }
@@ -326,10 +326,17 @@ namespace Loab.Sim
                 }
             }
 
+            // #11: late arrivals for a running event join in
+            if (forEvent && Event != null && EventPhase >= 1 && EventPhase <= 3)
+            {
+                c.watching = true;
+                if (Event.kind == 0 && Event.ticket > 0) TicketIncome += Event.ticket;
+            }
             Customers.Add(c);
             Arrivals++;
             SegCounts[(int)seg]++;
             Decide(c);
+            for (int i = 0; i < friendsToBring; i++) Spawn(seg, false);
             return c;
         }
 
@@ -429,16 +436,34 @@ namespace Loab.Sim
             if (c.seatSlot >= 0)
             {
                 var it = S.Item(c.seatItem);
-                var app = L.Approaches(it);
-                Cell target = Nearest(app, CellOf(c));
-                c.state = CState.ToSeat;
-                if (!WalkTo(c, target)) { c.state = CState.Seated; }
-                return;
+                var target = ReachableApproach(it, CellOf(c));
+                if (target.HasValue)
+                {
+                    c.state = CState.ToSeat;
+                    if (!WalkTo(c, target.Value)) c.state = CState.Seated;
+                    return;
+                }
+                // Can't get to that seat: give it up and stand instead.
+                if (_seats.TryGetValue(c.seatItem, out var arr) && arr[c.seatSlot] == c) arr[c.seatSlot] = null;
+                c.seatSlot = -1;
             }
             c.state = CState.Standing;
             c.standCell = _standSpots.Count > 0 ? _standSpots[R.Range(0, _standSpots.Count)] : L.Door;
             WalkTo(c, c.standCell);
             if (T - c.arrivedAt > 15) c.Mark(Note.NoSeat);
+        }
+
+        /// <summary>The approach cell with the shortest walk, or null if none can be reached.</summary>
+        Cell? ReachableApproach(PlacedItem it, Cell from)
+        {
+            if (it == null) return null;
+            Cell? best = null; float bd = float.MaxValue;
+            foreach (var c in L.Approaches(it))
+            {
+                float d = L.Distance(from, c);
+                if (d < bd && d < 999) { bd = d; best = c; }
+            }
+            return best;
         }
 
         Cell Nearest(List<Cell> cells, Cell from)
@@ -484,12 +509,12 @@ namespace Loab.Sim
                 var it = S.Item(kv.Key);
                 var d = Content.Item(it.id);
                 if (d.Fn != ItemFn.Games || kv.Value.Count >= d.Capacity) continue;
-                var app = L.Approaches(it);
-                if (app.Count == 0) continue;
+                var spot = ReachableApproach(it, CellOf(c));
+                if (!spot.HasValue) continue;
                 kv.Value.Add(c);
                 c.gameItem = it.uid;
                 c.state = CState.ToGame;
-                WalkTo(c, app[R.Range(0, app.Count)]);
+                WalkTo(c, spot.Value);
                 return true;
             }
             return false;
@@ -512,11 +537,11 @@ namespace Loab.Sim
                 return true;
             }
             var it = S.Item(best);
-            var app = L.Approaches(it);
-            if (app.Count == 0) return false;
+            var spot = ReachableApproach(it, CellOf(c));
+            if (!spot.HasValue) return false;
             c.toiletItem = best;
             c.state = CState.ToToilet;
-            WalkTo(c, Nearest(app, CellOf(c)));
+            WalkTo(c, spot.Value);
             return true;
         }
 
@@ -536,6 +561,15 @@ namespace Loab.Sim
 
         void ReleaseAll(Customer c)
         {
+            foreach (var a in Staff)
+            {
+                if (a.serving != c) continue;
+                a.serving = null;
+                a.workLeft = 0;
+                if (a.barPoint >= 0 && a.barPoint < BarPoints.Count) BarPoints[a.barPoint].bartender = null;
+                _washing.Add((T + 1, 1)); // the glass goes back
+                if (c.state == CState.Ordering) c.drink = null;
+            }
             if (c.barPoint >= 0 && c.barPoint < BarPoints.Count) BarPoints[c.barPoint].queue.Remove(c);
             c.barPoint = -1;
             if (c.seatSlot >= 0 && _seats.TryGetValue(c.seatItem, out var arr) && arr[c.seatSlot] == c) arr[c.seatSlot] = null;
@@ -1010,6 +1044,7 @@ namespace Loab.Sim
             if (m == null || m.stock <= 0)
             {
                 c.drink = null;
+                _washing.Add((T, 1)); // unused glass goes back on the shelf
                 Settle(c);
                 return;
             }
@@ -1069,7 +1104,7 @@ namespace Loab.Sim
                 Incident best = null; float bestScore = float.MaxValue;
                 foreach (var i in Incidents)
                 {
-                    if (i.resolved || i.claimed) continue;
+                    if (i.resolved || i.claimed || T < i.retryAt) continue;
                     float pri = i.kind == IncidentKind.Rowdy ? 0 : i.kind == IncidentKind.Spill ? 5 : i.kind == IncidentKind.Toilet ? 8 : (i.count >= 3 ? 10 : 18);
                     Cell at = i.kind == IncidentKind.Rowdy && i.customer != null ? new Cell((int)Math.Round(i.customer.x), (int)Math.Round(i.customer.y)) : i.cell;
                     float score = pri + Math.Abs(at.x - a.x) + Math.Abs(at.y - a.y);
@@ -1082,7 +1117,7 @@ namespace Loab.Sim
                 Cell target = TaskCell(best);
                 a.path = L.Path(new Cell((int)Math.Round(a.x), (int)Math.Round(a.y)), target);
                 a.pathIdx = 0;
-                if (a.path == null) { best.claimed = false; a.task = null; }
+                if (a.path == null) { best.claimed = false; best.retryAt = T + 10; a.task = null; }
                 return;
             }
             var t = a.task;
@@ -1135,7 +1170,7 @@ namespace Loab.Sim
             if (i.itemUid != 0)
             {
                 var it = S.Item(i.itemUid);
-                if (it != null) { var app = L.Approaches(it); if (app.Count > 0) return app[0]; }
+                if (it != null) { var app = L.Approaches(it); if (app.Count > 0) return app[0]; } // UpdateFloor backs off if unreachable
             }
             return L.Walkable(i.cell) ? i.cell : L.Door;
         }
@@ -1305,6 +1340,7 @@ namespace Loab.Sim
             var m = S.Menu(drinkId);
             if (d == null || m == null) return "Unknown drink";
             float cost = d.CaseSize * d.UnitCost * 1.6f;
+            if (T + 20 >= LastOrders) return "Too late: it wouldn't arrive before last orders";
             if (S.cash < cost && S.difficulty > 0) return "Not enough cash";
             S.cash -= cost;
             EmergencySpend += cost;
@@ -1377,17 +1413,18 @@ namespace Loab.Sim
         /// <summary>Seat position in cell units (shared with the renderer).</summary>
         public static void SeatPos(PlacedItem it, int slot, out float x, out float y, out float faceX, out float faceY)
         {
+            // Work in the model's unrotated local space (front = -y), then rotate with the item, so seats
+            // always line up with the chairs the renderer builds.
             var d = Content.Item(it.id);
-            Layout.Size(d, it.rot, out int w, out int h);
-            float cx = it.x + (w - 1) / 2f, cy = it.y + (h - 1) / 2f;
+            int w0 = d.W, h0 = d.H;
             int n = Math.Max(1, d.Capacity);
             bool oneRow = d.Model == "sofa" || d.Model == "armchair" || d.Model == "beanbag" || d.Model == "stool";
-            bool alongX = w >= h;
+            bool alongX = w0 >= h0;
             float along, across;
             if (n == 1) { along = 0; across = 0; }
             else if (oneRow)
             {
-                along = (slot - (n - 1) / 2f) * (Math.Max(w, h) / (float)n);
+                along = (slot - (n - 1) / 2f) * (Math.Max(w0, h0) / (float)n);
                 across = 0;
             }
             else
@@ -1395,17 +1432,32 @@ namespace Loab.Sim
                 int perSide = (n + 1) / 2;
                 int side = slot % 2;
                 int k = slot / 2;
-                float len = Math.Max(w, h);
+                float len = Math.Max(w0, h0);
                 along = perSide == 1 ? 0 : (k - (perSide - 1) / 2f) * (len / perSide);
-                float half = Math.Min(w, h) / 2f;
+                float half = Math.Min(w0, h0) / 2f;
                 across = (side == 0 ? -1 : 1) * Math.Max(0.32f, half - 0.12f);
             }
-            if (alongX) { x = cx + along; y = cy + across; faceX = 0; faceY = across == 0 ? -1 : -Math.Sign(across); }
-            else { x = cx + across; y = cy + along; faceX = across == 0 ? -1 : -Math.Sign(across); faceY = 0; }
-            if (oneRow && n >= 1)
+            float lx, ly, fx, fy;
+            if (alongX) { lx = along; ly = across; fx = 0; fy = across == 0 ? -1 : -Math.Sign(across); }
+            else { lx = across; ly = along; fx = across == 0 ? -1 : -Math.Sign(across); fy = 0; }
+            if (oneRow) { fx = 0; fy = -1; }
+            Rotate(it.rot, ref lx, ref ly);
+            Rotate(it.rot, ref fx, ref fy);
+            Layout.Size(d, it.rot, out int w, out int h);
+            x = it.x + (w - 1) / 2f + lx;
+            y = it.y + (h - 1) / 2f + ly;
+            faceX = fx; faceY = fy;
+        }
+
+        /// <summary>Rotate a local offset by item rotation (matches the renderer's 90-degree Y rotations).</summary>
+        static void Rotate(int rot, ref float x, ref float y)
+        {
+            float ox = x, oy = y;
+            switch (rot & 3)
             {
-                var f = Layout.Facing(it.rot);
-                faceX = f.x; faceY = f.y;
+                case 1: x = oy; y = -ox; break;
+                case 2: x = -ox; y = -oy; break;
+                case 3: x = -oy; y = ox; break;
             }
         }
 

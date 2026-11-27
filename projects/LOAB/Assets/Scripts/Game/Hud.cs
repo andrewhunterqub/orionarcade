@@ -282,8 +282,8 @@ namespace Loab.Game
             CloseOverlay();
             SetMode();
             MarkDirty();
-            if (G.S.pendingCard != null) ShowCard();
-            else if (G.Phase == Phase.GameOver) ShowGameOver();
+            if (G.Phase == Phase.GameOver || G.S.bankrupt) { G.Phase = Phase.GameOver; ShowGameOver(); }
+            else if (G.S.pendingCard != null) ShowCard();
             if (G.S.day == 0) Tip("prep");
             else if (G.S.day == 1) Tip("vibe");
             else if (G.S.day == 2) Tip("stock");
@@ -318,6 +318,8 @@ namespace Loab.Game
         }
 
         public void MarkDirty() => _dirty = true;
+        public bool ModalOpen => _overlayKind != null;
+        public bool TitleOpen => _overlayKind == "title";
 
         bool _photo;
         bool _photoHidden => false;

@@ -506,6 +506,9 @@ namespace Loab.Game
             _customers.Clear(); _staff.Clear();
             foreach (var kv in _incidents) Destroy(kv.Value);
             _incidents.Clear();
+            if (_performer != null) _performer.Root.SetActive(false);
+            if (_spot != null) _spot.gameObject.SetActive(false);
+            _eventLive = false;
         }
 
         CharView Rent()

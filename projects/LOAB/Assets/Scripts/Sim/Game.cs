@@ -103,7 +103,7 @@ namespace Loab.Sim
         public event Action Changed;
 
         // Undo/redo of build commands: snapshot-based, within one Prep phase.
-        sealed class Snapshot { public List<PlacedItem> items; public string floor, wall; public float cash; public int nextUid; public float spent; }
+        sealed class Snapshot { public List<PlacedItem> items; public string floor, wall; public int nextUid; public float cashDelta; }
         readonly Stack<Snapshot> _undo = new Stack<Snapshot>();
         readonly Stack<Snapshot> _redo = new Stack<Snapshot>();
         Rng _r;
@@ -111,6 +111,8 @@ namespace Loab.Sim
         public Game(GameState s)
         {
             S = s;
+            if (string.IsNullOrEmpty(s.pendingCard)) s.pendingCard = null; // JsonUtility saves null strings as ""
+            s.menu ??= new List<MenuEntry>(); s.staff ??= new List<StaffMember>(); s.events ??= new List<BookedEvent>();
             L = new Layout(s);
             _r = new Rng(s.seed + (ulong)s.day * 31UL + 7UL);
             Recompute();
@@ -229,29 +231,50 @@ namespace Loab.Sim
             if (Phase != Phase.Prep) return Fail("You can only build during Prep");
             var err = cmd.Validate(this);
             if (err != null) return Fail(err);
-            _undo.Push(Snap());
+            var snap = Snap();
+            float before = S.cash;
             _redo.Clear();
             cmd.Apply(this);
+            snap.cashDelta = S.cash - before; // only this command's money moves on undo/redo
+            _undo.Push(snap);
             Recompute();
             return null;
         }
 
         public bool CanUndo => _undo.Count > 0;
         public bool CanRedo => _redo.Count > 0;
-        public void Undo() { if (_undo.Count == 0) return; _redo.Push(Snap()); Restore(_undo.Pop()); }
-        public void Redo() { if (_redo.Count == 0) return; _undo.Push(Snap()); Restore(_redo.Pop()); }
+        public void Undo()
+        {
+            if (_undo.Count == 0) return;
+            var snap = _undo.Pop();
+            var cur = Snap(); cur.cashDelta = snap.cashDelta;
+            _redo.Push(cur);
+            Restore(snap);
+            S.cash -= snap.cashDelta; SpentToday += snap.cashDelta;
+            Recompute();
+        }
+
+        public void Redo()
+        {
+            if (_redo.Count == 0) return;
+            var snap = _redo.Pop();
+            var cur = Snap(); cur.cashDelta = snap.cashDelta;
+            _undo.Push(cur);
+            Restore(snap);
+            S.cash += snap.cashDelta; SpentToday -= snap.cashDelta;
+            Recompute();
+        }
 
         Snapshot Snap()
         {
             var list = new List<PlacedItem>();
             foreach (var i in S.items) list.Add(new PlacedItem { uid = i.uid, id = i.id, x = i.x, y = i.y, rot = i.rot, wear = i.wear });
-            return new Snapshot { items = list, floor = S.floor, wall = S.wall, cash = S.cash, nextUid = S.nextUid, spent = SpentToday };
+            return new Snapshot { items = list, floor = S.floor, wall = S.wall, nextUid = S.nextUid };
         }
 
         void Restore(Snapshot s)
         {
-            S.items = s.items; S.floor = s.floor; S.wall = s.wall; S.cash = s.cash; S.nextUid = s.nextUid; SpentToday = s.spent;
-            Recompute();
+            S.items = s.items; S.floor = s.floor; S.wall = s.wall; S.nextUid = s.nextUid;
         }
 
         // =====================================================================================
@@ -557,7 +580,7 @@ namespace Loab.Sim
         void FinishNight(Service svc)
         {
             var rec = new NightRecord { day = S.day, weather = S.weather };
-            float wages = 0;
+            float wages = 0, fines = 0;
             foreach (var m in S.staff) wages += m.wage;
             if (svc != null)
             {
@@ -619,7 +642,7 @@ namespace Loab.Sim
                 // Inspections & critic
                 if (S.GetFlag("inspector") == S.day + 1)
                 {
-                    if (svc.CleanlinessNow < 55 || svc.RowdyCount >= 3) { S.cash -= 300; rec.moments.Add("The licensing inspector was NOT impressed. £300 fine."); S.reputation -= 3; }
+                    if (svc.CleanlinessNow < 55 || svc.RowdyCount >= 3) { S.cash -= 300; fines += 300; rec.moments.Add("The licensing inspector was NOT impressed. £300 fine."); S.reputation -= 3; }
                     else { rec.moments.Add("The inspector left happy. Clean bill of health."); S.reputation += 1.5f; }
                 }
                 if (S.GetFlag("critic") == S.day + 1)
@@ -647,7 +670,8 @@ namespace Loab.Sim
             float dog = S.GetFlag("dog") == 1 ? 5 : 0;
             float loan = 0;
             if (S.loanBalance > 0) { loan = Math.Min(S.loanDaily, S.loanBalance); S.loanBalance -= loan; }
-            rec.costs = wages + utilities + rent + dog + loan + rec.cogs;
+            float extra = fines + (svc != null ? svc.EmergencySpend : 0); // already paid during the night
+            rec.costs = wages + utilities + rent + dog + loan + rec.cogs + extra;
             rec.profit = rec.takings - rec.costs;
             S.cash += rec.takings - (wages + utilities + rent + dog + loan);
             if (rent > 0)

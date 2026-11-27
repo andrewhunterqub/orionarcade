@@ -114,7 +114,8 @@ namespace Loab.Game
 
         public void Save()
         {
-            if (G == null || G.Phase == Phase.Service) return;
+            // Only save at a day boundary (Prep) or game over. Saving on the report would replay that night on load.
+            if (G == null || (G.Phase != Phase.Prep && G.Phase != Phase.GameOver)) return;
             try
             {
                 PlayerPrefs.SetString(SaveKey, JsonUtility.ToJson(G.S));
@@ -160,6 +161,7 @@ namespace Loab.Game
         public void OpenDoors()
         {
             ClearInteraction();
+            Save(); // keep tonight's Prep decisions
             var err = G.OpenDoors();
             if (err != null) { Ui.Flash(err); return; }
             Paused = false; SpeedMult = 1;
@@ -173,7 +175,20 @@ namespace Loab.Game
             if (G.Phase != Phase.Service) return;
             G.Svc.RunToEnd();
             G.EndServiceIfDone();
-            if (G.Phase == Phase.Report) { Audio.Play("till"); Ui.OnReport(); Save(); }
+            if (G.Phase == Phase.Report) { ClearInteraction(); Audio.Play("till"); Ui.OnReport(); }
+        }
+
+        /// <summary>Leave to the title. Mid-service, the night is abandoned and the game reloads from the last save.</summary>
+        public void QuitToTitle()
+        {
+            Paused = false;
+            if (G.Phase == Phase.Service)
+            {
+                Audio.Ambience(0);
+                if (!Continue()) Load(Sim.Game.NewCareer((ulong)DateTime.Now.Ticks, 1));
+            }
+            else Save();
+            Ui.ShowTitle();
         }
 
         public void NextDay()
@@ -232,7 +247,7 @@ namespace Loab.Game
             if (G == null) return;
             HandleKeys();
             HandlePointer();
-            if (G.Phase == Phase.Service) TickService();
+            if (G.Phase == Phase.Service && !Ui.TitleOpen) TickService();
             UpdateGhost();
             UpdateBlur();
             Ui.Update();
@@ -258,7 +273,7 @@ namespace Loab.Game
             }
             Audio.Ambience(svc.Inside / (float)Mathf.Max(1, svc.Capacity));
             G.EndServiceIfDone();
-            if (G.Phase == Phase.Report) { Audio.Ambience(0); Audio.Play("till"); Ui.OnReport(); Save(); }
+            if (G.Phase == Phase.Report) { Audio.Ambience(0); Audio.Play("till"); ClearInteraction(); Ui.OnReport(); }
         }
 
         void HandleKeys()
@@ -273,7 +288,7 @@ namespace Loab.Game
             if (Input.GetKeyDown(KeyCode.Delete) || Input.GetKeyDown(KeyCode.Backspace)) SellSelected();
             if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.LeftCommand)) && Input.GetKeyDown(KeyCode.Z)) { G.Undo(); ClearInteraction(); }
             if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.LeftCommand)) && Input.GetKeyDown(KeyCode.Y)) { G.Redo(); ClearInteraction(); }
-            if (G.Phase == Phase.Service)
+            if (G.Phase == Phase.Service && !Ui.ModalOpen)
             {
                 if (Input.GetKeyDown(KeyCode.Space)) Paused = !Paused;
                 if (Input.GetKeyDown(KeyCode.Alpha1)) { SpeedMult = 1; Paused = false; }

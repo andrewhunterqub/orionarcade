@@ -87,6 +87,7 @@ namespace Loab.Sim
         public int itemUid;        // toilet / table
         public Customer customer;  // rowdy
         public bool claimed, resolved;
+        public float retryAt;      // staff back off from incidents they couldn't reach
     }
 
     public sealed class ServiceMessage

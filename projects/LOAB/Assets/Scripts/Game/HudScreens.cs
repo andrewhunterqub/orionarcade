@@ -115,7 +115,7 @@ namespace Loab.Game
                 PlayerPrefs.SetInt("loab_stopmo", WorldView.CharView.StopMotion ? 1 : 0);
                 ShowPause();
             }, "option"));
-            m.Add(Btn("Save and quit to title", () => { _run.Save(); _run.Paused = false; ShowTitle(); }, "option"));
+            m.Add(Btn(G.Phase == Phase.Service ? "Quit to title (abandons tonight)" : "Save and quit to title", () => _run.QuitToTitle(), "option"));
             if (G.Phase == Phase.Service) m.Add(Lbl("Your progress is saved at the start of each day.", "hint"));
         }
 
@@ -158,7 +158,7 @@ namespace Loab.Game
             var take = Btn("", () => { G.TakeEmergencyLoan(); _run.Save(); CloseOverlay(); MarkDirty(); }, "option", "btn-primary");
             take.Add(Lbl("Take the loan", "option-label")); take.Add(Lbl("A second chance. Don't waste it.", "option-detail"));
             m.Add(take);
-            var no = Btn("", () => { G.S.bankrupt = true; G.Phase = Phase.GameOver; ShowGameOver(); }, "option");
+            var no = Btn("", () => { G.S.bankrupt = true; G.Phase = Phase.GameOver; _run.Save(); ShowGameOver(); }, "option");
             no.Add(Lbl("Hand back the keys", "option-label")); no.Add(Lbl("Close the bar for good.", "option-detail"));
             m.Add(no);
         }
