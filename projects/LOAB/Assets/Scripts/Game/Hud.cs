@@ -16,11 +16,11 @@ namespace Loab.Game
 
         // Persistent chrome
         VisualElement _top, _tabs, _side, _sideBody, _feed, _goal, _mentor, _actions, _inspector, _overlay;
-        Label _tooltip, _thought;
+        Label _tooltip, _thought, _sign, _plaque;
         ScrollView _sideScroll;
         Label _barName, _dayText, _cash, _rating, _rep, _custLabel, _custVal, _clock, _goalText, _hint;
         Button _openBtn;
-        VisualElement _speedBox, _stats;
+        VisualElement _speedBox, _stats, _camBox;
         readonly List<Button> _speedBtns = new List<Button>();
         readonly List<(VisualElement el, float until)> _toasts = new List<(VisualElement, float)>();
         string _tab;
@@ -28,6 +28,7 @@ namespace Loab.Game
         float _hintUntil;
         Button _behindBtn, _happyBtn, _collectBtn;
         public bool TextFocused;
+        int _tooltipFrame;
 
         public static readonly string Star = "★", EmptyStar = "☆";
 
@@ -50,6 +51,7 @@ namespace Loab.Game
             _root = _doc.rootVisualElement;
             _root.styleSheets.Add(Resources.Load<StyleSheet>("UI/Loab"));
             _root.AddToClassList("root");
+            if (PlayerPrefs.GetInt("loab_large_text", 0) == 1) ps.scale = 1.18f;
             _root.pickingMode = PickingMode.Ignore;
             BuildChrome();
         }
@@ -116,6 +118,13 @@ namespace Loab.Game
 
         void BuildChrome()
         {
+            _sign = Lbl("", "sign");
+            _sign.pickingMode = PickingMode.Ignore;
+            _root.Add(_sign); // first children, so every other piece of UI draws over them
+            _plaque = Lbl("", "sign", "plaque");
+            _plaque.pickingMode = PickingMode.Ignore;
+            _root.Add(_plaque);
+
             _top = El("topbar");
             _barName = Lbl("", "barname");
             _dayText = Lbl("", "daytext");
@@ -161,6 +170,7 @@ namespace Loab.Game
             _side = El("panel", "side");
             _sideScroll = new ScrollView(ScrollViewMode.Vertical);
             _sideScroll.style.flexGrow = 1;
+            _sideScroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             _sideBody = new VisualElement();
             _sideScroll.Add(_sideBody);
             _side.Add(_sideScroll);
@@ -175,6 +185,15 @@ namespace Loab.Game
 
             _openBtn = Btn("OPEN DOORS", () => _run.OpenDoors(), "btn-primary", "open-btn");
             _root.Add(_openBtn);
+
+            _camBox = El("row");
+            _camBox.style.position = Position.Absolute;
+            _camBox.style.right = 18; _camBox.style.bottom = 90;
+            AddCam("<", () => _run.Rig.Rotate(-1), "Rotate view (Q)");
+            AddCam(">", () => _run.Rig.Rotate(1), "Rotate view (E)");
+            AddCam("+", () => _run.Rig.ZoomBy(-0.15f), "Zoom in");
+            AddCam("-", () => _run.Rig.ZoomBy(0.15f), "Zoom out");
+            _root.Add(_camBox);
 
             _actions = El("actions");
             _happyBtn = Btn("Happy Hour\n(1 hour, once a night)", () => { var e = G.Svc?.StartHappyHour(); if (e != null) Flash(e); else _run.Audio.Play("coin"); }, "action");
@@ -238,6 +257,7 @@ namespace Loab.Game
             _tabs.style.display = prep ? DisplayStyle.Flex : DisplayStyle.None;
             _openBtn.style.display = prep ? DisplayStyle.Flex : DisplayStyle.None;
             _actions.style.display = service ? DisplayStyle.Flex : DisplayStyle.None;
+            _camBox.style.display = prep || service ? DisplayStyle.Flex : DisplayStyle.None;
             _speedBox.style.display = service ? DisplayStyle.Flex : DisplayStyle.None;
             bool sideOpen = prep && (_tab != null || _run.Selected != null);
             _goal.style.display = (prep || service) && G.CurrentGoal != null && !sideOpen ? DisplayStyle.Flex : DisplayStyle.None;
@@ -274,6 +294,8 @@ namespace Loab.Game
 
         public void OnServiceStart()
         {
+            HideMentor(false);
+            _tipQueue.Remove("prep"); _tipQueue.Remove("vibe"); _tipQueue.Remove("stock"); _tipQueue.Remove("events"); _tipQueue.Remove("cash");
             CloseOverlay();
             ClearToasts();
             SetMode();
@@ -283,6 +305,8 @@ namespace Loab.Game
 
         public void OnReport()
         {
+            HideMentor(false);
+            _tipQueue.Remove("service");
             SetMode();
             ShowReport();
         }
@@ -296,10 +320,11 @@ namespace Loab.Game
         public void MarkDirty() => _dirty = true;
 
         bool _photo;
+        bool _photoHidden => false;
         public void TogglePhotoMode()
         {
             _photo = !_photo;
-            foreach (var child in _root.Children()) child.visible = !_photo;
+            foreach (var child in _root.Children()) child.visible = !_photo || child == _sign || child == _plaque;
             if (!_photo) SetMode();
         }
 
@@ -344,11 +369,32 @@ namespace Loab.Game
                 _custLabel.text = "expected tonight";
             }
 
+            // Bar name on the hanging sign outside (a screen-space label pinned to the board).
+            bool showSign = _overlayKind != "title" && _root.panel != null && !_photoHidden;
+            if (showSign)
+            {
+                var sp = WorldToPanel(WorldView.SignPos(s));
+                _sign.text = s.barName;
+                _sign.style.left = sp.x; _sign.style.top = sp.y;
+                float ppu = _root.layout.height / _run.Rig.VisibleHeight; // panel pixels per world unit (at the focus)
+                _sign.style.fontSize = Mathf.Clamp(0.16f * ppu, 5, 30);
+                _sign.style.width = 1.25f * ppu;
+                var pp = WorldToPanel(WorldView.PlaquePos(s));
+                _plaque.text = s.barName;
+                _plaque.style.left = pp.x; _plaque.style.top = pp.y;
+                _plaque.style.fontSize = Mathf.Clamp(0.3f * ppu, 8, 40);
+                _plaque.style.width = 3.3f * ppu;
+                _plaque.style.translate = new Translate(Length.Percent(-50), Length.Percent(-50));
+                _sign.style.translate = new Translate(Length.Percent(-50), Length.Percent(-50));
+            }
+            _sign.style.display = showSign ? DisplayStyle.Flex : DisplayStyle.None;
+            _plaque.style.display = showSign ? DisplayStyle.Flex : DisplayStyle.None;
+
             for (int i = _toasts.Count - 1; i >= 0; i--)
                 if (Time.unscaledTime > _toasts[i].until) { _toasts[i].el.RemoveFromHierarchy(); _toasts.RemoveAt(i); }
 
             if (Time.unscaledTime > _hintUntil) _hint.style.display = DisplayStyle.None;
-            if (_run.PlaceId == null && !_run.Moving) _tooltip.style.display = DisplayStyle.None;
+            if (Time.frameCount - _tooltipFrame > 4) _tooltip.style.display = DisplayStyle.None;
 
             if (_dirty && !Input.GetMouseButton(0))
             {
@@ -382,10 +428,24 @@ namespace Loab.Game
             return RuntimePanelUtils.ScreenToPanel(_root.panel, new Vector2(sp.x, Screen.height - sp.y));
         }
 
+        void AddCam(string label, Action act, string tip)
+        {
+            var b = Btn(label, act, "btn-small");
+            b.style.width = 34; b.style.height = 30; b.tooltip = tip;
+            _camBox.Add(b);
+        }
+
+        public void SetLargeText(bool on)
+        {
+            _doc.panelSettings.scale = on ? 1.18f : 1f;
+            PlayerPrefs.SetInt("loab_large_text", on ? 1 : 0);
+        }
+
         public void SetCursorHint(string text, Vector2 screenPos)
         {
             if (_root.panel == null) return;
             var p = RuntimePanelUtils.ScreenToPanel(_root.panel, new Vector2(screenPos.x, Screen.height - screenPos.y));
+            _tooltipFrame = Time.frameCount;
             _tooltip.text = text;
             _tooltip.style.left = p.x + 18;
             _tooltip.style.top = p.y + 14;
@@ -488,6 +548,7 @@ namespace Loab.Game
                 return;
             }
             var text = Mentor.Tips[key];
+            _mentorKey = key;
             G.S.seenTips.Add(key);
             _mentor.Clear();
             var portrait = Lbl("M", "portrait");
@@ -505,6 +566,19 @@ namespace Loab.Game
         }
 
         readonly List<string> _tipQueue = new List<string>();
+        string _mentorKey;
+
+        /// <summary>Hide Maggie. If requeue, her current tip comes back once the way is clear.</summary>
+        void HideMentor(bool requeue)
+        {
+            if (_mentor.style.display != DisplayStyle.Flex) return;
+            _mentor.style.display = DisplayStyle.None;
+            if (requeue && _mentorKey != null)
+            {
+                G.S.seenTips.Remove(_mentorKey);
+                _tipQueue.Insert(0, _mentorKey);
+            }
+        }
 
         void FlushPendingTip()
         {

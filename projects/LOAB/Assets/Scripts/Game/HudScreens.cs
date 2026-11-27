@@ -17,6 +17,7 @@ namespace Loab.Game
             var panel = El("panel", wide ? "modal-wide" : "modal");
             var scroll = new ScrollView(ScrollViewMode.Vertical);
             scroll.style.flexShrink = 1;
+            scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             panel.Add(scroll);
             if (title != null) scroll.Add(Lbl(title, "modal-title"));
             if (body != null) scroll.Add(Lbl(body, "body"));
@@ -93,6 +94,7 @@ namespace Loab.Game
             H("VIBE", "Everything you choose (furniture, floor, walls, music, lighting, prices) shapes your bar's Vibe across five axes. Each type of customer has a Vibe they love. Collect enough matching items to get a theme recognised.");
             H("SERVICE", "Watch people come in, queue, drink and chat. Click spills, blocked toilets and rowdy customers (red !) to deal with them. Click anyone to see what they're thinking. Use Happy Hour, Help behind the bar and Emergency delivery when it gets hectic.");
             H("GROWING", "Good nights earn good BarHopper reviews, which build reputation and bring bigger crowds and better staff. Book quizzes and comedy nights, keep regulars happy, and work through Maggie's goals.");
+            H("THE MODEL", "Your bar is a little scale model on its plinth. In the day it sits in a bright studio; when the doors open the lights go down and the bar glows. The soft blur at the top and bottom of the screen is the miniature lens: turn it off in the menu if you prefer.");
             H("CONTROLS", "Drag or WASD to pan, scroll or pinch to zoom, Q/E to rotate the view. Space pauses service, 1/2/3 change speed. Ctrl+Z undoes building. Enter moves on from the nightly report. H hides the interface for photos.");
             m.Add(Btn("Close", () => { if (fromTitle) ShowTitle(); else CloseOverlay(); }, "btn-primary", "option"));
         }
@@ -105,6 +107,14 @@ namespace Loab.Game
             m.Add(Btn("Resume", () => { _run.Paused = wasPaused; CloseOverlay(); }, "btn-primary", "option"));
             m.Add(Btn("How to play", () => ShowHelp(false), "option"));
             m.Add(Btn(_run.Audio.Muted ? "Sound: OFF" : "Sound: ON", () => { _run.Audio.Muted = !_run.Audio.Muted; ShowPause(); }, "option"));
+            m.Add(Btn(_doc.panelSettings.scale > 1.01f ? "Text size: LARGE" : "Text size: normal", () => { SetLargeText(_doc.panelSettings.scale <= 1.01f); ShowPause(); }, "option"));
+            m.Add(Btn(_run.Blur.Enabled ? "Miniature blur: ON" : "Miniature blur: OFF", () => { _run.SetBlur(!_run.Blur.Enabled); ShowPause(); }, "option"));
+            m.Add(Btn(WorldView.CharView.StopMotion ? "Stop-motion figures: ON" : "Stop-motion figures: OFF", () =>
+            {
+                WorldView.CharView.StopMotion = !WorldView.CharView.StopMotion;
+                PlayerPrefs.SetInt("loab_stopmo", WorldView.CharView.StopMotion ? 1 : 0);
+                ShowPause();
+            }, "option"));
             m.Add(Btn("Save and quit to title", () => { _run.Save(); _run.Paused = false; ShowTitle(); }, "option"));
             if (G.Phase == Phase.Service) m.Add(Lbl("Your progress is saved at the start of each day.", "hint"));
         }
@@ -118,6 +128,7 @@ namespace Loab.Game
             if (G.S.pendingCard == "loan") { ShowLoan(); return; }
             var card = Director.Get(G.S.pendingCard);
             if (card == null) { G.S.pendingCard = null; return; }
+            HideMentor(true);
             var m = Modal(card.Title, card.Format != null ? card.Format(G) : card.Text);
             _overlayKind = "card";
             for (int i = 0; i < card.Options.Count; i++)
@@ -172,6 +183,11 @@ namespace Loab.Game
             var m = Modal($"{Content.DayNames[n.day % 7]} night at {s.barName}", null, true);
             _run.Audio.Play(n.profit > 0 ? "fanfare" : "error", 0.4f);
 
+            if (s.pendingCard != "loan")
+            {
+                var quick = Row(Lbl($"{s.weather}  -  {Content.Seasons[s.Season]}, week {s.Week}", "hint"), Spacer(), Btn("Next day (Enter)", () => _run.NextDay(), "btn-primary"));
+                m.Add(quick);
+            }
             var kpis = Row();
             kpis.Add(Kpi(n.customers.ToString(), "customers"));
             kpis.Add(Kpi(n.servedDrinks.ToString(), "drinks served"));

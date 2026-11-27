@@ -14,6 +14,7 @@ namespace Loab.Game
         public CameraRig Rig;
         public Hud Ui;
         public Sfx Audio;
+        public TiltShift Blur;
 
         // Interaction state
         public string PlaceId;      // item being placed from the catalogue
@@ -28,6 +29,7 @@ namespace Loab.Game
         bool _down, _dragging;
         float _pinchDist;
         float _tickAcc;
+        int _lastEventPhase;
         int _hoverX = int.MinValue, _hoverY;
         bool _hoverOk;
         string _hoverErr;
@@ -42,8 +44,8 @@ namespace Loab.Game
         void Awake()
         {
             Application.targetFrameRate = 60;
-            QualitySettings.shadowDistance = 40;
-            QualitySettings.pixelLightCount = 6;
+            QualitySettings.shadowDistance = 100;
+            QualitySettings.pixelLightCount = 10;
             ModelFactory.Init(Resources.Load<Material>("Materials/Lit"), Resources.Load<Material>("Materials/Glow"));
             Audio = gameObject.AddComponent<Sfx>();
             // Start with a fresh career in the background of the title screen so there's something to look at.
@@ -58,6 +60,10 @@ namespace Loab.Game
             var s = G.S;
             var centre = new Vector3((s.gridW - 1) / 2f, 0, (s.gridH - 1) / 2f);
             Rig = CameraRig.Create(centre, new Vector3(-2, 0, -4), new Vector3(s.gridW + 1, 0, s.gridH + 1));
+            Blur = Rig.Cam.gameObject.AddComponent<TiltShift>();
+            Blur.Mat = Resources.Load<Material>("Materials/TiltShift");
+            Blur.Enabled = PlayerPrefs.GetInt("loab_blur", 1) == 1;
+            WorldView.CharView.StopMotion = PlayerPrefs.GetInt("loab_stopmo", 0) == 1;
             World = WorldView.Create(G, Rig);
         }
 
@@ -115,6 +121,38 @@ namespace Loab.Game
                 PlayerPrefs.Save();
             }
             catch (Exception e) { Debug.LogWarning("Save failed: " + e.Message); }
+        }
+
+        public void SetBlur(bool on)
+        {
+            Blur.Enabled = on;
+            PlayerPrefs.SetInt("loab_blur", on ? 1 : 0);
+        }
+
+        /// <summary>Tilt-shift rules from the visual brief (5.2): stronger when zoomed in, gentle while building.</summary>
+        void UpdateBlur()
+        {
+            float t = Rig.ZoomT;
+            bool building = G.Phase == Phase.Prep && (PlaceId != null || Moving);
+            float strength = Mathf.Lerp(0.55f, 1f, t);
+            float band = Mathf.Lerp(0.3f, 0.15f, t);
+            if (building) { strength *= 0.3f; band = 0.35f; }
+            Blur.Strength = Mathf.Lerp(Blur.Strength, strength, 0.15f);
+            Blur.Band = Mathf.Lerp(Blur.Band, band, 0.15f);
+            Blur.Softness = Mathf.Lerp(0.3f, 0.2f, t);
+            Blur.Spread = Mathf.Lerp(1.1f, 1.8f, t);
+            // The sharp band follows what you're looking at (brief 5.1).
+            float focus = 0.5f;
+            Vector3? subject = null;
+            if (G.Phase == Phase.Service && World.EventLive) subject = World.StagePos + Vector3.up;
+            else if (Inspected != null) subject = new Vector3(Inspected.x, 1f, Inspected.y);
+            else if (Selected != null) subject = WorldView.ItemCentre(Selected);
+            if (subject.HasValue)
+            {
+                var sp = Rig.Cam.WorldToViewportPoint(subject.Value);
+                if (sp.z > 0) focus = Mathf.Clamp(sp.y, 0.25f, 0.75f);
+            }
+            Blur.Focus = Mathf.Lerp(Blur.Focus, focus, 1f - Mathf.Exp(-Time.unscaledDeltaTime / 0.3f * 3f));
         }
 
         public void DeleteSave() { PlayerPrefs.DeleteKey(SaveKey); PlayerPrefs.Save(); }
@@ -196,6 +234,7 @@ namespace Loab.Game
             HandlePointer();
             if (G.Phase == Phase.Service) TickService();
             UpdateGhost();
+            UpdateBlur();
             Ui.Update();
         }
 
@@ -213,6 +252,8 @@ namespace Loab.Game
                 float takings = svc.Takings;
                 for (int i = 0; i < steps && !svc.Finished; i++) svc.Step();
                 for (int i = before; i < svc.Messages.Count; i++) Ui.Toast(svc.Messages[i]);
+                if (svc.EventPhase == 4 && _lastEventPhase != 4 && (svc.EventOutcome == "Hit" || svc.EventOutcome == "Viral hit")) Audio.Play("cheer", 0.7f);
+                _lastEventPhase = svc.EventPhase;
                 if (svc.Takings > takings && Time.frameCount % 3 == 0) Audio.Play("till", 0.25f);
             }
             Audio.Ambience(svc.Inside / (float)Mathf.Max(1, svc.Capacity));
@@ -335,9 +376,36 @@ namespace Loab.Game
             Ui.OnSelected();
         }
 
+        void UpdateHover()
+        {
+            if (_dragging || Time.frameCount % 3 != 0) return;
+            Vector2 pos = Input.mousePosition;
+            if (Ui.IsOverUI(pos)) return;
+            var ray = Rig.Cam.ScreenPointToRay(pos);
+            if (!Physics.Raycast(ray, out var hit, 200f)) return;
+            if (G.Phase == Phase.Service)
+            {
+                var ag = hit.collider.GetComponentInParent<AgentTag>();
+                if (ag != null && ag.Customer != null)
+                {
+                    var c = ag.Customer;
+                    Ui.SetCursorHint(c.rowdy ? c.name + " is getting rowdy. Click to have a word." : c.name + " (" + c.def.Name.ToLowerInvariant() + "). Click for details.", pos);
+                    return;
+                }
+                if (hit.collider.GetComponentInParent<IncidentTag>() != null) Ui.SetCursorHint("Click to sort this out (collect, mop or fix)", pos);
+            }
+            else if (G.Phase == Phase.Prep)
+            {
+                var itag = hit.collider.GetComponentInParent<ItemTag>();
+                var it = itag != null ? G.S.Item(itag.Uid) : null;
+                if (it != null) Ui.SetCursorHint(Content.Item(it.id).Name + "  -  click to move, rotate or sell", pos);
+            }
+        }
+
         void UpdateGhost()
         {
             string id = PlaceId ?? (Moving && Selected != null ? Selected.id : null);
+            if (id == null && (G.Phase == Phase.Prep || G.Phase == Phase.Service)) UpdateHover();
             if (id == null || G.Phase != Phase.Prep) { World.HideGhost(); return; }
             Vector2 pos = Input.mousePosition;
             if (Ui.IsOverUI(pos) || !Rig.ScreenToGround(pos, out var world)) { World.HideGhost(); return; }

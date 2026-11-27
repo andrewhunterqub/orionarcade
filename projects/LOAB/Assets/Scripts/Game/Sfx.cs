@@ -26,6 +26,16 @@ namespace Loab.Game
             _clips["whistle"] = Make(0.4f, (t, i) => Env(t, 0.02f, 0.35f) * 0.3f * Sin(t, 2100 + 80 * Mathf.Sin(t * 40)));
             _clips["coin"] = Make(0.3f, (t, i) => Env(t, 0.002f, 0.28f) * 0.4f * Sin(t, t < 0.07f ? 988 : 1319));
             _clips["fanfare"] = Make(0.9f, (t, i) => Env(t, 0.01f, 0.85f) * 0.35f * (Sin(t, t < 0.2f ? 523 : t < 0.4f ? 659 : 784) + 0.5f * Sin(t, t < 0.4f ? 1046 : 1568)));
+            // A cheer: filtered noise swelling and fading, with a few whoops.
+            float lp = 0;
+            var cr = new System.Random(7);
+            _clips["cheer"] = Make(1.6f, (t, i) =>
+            {
+                lp += ((float)(cr.NextDouble() * 2 - 1) - lp) * 0.25f;
+                float env = Mathf.Clamp01(t / 0.15f) * Mathf.Exp(-Mathf.Max(0, t - 0.3f) * 2.2f);
+                float whoop = (t > 0.2f && t < 0.6f ? 0.15f * Sin(t, 520 + 400 * (t - 0.2f)) : 0) + (t > 0.5f && t < 0.9f ? 0.12f * Sin(t, 700 - 200 * (t - 0.5f)) : 0);
+                return (lp * 1.3f + whoop) * env;
+            });
             // Crowd murmur: brown noise with slow swells and the odd glass clink.
             float brown = 0;
             var rng = new System.Random(3);

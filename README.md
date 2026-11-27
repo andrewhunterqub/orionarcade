@@ -19,7 +19,17 @@ site/                    <- everything that gets published
 scripts/                 helper scripts (Node 20+, no dependencies)
 ```
 
+## Games
+
+| Game | Type | Source |
+|---|---|---|
+| Let's Own A Bar! | Unity 6 WebGL | [`projects/LOAB`](projects/LOAB) (see its README) |
+| Pythle | Plain web app | Copied from the Pythle project; rebuild its data there and copy the 5 runtime files |
+
 ## Adding a game
+
+Plain HTML/JS games work too: put the game in `site/games/<slug>/` with an `index.html` (and no `Build/` folder), then run `npm run add-game -- <slug>`. It's played in a sandboxed iframe.
+
 
 1. **Set up Unity's WebGL build** (Player Settings > WebGL > Publishing Settings):
    - **Compression Format:** `Disabled` is simplest. If you want `Brotli` or `Gzip`, also tick **Decompression Fallback**. GitHub Pages can't send the `Content-Encoding` headers Unity needs for `.br`/`.gz` files.
@@ -51,7 +61,8 @@ scripts/                 helper scripts (Node 20+, no dependencies)
 | `mobile` | | Set `false` to warn phone/tablet players |
 | `added` | | `YYYY-MM-DD`, newest games are listed first |
 | `version`, `company` | | Passed to Unity |
-| `hidden` | | `true` keeps a game out of the library (useful while testing) |
+| `hidden` | | `true` keeps a game out of the library but still playable by direct link |
+| `type`, `entry` | | `"html"` and an entry page for plain web games (no Unity), set automatically by `add-game` |
 
 ### Size limits
 

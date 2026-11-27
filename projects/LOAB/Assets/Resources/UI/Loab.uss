@@ -245,3 +245,17 @@
 .chart-bar-neg { background-color: rgb(255, 110, 100); }
 .toggle-on { color: rgb(120, 220, 140); }
 .toggle-off { color: rgb(160, 140, 120); }
+
+.sign {
+    position: absolute;
+    color: rgb(255, 214, 120);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    width: 120px;
+}
+
+.plaque {
+    color: rgb(60, 38, 24);
+    -unity-font-style: bold-and-italic;
+}

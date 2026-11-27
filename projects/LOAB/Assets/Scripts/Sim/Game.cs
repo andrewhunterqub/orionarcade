@@ -123,7 +123,7 @@ namespace Loab.Sim
 
         public static Game NewCareer(ulong seed, int difficulty)
         {
-            var s = new GameState { seed = seed, difficulty = difficulty, mode = 0, cash = difficulty == 0 ? 8000 : 6000, reputation = 12, rating = 3f };
+            var s = new GameState { seed = seed, difficulty = difficulty, mode = 0, cash = difficulty == 0 ? 8000 : difficulty == 2 ? 4500 : 6000, reputation = 12, rating = 3f };
             s.awareness = new[] { 0.2f, 0.16f, 0.34f, 0.18f, 0.16f };
             var r = new Rng(seed);
             Item(s, "bar_counter", 6, 8, 0);
@@ -345,6 +345,40 @@ namespace Loab.Sim
                 m.stock += cases * d.CaseSize;
             }
             Recompute();
+            return null;
+        }
+
+        public float RepairCost(PlacedItem it) => (float)Math.Round(Content.Item(it.id).Cost * it.wear / 100f * 0.35f);
+
+        public string Repair(int uid)
+        {
+            var it = S.Item(uid);
+            if (it == null) return Fail("Gone");
+            if (it.wear < 5) return Fail("It's in good nick already");
+            float cost = RepairCost(it);
+            if (S.cash < cost && S.difficulty > 0) return Fail("Not enough cash");
+            Spend(cost, "Repairs");
+            it.wear = 0;
+            Recompute();
+            return null;
+        }
+
+        public const int TrainingCost = 150;
+
+        public string Train(int uid)
+        {
+            var m = S.Staff(uid);
+            if (m == null) return Fail("Not found");
+            if (S.GetFlag("trained_" + uid) >= S.Week) return Fail("One course per person per week");
+            if (S.cash < TrainingCost && S.difficulty > 0) return Fail("Not enough cash");
+            Spend(TrainingCost, "Training");
+            // Improve the weakest relevant attribute.
+            if (m.role == 0 && m.skill <= m.speed && m.skill <= m.charm) m.skill = Math.Min(20, m.skill + 2);
+            else if (m.speed <= m.charm) m.speed = Math.Min(20, m.speed + 2);
+            else m.charm = Math.Min(20, m.charm + 2);
+            m.morale = Math.Min(100, m.morale + 8);
+            S.SetFlag("trained_" + uid, S.Week);
+            Changed?.Invoke();
             return null;
         }
 
@@ -609,7 +643,7 @@ namespace Loab.Sim
             // Money
             rec.wages = wages;
             float utilities = Economy.UtilitiesPerNight + rec.customers * 0.4f;
-            float rent = S.DayOfWeek == 6 ? Economy.RentPerWeek : 0;
+            float rent = S.DayOfWeek == 6 ? Economy.RentPerWeek * (S.difficulty == 0 ? 0.8f : S.difficulty == 2 ? 1.3f : 1f) : 0;
             float dog = S.GetFlag("dog") == 1 ? 5 : 0;
             float loan = 0;
             if (S.loanBalance > 0) { loan = Math.Min(S.loanDaily, S.loanBalance); S.loanBalance -= loan; }
@@ -638,6 +672,8 @@ namespace Loab.Sim
             float target = (S.rating - 1f) / 4f * 100f * Math.Min(1f, (S.reviewCount + 8) / 50f);
             S.reputation += (target - S.reputation) * 0.12f;
             S.reputation = Math.Max(0, Math.Min(100, S.reputation));
+            if (PlinthTier(S.reputation) > PlinthTier(repBefore))
+                rec.moments.Insert(0, $"Your model has been upgraded to a {PlinthNames[PlinthTier(S.reputation)]} plinth. People are noticing.");
             if (S.mode == 0)
             {
                 var unlocked = new List<string>();
@@ -684,7 +720,13 @@ namespace Loab.Sim
 
             S.events.RemoveAll(e => e.day <= S.day);
             S.history.Add(rec);
-            if (S.history.Count > 60) S.history.RemoveAt(0);
+            if (S.history.Count > 42) S.history.RemoveAt(0);
+            // Keep saves small (WebGL PlayerPrefs are capped): old nights keep their numbers, not their stories.
+            for (int i = 0; i < S.history.Count - 7; i++)
+            {
+                var h = S.history[i];
+                h.reviews.Clear(); h.moments.Clear(); h.thoughts.Clear(); h.stockOuts.Clear();
+            }
 
             // Goals (after the night is in the history, so "first night" etc. count tonight)
             GoalsDoneLastNight.Clear();
@@ -713,6 +755,9 @@ namespace Loab.Sim
                 S.goalIndex++;
             }
         }
+
+        public static readonly string[] PlinthNames = { "Cardboard", "Painted MDF", "Stained Oak", "Walnut & Inlay", "Marble" };
+        public static int PlinthTier(float reputation) => reputation >= 80 ? 4 : reputation >= 60 ? 3 : reputation >= 40 ? 2 : reputation >= 20 ? 1 : 0;
 
         public GoalDef CurrentGoal => S.mode == 0 && S.goalIndex < Goals.Career.Count ? Goals.Career[S.goalIndex] : null;
 

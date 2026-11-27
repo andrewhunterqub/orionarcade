@@ -54,6 +54,17 @@ public static class LoabBuild
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             EditorSceneManager.SaveScene(scene, ScenePath);
         }
+        const string TiltMat = "Assets/Resources/Materials/TiltShift.mat";
+        if (AssetDatabase.LoadAssetAtPath<Material>(TiltMat) == null)
+        {
+            AssetDatabase.ImportAsset("Assets/Shaders/TiltShift.shader");
+            var sh = Shader.Find("Hidden/LoabTiltShift");
+            if (sh != null) AssetDatabase.CreateAsset(new Material(sh), TiltMat);
+            else Debug.LogError("Tilt-shift shader not found");
+        }
+        var litAsset = AssetDatabase.LoadAssetAtPath<Material>(LitMat);
+        if (litAsset != null && litAsset.GetFloat("_Glossiness") > 0.13f) { litAsset.SetFloat("_Glossiness", 0.12f); EditorUtility.SetDirty(litAsset); }
+
         foreach (var path in new[] { LitMat, GlowMat })
         {
             var mat = AssetDatabase.LoadAssetAtPath<Material>(path);

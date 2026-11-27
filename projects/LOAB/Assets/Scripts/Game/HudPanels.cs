@@ -121,7 +121,14 @@ namespace Loab.Game
                 p.Add(Row(Lbl(Axis.Names[a], "slider-label"), Lbl((v > 0 ? "+" : "") + v.ToString("0") + "  " + (v > 0 ? Axis.High[a] : Axis.Low[a]), "card-sub")));
             }
             if (d.Themes.Length > 0) p.Add(Lbl("Counts towards: " + string.Join(", ", d.Themes.Select(t => Content.Theme(t).Name)), "hint"));
-            p.Add(Lbl($"Condition: {100 - it.wear:0}%", "card-sub"));
+            var cond = Row(Lbl($"Condition: {100 - it.wear:0}%", "card-sub"), Spacer());
+            if (it.wear >= 5)
+            {
+                var uid = it.uid;
+                cond.Add(Btn($"Repair ({Money(G.RepairCost(it))})", () => { var e = G.Repair(uid); if (e != null) Flash(e); else _run.Audio.Play("place"); }, "btn-small"));
+            }
+            p.Add(cond);
+            p.Add(Lbl("Worn items drag the Vibe down a little. Repairs make them good as new.", "hint"));
         }
 
         // =====================================================================================
@@ -209,10 +216,12 @@ namespace Loab.Game
         {
             Title(p, "Drinks & stock", "Tick what's on the menu, set prices and keep it stocked. A keg is about 88 pints.");
             float restock = G.RestockCost();
-            p.Add(Row(
+            var topRow = Row(
                 Btn(restock > 0 ? $"Restock all ({Money(restock)})" : "Stock looks healthy", () => { var e = G.RestockAll(); if (e != null) Flash(e); else _run.Audio.Play("coin"); }, "btn-primary"),
                 Btn($"Clean lines £40 ({G.S.lineQuality:0}%)", () => { var e = G.CleanLines(); if (e != null) Flash(e); }),
-                Btn($"Deep clean £60 ({G.S.cleanliness:0}%)", () => { var e = G.DeepClean(); if (e != null) Flash(e); })));
+                Btn($"Deep clean £60 ({G.S.cleanliness:0}%)", () => { var e = G.DeepClean(); if (e != null) Flash(e); }));
+            topRow.AddToClassList("wrap");
+            p.Add(topRow);
             var resp = Btn(G.S.responsibleService ? "Responsible service: ON" : "Responsible service: OFF", () => G.SetResponsible(!G.S.responsibleService), "btn-small");
             resp.EnableInClassList("btn-good", G.S.responsibleService);
             resp.tooltip = "Staff stop serving alcohol to anyone who's had five. Fewer rowdy incidents, and people respect it.";
@@ -310,7 +319,11 @@ namespace Loab.Game
             {
                 c.Add(Row(Lbl("Morale", "slider-label"), Bar(m.morale / 100f, m.morale < 30 ? Col(0xff6e64) : Col(0x78dc8c)), Lbl($"  Lv {m.level}", "card-sub")));
                 var me = m;
-                c.Add(Row(Btn("Pay +£5", () => G.SetWage(me.uid, me.wage + 5), "btn-small"), Btn("Pay -£5", () => G.SetWage(me.uid, me.wage - 5), "btn-small"), Spacer(),
+                bool trained = G.S.GetFlag("trained_" + m.uid) >= G.S.Week;
+                var course = Btn(trained ? "On a course this week" : $"Training (£{Sim.Game.TrainingCost})", () => { var e = G.Train(me.uid); if (e != null) Flash(e); else _run.Audio.Play("coin"); }, "btn-small");
+                course.SetEnabled(!trained);
+                course.tooltip = "+2 to their weakest skill and a morale boost. One course per person per week.";
+                c.Add(Row(Btn("Pay +£5", () => G.SetWage(me.uid, me.wage + 5), "btn-small"), Btn("Pay -£5", () => G.SetWage(me.uid, me.wage - 5), "btn-small"), course, Spacer(),
                     Btn("Let go", () => { G.Fire(me.uid); }, "btn-small", "btn-bad")));
             }
             else
@@ -446,7 +459,7 @@ namespace Loab.Game
             Title(p, "Money", "Rent is due every Sunday night. Wages and bills are paid nightly. Stock is paid for when you order it.");
             var s = G.S;
             p.Add(Row(Lbl("Cash", "slider-label"), Lbl(Money(s.cash), "price")));
-            p.Add(Row(Lbl("Rent", "slider-label"), Lbl($"{Money(Economy.RentPerWeek)} on Sunday" + (s.DayOfWeek == 6 ? " (TONIGHT)" : $" (in {6 - s.DayOfWeek} days)"), "card-sub")));
+            p.Add(Row(Lbl("Rent", "slider-label"), Lbl($"{Money(Economy.RentPerWeek * (s.difficulty == 0 ? 0.8f : s.difficulty == 2 ? 1.3f : 1f))} on Sunday" + (s.DayOfWeek == 6 ? " (TONIGHT)" : $" (in {6 - s.DayOfWeek} days)"), "card-sub")));
             p.Add(Row(Lbl("Wages", "slider-label"), Lbl($"{Money(s.staff.Sum(m => m.wage))} a night", "card-sub")));
             if (s.loanBalance > 0) p.Add(Row(Lbl("Loan", "slider-label"), Lbl($"{Money(s.loanBalance)} left at {Money(s.loanDaily)}/night", "card-sub")));
             p.Add(Row(Lbl("Spent today", "slider-label"), Lbl(Money(G.SpentToday), "card-sub")));

@@ -170,7 +170,7 @@ namespace Loab.Sim
             Themes.Add(new ThemeDef { Id = "arcade", Name = "Retro Arcade Bar", Blurb = "Cabinets, chiptunes and neon flamingos." });
 
             // ---- Bar counters -------------------------------------------------------------------------
-            Add("bar_counter", "Bar Counter", ItemFn.BarCounter, 3, 2, 1500, 3, 0, 0, V(0, 0, 0, 0, 0), T(), "bar", 0x5a3a22, 0x2b1b10,
+            Add("bar_counter", "Bar Counter", ItemFn.BarCounter, 3, 2, 1500, 3, 0, 0, V(0, 0, 0, 0, 0), T(), "bar", 0xA8573A, 0x5a2a1a,
                 blurb: "Three serving points. Your bartenders work behind it.");
             Add("bar_neon", "Neon Dive Bar", ItemFn.BarCounter, 3, 2, 1900, 3, 0, 0, V(5, -4, 4, -2, 6), T("dive", "arcade"), "bar", 0x2a2a35, 0xff3fa4,
                 unlock: 10, blurb: "A battered counter with a pink neon underglow.");
@@ -192,7 +192,7 @@ namespace Loab.Sim
                 blurb: "Seats 2. Nobody has ever chosen these on purpose.");
             Add("beanbags", "Beanbags", ItemFn.Seat, 1, 1, 90, 2, 6, 0, V(-2, -3, 4, 2, 6), T("arcade"), "beanbag", 0xff9f1c, 0x9b5de5,
                 blurb: "Seats 2. Getting up is the hard part.");
-            Add("booth", "Leather Booth", ItemFn.Seat, 2, 2, 650, 4, 8, 0, V(-2, 4, -2, 7, 0), T("speakeasy", "pub"), "booth", 0x6a1e1e, 0x3a2416,
+            Add("booth", "Leather Booth", ItemFn.Seat, 2, 2, 650, 4, 8, 0, V(-2, 4, -2, 7, 0), T("speakeasy", "pub"), "booth", 0xFF6B6B, 0x6b3a26,
                 unlock: 5, blurb: "Seats 4. Date-night magnet.");
             Add("armchair", "Velvet Armchair", ItemFn.Seat, 1, 1, 300, 1, 8, 0, V(-3, 6, -3, 5, 1), T("speakeasy"), "armchair", 0x1f5f4a, 0x2b1b10,
                 unlock: 10, blurb: "Seats 1. Sink in and stay a while.");
@@ -236,13 +236,13 @@ namespace Loab.Sim
                 unlock: 15, blurb: "Match day, but massive.", glow: true);
 
             // ---- Lighting -----------------------------------------------------------------------------
-            Add("edison", "Edison Bulbs", ItemFn.Decor, 1, 1, 120, 0, 0, 0, V(0, 2, -1, 4, 2), T("speakeasy"), "edison", 0xffb347, 0xffb347,
+            Add("edison", "Edison Bulbs", ItemFn.Decor, 1, 1, 120, 0, 0, 0, V(0, 2, -1, 4, 2), T("speakeasy"), "edison", 0xFFD27A, 0xFFD27A,
                 blurb: "Warm filament glow.", glow: true);
             Add("candles", "Candle Cluster", ItemFn.Decor, 1, 1, 40, 0, 0, 0, V(-4, 3, -2, 7, 0), T("speakeasy"), "candles", 0xfff1c1, 0xffb347,
                 blurb: "Instant intimacy.", glow: true);
             Add("neon_open", "Neon 'OPEN' Sign", ItemFn.Decor, 1, 1, 180, 0, 0, 0, V(3, -2, 3, -1, 5), T("dive", "arcade"), "neon", 0xff3fa4, 0xff3fa4,
                 blurb: "Buzzes faintly.", glow: true);
-            Add("festoon", "Festoon Lights", ItemFn.Decor, 1, 1, 100, 0, 0, 0, V(2, 1, 1, 2, 2), T(), "festoon", 0xffe08a, 0xffe08a,
+            Add("festoon", "Festoon Lights", ItemFn.Decor, 1, 1, 100, 0, 0, 0, V(2, 1, 1, 2, 2), T(), "festoon", 0xFFD27A, 0xFFD27A,
                 blurb: "Strings of bulbs. Everyone likes these.", glow: true);
             Add("discoball", "Disco Ball", ItemFn.Decor, 1, 1, 250, 0, 0, 1, V(8, -1, -2, -3, 7), T("arcade"), "discoball", 0xdddddd, 0xffffff,
                 blurb: "Ironically or not.", glow: true);
@@ -250,7 +250,7 @@ namespace Loab.Sim
                 unlock: 20, blurb: "Crystal drops and delusions of grandeur.", glow: true);
 
             // ---- Decor --------------------------------------------------------------------------------
-            Add("plant", "Potted Palm", ItemFn.Decor, 1, 1, 80, 0, 0, 0, V(0, 2, 1, 2, 1), T(), "plant", 0x2d6a4f, 0x8a5a33, blurb: "Green and pleasant.");
+            Add("plant", "Potted Palm", ItemFn.Decor, 1, 1, 80, 0, 0, 0, V(0, 2, 1, 2, 1), T(), "plant", 0x6CC070, 0xD98A63, blurb: "Green and pleasant.");
             Add("fern", "Hanging Fern", ItemFn.Decor, 1, 1, 60, 0, 0, 0, V(-1, 1, 0, 3, 1), T(), "fern", 0x40916c, 0x5a3a22, blurb: "Softens any corner.");
             Add("photos", "Old Local Photos", ItemFn.Decor, 1, 1, 50, 0, 0, 0, V(0, 0, -5, 2, 1), T("pub"), "frames", 0x5a3a22, 0xd9c9a3, blurb: "Sepia history of the street.");
             Add("mirror", "Brewery Mirror", ItemFn.Decor, 1, 1, 160, 0, 0, 0, V(0, 2, -5, 1, 1), T("pub"), "frames", 0xd4a64a, 0x9ec5d6, blurb: "Gilt lettering, fictional brewery.");
@@ -268,15 +268,15 @@ namespace Loab.Sim
             Add("dog_bed", "Biscuit's Bed", ItemFn.Decor, 1, 1, 0, 0, 0, 1, V(0, 0, 0, 3, 6), T("pub"), "dogbed", 0x8a5a33, 0xd9a066, blurb: "Home of the bar's unofficial mascot.", hidden: true);
 
             // ---- Floors & walls -----------------------------------------------------------------------
-            Floors.Add(new StyleDef { Id = "boards", Name = "Worn Floorboards", Cost = 0, Vibe = V(0, -3, -3, 1, 0), Themes = T("pub", "dive"), Color = 0x6b4a2f, Color2 = 0x5c3f27 });
+            Floors.Add(new StyleDef { Id = "boards", Name = "Honey Oak Boards", Cost = 0, Vibe = V(0, -3, -3, 1, 0), Themes = T("pub", "dive"), Color = 0xB9805A, Color2 = 0xAE7650 });
             Floors.Add(new StyleDef { Id = "oak", Name = "Polished Oak", Cost = 1200, Vibe = V(0, 5, -2, 2, 0), Themes = T("pub", "speakeasy"), Color = 0x9a6a3b, Color2 = 0x8a5d33 });
             Floors.Add(new StyleDef { Id = "checker", Name = "Checker Tile", Cost = 900, Vibe = V(2, 2, 1, -1, 3), Themes = T("dive", "arcade"), Color = 0xe8e8e8, Color2 = 0x222222 });
             Floors.Add(new StyleDef { Id = "concrete", Name = "Polished Concrete", Cost = 800, Vibe = V(1, 2, 7, -3, 1), Themes = T("sports"), Color = 0x8c8c8c, Color2 = 0x828282 });
             Floors.Add(new StyleDef { Id = "carpet", Name = "Plush Carpet", Cost = 1000, Vibe = V(-3, 3, -3, 5, 0), Themes = T("speakeasy"), Color = 0x6a1e2a, Color2 = 0x601a26 });
             Floors.Add(new StyleDef { Id = "sticky", Name = "Sticky Carpet", Cost = 300, Vibe = V(1, -8, -4, 1, 4), Themes = T("dive", "pub"), Color = 0x5a2a4a, Color2 = 0x4e2440 });
 
-            Walls.Add(new StyleDef { Id = "cream", Name = "Nicotine Cream", Cost = 0, Vibe = V(0, -4, -3, 0, 0), Themes = T("pub", "dive"), Color = 0xcdb98a });
-            Walls.Add(new StyleDef { Id = "panelling", Name = "Dark Wood Panelling", Cost = 1500, Vibe = V(-2, 5, -4, 5, 0), Themes = T("pub", "speakeasy"), Color = 0x4a2e18 });
+            Walls.Add(new StyleDef { Id = "cream", Name = "Peach Plaster", Cost = 0, Vibe = V(0, -4, -3, 0, 0), Themes = T("pub", "dive"), Color = 0xF2B38A });
+            Walls.Add(new StyleDef { Id = "panelling", Name = "Terracotta Panelling", Cost = 1500, Vibe = V(-2, 5, -4, 5, 0), Themes = T("pub", "speakeasy"), Color = 0xD98A63 });
             Walls.Add(new StyleDef { Id = "brick", Name = "Exposed Brick", Cost = 1000, Vibe = V(1, 1, 4, 1, 2), Themes = T(), Color = 0x9c4a32 });
             Walls.Add(new StyleDef { Id = "green", Name = "Midnight Green", Cost = 700, Vibe = V(-2, 4, 1, 4, 1), Themes = T("speakeasy"), Color = 0x1b3b33 });
             Walls.Add(new StyleDef { Id = "pink", Name = "Hot Pink & Neon", Cost = 700, Vibe = V(6, -1, 4, -2, 7), Themes = T("arcade", "dive"), Color = 0xc2185b });

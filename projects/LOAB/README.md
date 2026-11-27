@@ -22,6 +22,15 @@ Play it at `arcade.oriondesign.xyz/play.html?game=loab` (or locally with `npm ru
 | Career (8.2) | Act 1 goals with Maggie the mentor; Relaxed / Standard / Hardcore; Sandbox |
 | Responsible design (18.2) | Responsible-service toggle, alcohol-free demand, incidents kept light |
 
+### Visual direction
+
+Follows [`LOAB – Visual Brief_ Diorama _ Miniature.md`](../../LOAB%20–%20Visual%20Brief_%20Diorama%20_%20Miniature.md):
+the bar is a scale model on a plinth (cardboard, then MDF, oak, walnut and marble as reputation grows), shot with a
+narrow 22 degree lens and a tilt-shift band that follows what you're looking at. Prep is cool studio daylight; when the
+doors open the studio darkens and the bar's own lamps come on one by one. Cut walls get foam-board caps, the
+neighbours are white-card massing models, and customers wear segment silhouettes (backpacks, ties, flat caps, scarves,
+beanies). Not yet done from the brief: bevelled meshes, bloom, grain textures, stop-motion animation, URP.
+
 Not in the slice: food, outdoor space, multiple venues, multiplayer, monetisation, localisation.
 
 ## Architecture

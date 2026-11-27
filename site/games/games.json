@@ -11,7 +11,8 @@
       "added": "2026-11-27",
       "controls": "Click tiles to mark grey / yellow / green, then pick a suggested guess",
       "type": "html",
-      "entry": "index.html"
+      "entry": "index.html",
+      "thumbnail": "thumbnail.jpg"
     },
     {
       "slug": "loab",
@@ -23,14 +24,35 @@
         "tycoon"
       ],
       "added": "2026-11-27",
-      "controls": "Mouse or touch. Drag to pan, scroll or pinch to zoom.",
+      "controls": "Mouse: click to build and interact, drag to pan, scroll to zoom. Q/E rotate, Space pauses, H hides the UI.",
       "build": {
         "loader": "Build/loab.loader.js",
         "framework": "Build/loab.framework.js.unityweb",
         "data": "Build/loab.data.unityweb",
         "code": "Build/loab.wasm.unityweb"
       },
-      "hidden": true
+      "thumbnail": "thumbnail.jpg",
+      "mobile": false,
+      "version": "0.1.0"
+    },
+    {
+      "slug": "fer-vr",
+      "title": "FerVR Grid Room",
+      "description": "An experimental WebXR space: a black grid room filled with glowing spheres driven by data. Best with a VR headset.",
+      "tags": [
+        "experiment",
+        "vr"
+      ],
+      "added": "2026-11-27",
+      "controls": "Look around with the mouse. On a VR headset, use Enter VR.",
+      "aspect": "16:9",
+      "build": {
+        "loader": "Build/WebVRGridRoom.loader.js",
+        "framework": "Build/WebVRGridRoom.framework.js",
+        "data": "Build/WebVRGridRoom.data",
+        "code": "Build/WebVRGridRoom.wasm"
+      },
+      "thumbnail": "thumbnail.jpg"
     }
   ]
 }
