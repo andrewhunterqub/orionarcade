@@ -22,7 +22,17 @@ unity/OrionArcade/       optional Unity plugin for account saves
 firestore.rules          security rules for account saves
 ```
 
+## Games
+
+| Game | Type | Source |
+|---|---|---|
+| Let's Own A Bar! | Unity 6 WebGL | [`projects/LOAB`](projects/LOAB) (see its README) |
+| Pythle | Plain web app | Copied from the Pythle project; rebuild its data there and copy the 5 runtime files |
+
 ## Adding a game
+
+Plain HTML/JS games work too: put the game in `site/games/<slug>/` with an `index.html` (and no `Build/` folder), then run `npm run add-game -- <slug>`. It's played in a sandboxed iframe.
+
 
 1. **Set up Unity's WebGL build** (Player Settings > WebGL > Publishing Settings):
    - **Compression Format:** `Disabled` is simplest. If you want `Brotli` or `Gzip`, also tick **Decompression Fallback**. GitHub Pages can't send the `Content-Encoding` headers Unity needs for `.br`/`.gz` files.
@@ -54,11 +64,21 @@ firestore.rules          security rules for account saves
 | `mobile` | | Set `false` to warn phone/tablet players |
 | `added` | | `YYYY-MM-DD`, newest games are listed first |
 | `version`, `company` | | Passed to Unity |
-| `hidden` | | `true` keeps a game out of the library (useful while testing) |
+| `hidden` | | `true` keeps a game out of the library but still playable by direct link |
+| `type`, `entry` | | `"html"` and an entry page for plain web games (no Unity), set automatically by `add-game` |
 
-### Size limits
+### Size rule (applies to every game and project in this repo)
 
-GitHub rejects files over 100 MB, and a Pages site should stay under 1 GB in total. `npm run check` flags any file over the limit. If builds get large, use compression with Decompression Fallback, strip unused assets, or move to a host that supports large files and compression headers (Cloudflare Pages, Netlify, S3 + CloudFront). The site works unchanged on any static host.
+**GitHub rejects any push containing a file over 100 MB**, and a Pages site should stay under 1 GB in total. One oversized file blocks the whole push, so this is a design constraint from day one, not a cleanup step:
+
+- **Budget:** keep every committed file under **50 MB** (`npm run check` warns above that and fails above 100 MB). Aim for a whole game build in the low tens of MB.
+- **Favour small files:** procedural or primitive-built content over imported art, compressed textures and audio (and at sensible resolutions), no raw source media (PSD, WAV, 4K video) in the repo.
+- **Split, don't bloat:** break large data into multiple files or modules, and load optional content on demand (e.g. `StreamingAssets/`, Addressables) rather than baking it into one big `.data`.
+- **Never commit generated or environment folders:** Unity `Library/`, `Temp/`, `Logs/`, `UserSettings/`, `obj/`, Python `.venv`/`.conda`/`__pycache__`, sim output folders. The root `.gitignore` blocks these for projects at any depth; keep it that way.
+- **Source lives in `projects/<name>/`, builds in `site/games/<slug>/`.** Everything under `site/` is published publicly, so no source projects, keys or certificates there.
+- **Run `npm run check` before every commit.** It scans every file git would commit, not just the builds in `games.json`.
+
+If a build still gets large, use compression with Decompression Fallback, strip unused assets/engine modules, or move to a host that supports large files and compression headers (Cloudflare Pages, Netlify, S3 + CloudFront). The site works unchanged on any static host.
 
 ## Saving progress
 
@@ -127,4 +147,4 @@ One-off setup:
 |---|---|
 | `npm run serve` | Local server at :8080 (sets compression headers for `.br`/`.gz`) |
 | `npm run add-game -- <slug> [options]` | Detect a build and add or update its manifest entry |
-| `npm run check` | Validate `games.json` and that all referenced files exist |
+| `npm run check` | Validate `games.json`, that all referenced files exist, and that nothing git would commit is over the size limits |

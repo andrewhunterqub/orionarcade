@@ -78,6 +78,8 @@ async function start() {
   }
   $("stage").style.setProperty("--aspect", aspectRatio(game));
 
+  if (game.type === "html") return startHtml(game);
+
   const b = game.build || {};
   if (!b.loader || !b.data || !b.framework || !b.code) {
     return showError("This game's build is incomplete. Please check back soon.");
@@ -124,6 +126,24 @@ async function start() {
     console.error(err);
     showError(typeof err === "string" ? err : err?.message || "The game failed to start.");
   }
+}
+
+// Plain web games (no Unity) run in a sandboxed iframe pointing at the game's entry page.
+function startHtml(game) {
+  const frame = document.createElement("iframe");
+  frame.className = "game-frame";
+  frame.title = game.title;
+  frame.src = gameUrl(game, game.entry || "index.html");
+  frame.allow = "fullscreen; autoplay; gamepad";
+  frame.setAttribute("sandbox", "allow-scripts allow-same-origin allow-pointer-lock allow-popups");
+  frame.addEventListener("load", () => {
+    loading.hidden = true;
+    frame.focus();
+  }, { once: true });
+  canvas.replaceWith(frame);
+  if (!game.aspect) $("stage").classList.add("stage-fill");
+  fullscreenBtn.hidden = false;
+  fullscreenBtn.addEventListener("click", () => $("stage").requestFullscreen?.());
 }
 
 start();

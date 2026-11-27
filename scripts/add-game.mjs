@@ -31,7 +31,9 @@ if (!slug || !SLUG_RE.test(slug)) {
 }
 
 try {
-  const build = await detectBuild(slug);
+  // A folder with index.html and no Unity Build/ folder is a plain web game.
+  const isHtml = !(await exists(path.join(GAMES, slug, "Build"))) && (await exists(path.join(GAMES, slug, "index.html")));
+  const build = isHtml ? {} : await detectBuild(slug);
   const manifest = await readManifest();
   manifest.games ??= [];
 
@@ -62,12 +64,20 @@ try {
       break;
     }
   }
-  game.build = build;
-  if (await exists(path.join(GAMES, slug, "StreamingAssets"))) game.streamingAssets = "StreamingAssets";
+  if (isHtml) {
+    game.type = "html";
+    game.entry = "index.html";
+    delete game.build;
+  } else {
+    delete game.type;
+    delete game.entry;
+    game.build = build;
+    if (await exists(path.join(GAMES, slug, "StreamingAssets"))) game.streamingAssets = "StreamingAssets";
+  }
 
   await writeManifest(manifest);
 
-  console.log(`${isNew ? "Added" : "Updated"} "${game.title}" (${slug})`);
+  console.log(`${isNew ? "Added" : "Updated"} "${game.title}" (${slug})${isHtml ? " as a web (HTML) game" : ""}`);
   for (const [k, v] of Object.entries(build)) console.log(`  ${k.padEnd(9)} ${v}`);
   if (!game.thumbnail) console.log(`  Tip: add site/games/${slug}/thumbnail.png (16:10, e.g. 640x400) for a nicer card.`);
 

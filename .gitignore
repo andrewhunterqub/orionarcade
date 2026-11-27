@@ -1,3 +1,28 @@
+# --- Orion Arcade repo rules ------------------------------------------------
+# GitHub rejects files over 100 MB, so caches and environments must never be
+# staged. These patterns are unrooted so they also cover Unity projects nested
+# anywhere in the repo (projects/*, etc.), not just one at the root.
+**/[Ll]ibrary/
+**/[Tt]emp/
+**/[Ll]ogs/
+**/[Uu]ser[Ss]ettings/
+**/.conda/
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.claude/settings.local.json
+*.pem
+*.key
+
+# Unity source project for FerVR. Its playable build is published from
+# site/games/fer-vr/; the source should move to projects/FerVR before being
+# committed (everything under site/ is deployed publicly).
+/site/games/FerVR/
+
+# Separate git repository with its own GitHub remote (andrewhunterqub/electioneering).
+/site/games/electioneering/
+
+# --- Unity template ---------------------------------------------------------
 # This .gitignore file should be placed at the root of your Unity project directory
 #
 # Get latest from https://github.com/github/gitignore/blob/main/Unity.gitignore
