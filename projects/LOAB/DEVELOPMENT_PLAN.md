@@ -240,6 +240,7 @@ In priority order:
 - [x] **Z3 · Save size headroom (S).** Saves peak at about 165 KB a career. With three slots that is about 0.5 MB of the roughly 1 MB WebGL PlayerPrefs budget. Trim the `regulars` and `reviews` lists, or compress before saving if it grows.
 - [x] **Z4 · Scenarios for the new features (S).** "The Sun Trap" (beer garden, summer) and "Quayside" (Old Harbour district, spring), each calibrated to about a 50% win rate for the scripted player.
 - [x] **Z5 · Card variety over a long career (S).** Fewer repeats of the same morning card in year one.
+- [ ] **Z6 · Aspect-ratio aware UI (S, owner request).** Scale by the tighter side; portrait layout for tablets held upright; check desktop, phone landscape and tablet portrait.
 
 **Explicitly out of scope this weekend:** multiplayer and social, monetisation, the food system, outdoor space, localisation, and real art assets.
 

@@ -47,7 +47,7 @@ namespace Loab.Game
             ps.scaleMode = PanelScaleMode.ScaleWithScreenSize;
             ps.referenceResolution = new Vector2Int(1366, 800);
             ps.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
-            ps.match = 0.6f;
+            ps.match = 0.6f; // replaced by ApplyAspect() once the panel exists
             _doc.panelSettings = ps;
             _root = _doc.rootVisualElement;
             _root.styleSheets.Add(Resources.Load<StyleSheet>("UI/Loab"));
@@ -58,6 +58,28 @@ namespace Loab.Game
             _root.pickingMode = PickingMode.Ignore;
             BuildGrain();
             BuildChrome();
+            ApplyAspect();
+        }
+
+        // ---- Aspect-ratio aware layout (task Z6) ----
+        // Landscape screens use a 1366x800 layout, scaled by whichever side is the tighter fit: narrower than
+        // 16:10 (a 4:3 tablet, say) fits the width so nothing runs off the side, and wider (16:9, 21:9, a
+        // phone on its side) fits the height so nothing runs off the bottom. Portrait screens (a tablet held
+        // upright) switch to an 800x1366 layout fitted to the width, and the "ar-tall" class rearranges the
+        // panels for it (see Loab.uss).
+        int _aspectW, _aspectH;
+        void ApplyAspect()
+        {
+            int w = Screen.width, h = Screen.height;
+            if (w == _aspectW && h == _aspectH) return;
+            _aspectW = w; _aspectH = h;
+            float a = h > 0 ? (float)w / h : 1.7f;
+            bool tall = a < 1f;
+            var ps = _doc.panelSettings;
+            ps.referenceResolution = tall ? new Vector2Int(800, 1366) : new Vector2Int(1366, 800);
+            ps.match = tall || a < 1366f / 800f ? 0f : 1f;
+            _root.EnableInClassList("ar-tall", tall);
+            _root.EnableInClassList("ar-wide", a > 2.2f);
         }
 
         // Paper-grain overlay (visual brief, task V3): a faint, fixed speckle over the world, under the panels,
@@ -378,6 +400,7 @@ namespace Loab.Game
 
         public void Update()
         {
+            ApplyAspect(); // the window, the phone's orientation or fullscreen can change at any time
             if (_grain != null) _grain.style.opacity = 1f - 0.6f * WorldView.Night01; // fainter once the lights go down
             if (G == null) return;
             var s = G.S;
@@ -524,7 +547,7 @@ namespace Loab.Game
         // around 10 CSS pixels tall on a phone held sideways. Scale it up so they're comfortable to tap.
         static float UiScale(bool largeText)
         {
-            float s = Application.isMobilePlatform ? 1.45f : 1f;
+            float s = Application.isMobilePlatform ? 1.6f : 1f; // phones now fit to height (task Z6), so a bit more to keep the same size
             return largeText ? s * 1.18f : s;
         }
 
