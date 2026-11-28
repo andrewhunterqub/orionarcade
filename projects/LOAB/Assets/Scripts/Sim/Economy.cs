@@ -146,6 +146,19 @@ namespace Loab.Sim
 
         public static bool IsBadTag(string t) => t == "Overpriced" || t == "Slow Service" || t == "Sticky Tables" || t == "Rough on a Saturday";
 
+        // ---- Staffing guidance (task B1) -------------------------------------------------------------------
+        /// About one bartender per 45 customers expected tonight (a bartender pours roughly 30 drinks an hour),
+        /// capped by how many serving points the bar has. Under-staffing spirals: queues, walkouts, bad reviews.
+        public static int RecommendedBartenders(GameState s, VibeReport v)
+        {
+            float expected = ExpectedTotal(s, v);
+            int want = Math.Max(1, (int)Math.Ceiling(expected / 45f));
+            return v != null && v.BarPoints > 0 ? Math.Min(want, v.BarPoints) : want;
+        }
+
+        /// Bartenders working tonight (the rota counts).
+        public static int BartendersTonight(GameState s) => s.staff.FindAll(m => m.role == Roles.Bartender && !m.OffOn(s.DayOfWeek)).Count;
+
         // ---- Tonight's verdict (task L5) ---------------------------------------------------------------
 
         static readonly Note[] Complaints =
@@ -160,7 +173,7 @@ namespace Loab.Sim
             switch (n)
             {
                 case Note.WaitedLong:
-                case Note.GaveUpQueue: return "Hire another bartender, add a second bar counter, or jump behind the bar yourself when it's busy.";
+                case Note.GaveUpQueue: return "Hire another bartender (the Staff tab shows how many tonight needs), add a second bar counter, or jump behind the bar yourself when it's busy.";
                 case Note.Dirty: return "Floor staff keep tables and spills under control. A deep clean before opening gives you a fresh start.";
                 case Note.OutOfStock: return "Use Restock all before opening: it now orders what actually sells.";
                 case Note.Pricey: return "Bring prices closer to normal (red prices on the Drinks tab), or try a happy hour.";

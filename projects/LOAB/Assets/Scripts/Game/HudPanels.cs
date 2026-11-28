@@ -324,6 +324,14 @@ namespace Loab.Game
             Title(p, "Staff", "Bartenders serve (one per serving point). Floor staff collect glasses, mop spills and calm rowdy customers. New applicants every Monday.");
             float wages = G.S.staff.Sum(m => m.wage);
             p.Add(Lbl($"Team of {G.S.staff.Count}  -  wages {Money(wages)} a night", "body"));
+            // Staffing guidance for tonight (task B1).
+            int rec = Economy.RecommendedBartenders(G.S, G.V), have = Economy.BartendersTonight(G.S);
+            float exp = Economy.ExpectedTotal(G.S, G.V);
+            var guide = Lbl($"Tonight: about {exp:0} customers, so {rec} bartender{(rec == 1 ? "" : "s")} recommended. You have {have} on tonight."
+                            + (have < rec ? (G.V.BarPoints <= have ? " Add another bar counter for more serving points." : " Hire or change someone's rota, or expect queues.") : ""),
+                            "card-sub", have < rec ? "bad-text" : "good-text");
+            guide.tooltip = "A bartender pours roughly 30 drinks an hour. Too few and queues grow, people give up, and the reviews follow.";
+            p.Add(guide);
             foreach (var m in G.S.staff) p.Add(StaffCard(m, false));
             p.Add(Lbl("APPLICANTS", "section"));
             if (G.S.applicants.Count == 0) p.Add(Lbl("No applicants this week. More on Monday.", "hint"));

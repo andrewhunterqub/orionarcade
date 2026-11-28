@@ -40,6 +40,7 @@ public static class Tests
         Test("content: ids unique, themes and suppliers exist, footprints and prices sane", ContentIntegrity);
         Test("awards: once a year at the end of summer; a strong season wins the trophy", Awards);
         Test("unlocks: the reputation track lists the next thresholds in order", Unlocks);
+        Test("staffing guidance: more bartenders for busier nights, capped by serving points, rota-aware", StaffingGuidance);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -482,6 +483,19 @@ public static class Tests
         g.S.reputation = 100;
         Assert(g.UpcomingUnlocks().Count == 0, "unlocks listed at max reputation");
         Assert(Game.NewSandbox(1).UpcomingUnlocks().Count == 0, "sandbox shouldn't list unlocks");
+    }
+
+    static void StaffingGuidance()
+    {
+        var g = Game.NewCareer(17, 1);
+        int quiet = Economy.RecommendedBartenders(g.S, g.V);
+        g.S.day = 5; g.S.reputation = 80; for (int i = 0; i < g.S.awareness.Length; i++) g.S.awareness[i] = 0.9f;
+        int busy = Economy.RecommendedBartenders(g.S, g.V);
+        Assert(busy > quiet, $"busy Saturday {busy} vs quiet {quiet}");
+        Assert(busy <= g.V.BarPoints, $"recommended {busy} with only {g.V.BarPoints} serving points");
+        Assert(Economy.BartendersTonight(g.S) == 1, "starting bar should have one bartender on");
+        g.ToggleDayOff(g.S.staff[0].uid, g.S.DayOfWeek);
+        Assert(Economy.BartendersTonight(g.S) == 0, "rota not respected");
     }
 
     static void CashCrisisArc()
