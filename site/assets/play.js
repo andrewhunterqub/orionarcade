@@ -157,6 +157,10 @@ async function start() {
     saves.start();
     enableFullscreen();
     canvas.focus();
+    // Phones held sideways: the stage fills the screen (see styles.css), so scroll it into view.
+    if (window.matchMedia("(orientation: landscape) and (max-height: 500px)").matches) {
+      document.getElementById("stage").scrollIntoView({ block: "start" });
+    }
   } catch (err) {
     console.error(err);
     showError(typeof err === "string" ? err : err?.message || "The game failed to start.");

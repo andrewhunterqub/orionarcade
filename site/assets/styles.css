@@ -459,6 +459,19 @@ a { color: var(--accent-2); }
   .stage { max-height: none; }
 }
 
+/* Phones held sideways: a 16:9 box under the header would be a thin strip, so the stage takes the
+   whole screen height and the page scrolls it into view once the game has loaded (play.js). */
+@media (orientation: landscape) and (max-height: 500px) {
+  .stage,
+  .stage.stage-fill {
+    aspect-ratio: auto;
+    height: calc(100vh - 8px);
+    height: calc(100dvh - 8px);
+    min-height: 0;
+    max-height: none;
+  }
+}
+
 /* Fullscreen: native (Fullscreen API) and "fill the screen" for iPhone Safari (see fullscreen.js) */
 .stage:fullscreen,
 .stage:-webkit-full-screen {
