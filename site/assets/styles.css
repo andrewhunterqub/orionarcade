@@ -472,6 +472,19 @@ a { color: var(--accent-2); }
   }
 }
 
+/* Tablets held upright: the game has a portrait layout (LOAB task Z6), so give it the screen's shape
+   rather than a short 16:9 strip. Same scroll-into-view as phones on their side (play.js). */
+@media (orientation: portrait) and (min-width: 601px) and (pointer: coarse) {
+  .stage,
+  .stage.stage-fill {
+    aspect-ratio: auto;
+    height: calc(100vh - 8px);
+    height: calc(100dvh - 8px);
+    min-height: 0;
+    max-height: none;
+  }
+}
+
 /* Phones held upright: suggest turning sideways for landscape games. */
 .rotate-hint { display: none; margin: 10px 0 0; text-align: center; color: var(--accent); font-size: .95rem; }
 @media (orientation: portrait) and (max-width: 600px) {

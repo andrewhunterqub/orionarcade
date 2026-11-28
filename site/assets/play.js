@@ -159,7 +159,7 @@ async function start() {
     enableFullscreen();
     canvas.focus();
     // Phones held sideways: the stage fills the screen (see styles.css), so scroll it into view.
-    if (window.matchMedia("(orientation: landscape) and (max-height: 500px)").matches) {
+    if (window.matchMedia("(orientation: landscape) and (max-height: 500px), (orientation: portrait) and (min-width: 601px) and (pointer: coarse)").matches) {
       document.getElementById("stage").scrollIntoView({ block: "start" });
     }
   } catch (err) {
