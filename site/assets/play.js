@@ -115,6 +115,7 @@ async function start() {
   $("stage").style.setProperty("--aspect", aspectRatio(game));
 
   if (game.type === "html") return startHtml(game);
+  document.body.classList.add("landscape-game"); // Unity games are laid out for a landscape screen
 
   const b = game.build || {};
   if (!b.loader || !b.data || !b.framework || !b.code) {

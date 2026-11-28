@@ -52,7 +52,7 @@ namespace Loab.Game
             _root = _doc.rootVisualElement;
             _root.styleSheets.Add(Resources.Load<StyleSheet>("UI/Loab"));
             _root.AddToClassList("root");
-            if (PlayerPrefs.GetInt("loab_large_text", 0) == 1) ps.scale = 1.18f;
+            ps.scale = UiScale(PlayerPrefs.GetInt("loab_large_text", 0) == 1);
             _root.EnableInClassList("cb", PlayerPrefs.GetInt("loab_cb", 0) == 1); // colour-blind friendly palette (task U2)
             _root.pickingMode = PickingMode.Ignore;
             BuildGrain();
@@ -518,9 +518,17 @@ namespace Loab.Game
             PlayerPrefs.SetInt("loab_cb", on ? 1 : 0);
         }
 
+        // Phones and tablets (task X3): the HUD is laid out for a 1366x800 screen, which leaves buttons
+        // around 10 CSS pixels tall on a phone held sideways. Scale it up so they're comfortable to tap.
+        static float UiScale(bool largeText)
+        {
+            float s = Application.isMobilePlatform ? 1.45f : 1f;
+            return largeText ? s * 1.18f : s;
+        }
+
         public void SetLargeText(bool on)
         {
-            _doc.panelSettings.scale = on ? 1.18f : 1f;
+            _doc.panelSettings.scale = UiScale(on);
             PlayerPrefs.SetInt("loab_large_text", on ? 1 : 0);
         }
 

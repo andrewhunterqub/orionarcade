@@ -472,6 +472,12 @@ a { color: var(--accent-2); }
   }
 }
 
+/* Phones held upright: suggest turning sideways for landscape games. */
+.rotate-hint { display: none; margin: 10px 0 0; text-align: center; color: var(--accent); font-size: .95rem; }
+@media (orientation: portrait) and (max-width: 600px) {
+  body.landscape-game .rotate-hint { display: block; }
+}
+
 /* Fullscreen: native (Fullscreen API) and "fill the screen" for iPhone Safari (see fullscreen.js) */
 .stage:fullscreen,
 .stage:-webkit-full-screen {
