@@ -72,7 +72,8 @@ namespace Loab.Game
             {
                 double v = rng.NextDouble() - 0.5;
                 byte a = (byte)(System.Math.Abs(v) * 2 * 16); // at most about 6% opacity
-                px[i] = v > 0 ? new Color32(255, 248, 235, a) : new Color32(40, 28, 20, a);
+                // Mostly dark flecks: light ones read as TV static on the night scene.
+                px[i] = v > 0 ? new Color32(255, 248, 235, (byte)(a * 0.35f)) : new Color32(40, 28, 20, a);
             }
             tex.SetPixels32(px); tex.Apply(false, true);
             _grain = new VisualElement { name = "grain", pickingMode = PickingMode.Ignore };
@@ -372,6 +373,7 @@ namespace Loab.Game
 
         public void Update()
         {
+            if (_grain != null) _grain.style.opacity = 1f - 0.6f * WorldView.Night01; // fainter once the lights go down
             if (G == null) return;
             var s = G.S;
             _barName.text = s.barName;

@@ -313,6 +313,7 @@ namespace Loab.Game
         // ---- Halos (visual brief, task V3): soft additive glows around lamps, bulbs and glowing kit.
         static Material _haloMat;
         public static bool HalosOn = true;
+        public static float Night01; // 0 in daylight, 1 once the lights are down for service
         static void Halo(Transform parent, Vector3 localPos, float size, uint rgb, float strength = 1f)
         {
             if (_haloMat == null) _haloMat = Resources.Load<Material>("Materials/Halo");
@@ -432,6 +433,7 @@ namespace Loab.Game
             _wasService = service;
             _night = Mathf.MoveTowards(_night, service ? 1f : 0f, Time.unscaledDeltaTime / 2.5f);
             float n = Mathf.SmoothStep(0, 1, _night);
+            Night01 = n;
             float L = s.lighting / 100f;
             Shader.SetGlobalFloat("_HaloStrength", HalosOn ? Mathf.Lerp(0.12f, 0.6f, n) : 0f);
 
