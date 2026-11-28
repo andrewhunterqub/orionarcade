@@ -213,6 +213,22 @@ namespace Loab.Sim
             Changed?.Invoke();
         }
 
+        /// The next reputation thresholds and what they unlock (task P4): up to `groups` thresholds above the current reputation.
+        public List<(int rep, List<ItemDef> items)> UpcomingUnlocks(int groups = 3)
+        {
+            var result = new List<(int, List<ItemDef>)>();
+            if (S.mode == 1) return result; // sandbox has everything
+            var pending = Content.Items.FindAll(d => !d.Hidden && d.UnlockRep > S.reputation && !S.unlockedItems.Contains(d.Id));
+            pending.Sort((a, b) => a.UnlockRep.CompareTo(b.UnlockRep));
+            foreach (var d in pending)
+            {
+                if (result.Count > 0 && result[result.Count - 1].Item1 == d.UnlockRep) { result[result.Count - 1].Item2.Add(d); continue; }
+                if (result.Count >= groups) break;
+                result.Add((d.UnlockRep, new List<ItemDef> { d }));
+            }
+            return result;
+        }
+
         public bool IsUnlocked(ItemDef d)
         {
             if (S.mode == 1) return !d.Hidden || S.unlockedItems.Contains(d.Id);

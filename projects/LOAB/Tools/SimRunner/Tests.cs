@@ -39,6 +39,7 @@ public static class Tests
         Test("director: every option of every card applies cleanly on a mid-game bar", AllCards);
         Test("content: ids unique, themes and suppliers exist, footprints and prices sane", ContentIntegrity);
         Test("awards: once a year at the end of summer; a strong season wins the trophy", Awards);
+        Test("unlocks: the reputation track lists the next thresholds in order", Unlocks);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -465,6 +466,18 @@ public static class Tests
         var h = Game.NewCareer(66, 1);
         h.S.rating = 3.2f; h.S.reputation = 60; h.S.tags.Add("Slow Service");
         Assert(Director.AwardsScore(h.S) < Director.AwardsWinScore, $"weak season scored {Director.AwardsScore(h.S)}");
+    }
+
+    static void Unlocks()
+    {
+        var g = Game.NewCareer(12, 1);
+        var up = g.UpcomingUnlocks(3);
+        Assert(up.Count == 3, $"expected 3 thresholds, got {up.Count}");
+        Assert(up[0].rep > g.S.reputation && up[0].rep < up[1].rep && up[1].rep < up[2].rep, "thresholds not ascending above current reputation");
+        Assert(up.All(u => u.items.All(i => !i.Hidden && i.UnlockRep == u.rep)), "wrong items in a group");
+        g.S.reputation = 100;
+        Assert(g.UpcomingUnlocks().Count == 0, "unlocks listed at max reputation");
+        Assert(Game.NewSandbox(1).UpcomingUnlocks().Count == 0, "sandbox shouldn't list unlocks");
     }
 
     static void CashCrisisArc()

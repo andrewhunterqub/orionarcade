@@ -175,6 +175,22 @@ namespace Loab.Game
                 row.Add(Lbl(Axis.High[a], "axis-hi"));
                 p.Add(row);
             }
+            // Reputation track (task P4): the next plinth and what's coming up.
+            var s0 = G.S;
+            int tier = Sim.Game.PlinthTier(s0.reputation);
+            int[] tierRep = { 0, 20, 40, 60, 80 };
+            p.Add(Lbl("REPUTATION TRACK", "section"));
+            var trackRow = Row(Lbl($"Reputation {s0.reputation:0}", "slider-label"), Bar(s0.reputation / 100f, Col(0xffd166)));
+            trackRow.tooltip = "Reputation grows with good nights, great events and happy customers. It unlocks new kit and upgrades your plinth.";
+            p.Add(trackRow);
+            if (tier < 4) p.Add(Lbl($"Next plinth: {Sim.Game.PlinthNames[tier + 1]} at reputation {tierRep[tier + 1]}.", "card-sub"));
+            else p.Add(Lbl($"Your bar stands on {Sim.Game.PlinthNames[4]}. It doesn't get grander.", "card-sub"));
+            foreach (var (rep, items) in G.UpcomingUnlocks(3))
+            {
+                var names = string.Join(", ", items.Take(4).Select(d => d.Name)) + (items.Count > 4 ? $" and {items.Count - 4} more" : "");
+                p.Add(Lbl($"At {rep}: {names}", "card-sub"));
+            }
+
             p.Add(Lbl("WHO WILL LOVE IT", "section"));
             for (int i = 0; i < Content.Segments.Count; i++)
             {
