@@ -1122,7 +1122,7 @@ namespace Loab.Sim
             if (HappyHour) ratio *= 1f - S.happyHourDiscount / 100f;
             if (ratio > 1.15f)
             {
-                c.mood -= (ratio - 1f) * c.def.PriceSensitivity * 25f;
+                c.mood -= (ratio - 1f) * c.def.PriceSensitivity * 55f; // feeling ripped off stings (task B1)
                 if (ratio > 1.25f && R.Chance(c.def.PriceSensitivity)) { c.Mark(Note.Pricey); Think(c, $"£{price:0.00} for a {c.drink.Name}? Steep."); }
             }
             else if (ratio < 0.9f) { c.Mark(Note.Bargain); c.mood += 3; }

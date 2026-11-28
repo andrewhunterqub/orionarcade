@@ -15,7 +15,7 @@ namespace Loab.Sim
         /// How strongly footfall falls as prices rise above normal (times each segment's price sensitivity).
         public const float PriceElasticity = 4.0f;
         /// How strongly footfall rises when prices are below normal ("great value" draws a crowd).
-        public const float ValueDraw = 2.2f;
+        public const float ValueDraw = 1.2f;
         public const float BaseFootfall = 260f;
 
         // ---- Difficulty and running costs (task T5) ---------------------------------------------------

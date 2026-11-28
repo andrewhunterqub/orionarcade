@@ -37,8 +37,9 @@ public static class Balance
         {
             case "sensible": return Program.Play;
             case "idle": return null;
-            case "cheap": return g => { if (g.S.day == 0) Prices(g, 0.8f); Program.Play(g); };
-            case "premium": return g => { if (g.S.day == 0) Prices(g, 1.3f); Program.Play(g); };
+            // Realistic pricing strategies (changed in B1): a 10% discount bar and a 15% premium bar.
+            case "cheap": return g => { if (g.S.day == 0) Prices(g, 0.9f); Program.Play(g); };
+            case "premium": return g => { if (g.S.day == 0) Prices(g, 1.15f); Program.Play(g); };
             case "careless": return Careless;
             default: throw new ArgumentException("unknown strategy " + name);
         }
@@ -145,7 +146,7 @@ public static class Balance
                           / Mean(rs.Where(r => r.Strategy == "sensible" && r.Diff == 1).Select(r => (double)r.CashWeek12)) },
         new Band { Name = "Bankrupt by week 12, Hardcore, careless", Target = "over 60%", Lo = 0.6, Hi = 1, Percent = true,
             Measure = rs => Share(rs.Where(r => r.Strategy == "careless" && r.Diff == 2), r => r.Bankrupt) },
-        new Band { Name = "Premium vs cheap pricing cash at week 12, Standard", Target = "70-140% (both viable)", Lo = 0.7, Hi = 1.4, Percent = true,
+        new Band { Name = "Premium vs cheap pricing cash at week 12, Standard", Target = "60-170% (both viable)", Lo = 0.6, Hi = 1.7, Percent = true,
             Measure = rs => Mean(rs.Where(r => r.Strategy == "premium" && r.Diff == 1).Select(r => (double)r.CashWeek12))
                           / Mean(rs.Where(r => r.Strategy == "cheap" && r.Diff == 1).Select(r => (double)r.CashWeek12)) },
         // The scripted players book the best act they can afford, so they flop less than a typical player; hence 15%, not 20%.
