@@ -73,6 +73,16 @@ namespace Loab.Game
 
         void LateUpdate() => Apply(false);
 
+        /// Aspect-aware framing (task Z6): screens narrower than 16:9 (a 4:3 tablet, a tablet held upright)
+        /// widen the vertical field of view so the room is as wide as it is on 16:9, not cropped at the sides.
+        public static float FovFor(float aspect)
+        {
+            const float Ref = 16f / 9f;
+            if (aspect >= Ref || aspect <= 0f) return Fov;
+            float halfH = Mathf.Atan(Mathf.Tan(Fov * 0.5f * Mathf.Deg2Rad) * Ref);
+            return Mathf.Min(55f, 2f * Mathf.Atan(Mathf.Tan(halfH) / aspect) * Mathf.Rad2Deg);
+        }
+
         void Apply(bool snap)
         {
             float targetYaw = 45f + YawStep * 90f;
@@ -80,6 +90,7 @@ namespace Loab.Game
             // ~0.35 s ease between corner views (brief 4.1)
             _yaw = snap ? targetYaw : Mathf.SmoothDampAngle(_yaw, targetYaw, ref _yawVel, 0.12f, 2000f, dt);
             _dist = snap ? Zoom : Mathf.Lerp(_dist, Zoom, 1f - Mathf.Exp(-dt * 12f));
+            Cam.fieldOfView = FovFor(Cam.aspect);
             var rot = Quaternion.Euler(Pitch, _yaw, 0);
             transform.position = Target;
             Cam.transform.rotation = rot;
