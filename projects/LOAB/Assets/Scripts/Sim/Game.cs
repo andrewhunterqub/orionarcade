@@ -482,6 +482,7 @@ namespace Loab.Sim
             var fresh = NewCareer(S.seed * 31 + 7, S.difficulty).S;
             fresh.mode = S.mode;
             fresh.district = dist.Id;
+            fresh.floor = dist.Floor; fresh.wall = dist.Wall;
             fresh.venues = 2;
             fresh.firstBarName = S.barName;
             fresh.barName = string.IsNullOrWhiteSpace(name) ? $"The Anchor, {dist.Name}" : name.Trim();

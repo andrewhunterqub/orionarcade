@@ -646,7 +646,7 @@ namespace Loab.Game
             {
                 p.Add(Lbl("YOUR FIRST BAR", "section"));
                 var dist = Content.District(s.district);
-                p.Add(Lbl($"{s.firstBarName} is run by your manager and sends {Money(s.managedIncome)} each Sunday. You're now running {s.barName}" + (dist != null ? $" in the {dist.Name}." : "."), "card-sub"));
+                p.Add(Lbl($"{s.firstBarName} is run by your manager" + (s.managedIncome > 0 ? $" and sends {Money(s.managedIncome)} each Sunday." : ", but it wasn't making a profit when you left, so nothing comes back.") + $" You're now running {s.barName}" + (dist != null ? $" in the {dist.Name}." : "."), "card-sub"));
             }
             else if (s.mode == 0)
             {
@@ -656,7 +656,8 @@ namespace Loab.Game
                     c.Add(Lbl($"Win Bar of the Year, or reach reputation {Sim.Game.SecondVenueRep}, and you can open a second bar in another part of town.", "card-sub"));
                 else
                 {
-                    c.Add(Lbl($"Hand {s.barName} to a manager, who'd send you about {Money(G.ManagedIncomeEstimate())} a week, and start again in a new district. The fit-out costs {Money(Sim.Game.SecondVenueCost)}.", "card-sub"));
+                    float est = G.ManagedIncomeEstimate();
+                    c.Add(Lbl($"Hand {s.barName} to a manager" + (est > 0 ? $", who'd send you about {Money(est)} a week," : " (they'd only send money once it's making a profit)") + $" and start again in a new district. The fit-out costs {Money(Sim.Game.SecondVenueCost)}.", "card-sub"));
                     var b = Btn("Plan a second bar", () => ShowSecondVenue(), "btn-small");
                     b.SetEnabled(G.Phase == Phase.Prep);
                     c.Add(b);

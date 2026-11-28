@@ -29,7 +29,8 @@ namespace Loab.Game
         void ShowSecondVenue()
         {
             var s = G.S;
-            var m = Modal("A second bar", $"Your manager takes over {s.barName} and sends you about {Money(G.ManagedIncomeEstimate())} a week. You keep your cash (less the {Money(Sim.Game.SecondVenueCost)} fit-out), your recipes and everything you've unlocked, and start again in a bare unit. A known name helps, but the new room has to earn its own reputation. There's no going back.");
+            float est = G.ManagedIncomeEstimate();
+            var m = Modal("A second bar", $"Your manager takes over {s.barName}" + (est > 0 ? $" and sends you about {Money(est)} a week." : ". It isn't making a profit at the moment, so don't count on money from it.") + $" You keep your cash (less the {Money(Sim.Game.SecondVenueCost)} fit-out), your recipes and everything you've unlocked, and start again in a bare unit. A known name helps, but the new room has to earn its own reputation. There's no going back.");
             var nameRow = Row(Lbl("Bar name", "slider-label"));
             var field = new TextField { value = "The Anchor II", maxLength = 28 };
             field.style.flexGrow = 1;

@@ -128,6 +128,7 @@ namespace Loab.Sim
         public string Id, Name, Blurb;
         public float[] ShareMult;   // per segment, multiplies Share (order of Content.Segments)
         public float RentMult = 1f, FootMult = 1f;
+        public string Floor = "boards", Wall = "cream"; // how the bare unit is fitted out when you move in
     }
 
     public static class Content
@@ -137,11 +138,11 @@ namespace Loab.Sim
         public static readonly List<DistrictDef> Districts = new List<DistrictDef>
         {
             new DistrictDef { Id = "harbour", Name = "Old Harbour", Blurb = "Cobbles, gulls and day-trippers. Tourists and couples by the boatload, a busy summer and a quiet winter.",
-                ShareMult = new[] { 0.6f, 0.9f, 0.8f, 0.7f, 1.0f, 0.6f, 2.4f, 1.8f }, RentMult = 1.15f, FootMult = 1.05f },
+                ShareMult = new[] { 0.6f, 0.9f, 0.8f, 0.7f, 1.0f, 0.6f, 2.4f, 1.8f }, RentMult = 1.15f, FootMult = 1.05f, Floor = "boards", Wall = "green" },
             new DistrictDef { Id = "campus", Name = "University Quarter", Blurb = "Cheap rent and endless students and creatives, but they count every penny and vanish in the holidays.",
-                ShareMult = new[] { 2.0f, 0.7f, 0.7f, 1.0f, 1.6f, 0.5f, 0.6f, 0.7f }, RentMult = 0.9f, FootMult = 1.0f },
+                ShareMult = new[] { 2.0f, 0.7f, 0.7f, 1.0f, 1.6f, 0.5f, 0.6f, 0.7f }, RentMult = 0.9f, FootMult = 1.0f, Floor = "concrete", Wall = "brick" },
             new DistrictDef { Id = "financial", Name = "Financial District", Blurb = "Expense accounts and after-work rounds. Rammed Thursday and Friday, rent to match.",
-                ShareMult = new[] { 0.4f, 1.9f, 0.5f, 0.9f, 0.6f, 2.6f, 0.8f, 1.0f }, RentMult = 1.25f, FootMult = 1.15f },
+                ShareMult = new[] { 0.4f, 1.9f, 0.5f, 0.9f, 0.6f, 2.6f, 0.8f, 1.0f }, RentMult = 1.25f, FootMult = 1.15f, Floor = "oak", Wall = "panelling" },
         };
         public static DistrictDef District(string id) => string.IsNullOrEmpty(id) ? null : Districts.Find(d => d.Id == id);
 

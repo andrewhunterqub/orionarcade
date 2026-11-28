@@ -380,7 +380,8 @@ namespace Loab.Game
             if (G == null) return;
             var s = G.S;
             _barName.text = s.barName;
-            _dayText.text = $"{Content.DayNames[s.DayOfWeek]}  -  Week {s.Week}, {Content.Seasons[s.Season]}  -  {s.weather}";
+            var dist = Content.District(s.district);
+            _dayText.text = $"{Content.DayNames[s.DayOfWeek]}  -  Week {s.Week}, {Content.Seasons[s.Season]}  -  {s.weather}" + (dist != null ? $"  -  {dist.Name}" : "");
             _dayText.tooltip = Economy.SeasonNote(s) ?? $"{Content.Seasons[s.Season]}, {s.weather.ToLowerInvariant()}.";
             _cash.text = Money(s.cash);
             _cash.EnableInClassList("neg", s.cash < 0);
