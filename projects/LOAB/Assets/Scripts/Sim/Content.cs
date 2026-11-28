@@ -442,9 +442,9 @@ namespace Loab.Sim
             Drink("espresso_martini", "Espresso Martini", DrinkCat.Cocktail, "velvet", 2.40f, 10.00f, 3.0f, "speakeasy", "lounge");
             Drink("mojito", "Mojito", DrinkCat.Cocktail, "velvet", 2.10f, 9.00f, 3.2f, "lounge");
             Drink("old_fashioned", "Old Fashioned", DrinkCat.Cocktail, "velvet", 2.60f, 10.50f, 2.6f, "speakeasy", "lounge");
-            Drink("zero_lager", "Zero Lager", DrinkCat.AlcoholFree, "barrel", 0.90f, 4.20f, 0.8f);
-            Drink("mocktail", "Virgin Colada", DrinkCat.AlcoholFree, "velvet", 1.10f, 6.00f, 2.4f);
-            Drink("soft", "Cola & Lemonade", DrinkCat.AlcoholFree, "barrel", 0.40f, 2.80f, 0.5f);
+            Drink("zero_lager", "Zero Lager", DrinkCat.AlcoholFree, "barrel", 0.90f, 4.20f, 0.8f, "pub", "sports", "craft");
+            Drink("mocktail", "Virgin Colada", DrinkCat.AlcoholFree, "velvet", 1.10f, 6.00f, 2.4f, "arcade", "lounge", "speakeasy");
+            Drink("soft", "Cola & Lemonade", DrinkCat.AlcoholFree, "barrel", 0.40f, 2.80f, 0.5f, "dive", "arcade", "sports");
             Drink("coffee", "Coffee", DrinkCat.Hot, "barrel", 0.30f, 3.00f, 1.0f);
 
             // ---- More drinks (task K3) ------------------------------------------------------------------

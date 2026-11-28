@@ -441,6 +441,10 @@ public static class Tests
         foreach (var st in Content.Floors.Concat(Content.Walls)) foreach (var t in st.Themes) Assert(themeIds.Contains(t), $"{st.Id}: unknown theme {t}");
         foreach (var m in Content.Music) Assert(m.SegLikes.Length == Content.Segments.Count, $"music {m.Id}: {m.SegLikes.Length} segment likes");
         foreach (var th in Content.Themes) Assert(Content.Items.Count(i => i.Themes.Contains(th.Id)) >= 6, $"theme {th.Id} has under 6 items");
+        // Responsible design (brief 18.2): every theme has an alcohol-free drink that fits it, and no shots.
+        foreach (var th in Content.Themes)
+            Assert(Content.Drinks.Exists(d => !d.Alcoholic && !d.Signature && d.Themes.Contains(th.Id)), $"theme {th.Id} has no alcohol-free drink");
+        Assert(!Content.Drinks.Exists(d => d.Name.ToLowerInvariant().Contains("shot")), "a shot crept into the drinks list");
     }
 
     static void Awards()
