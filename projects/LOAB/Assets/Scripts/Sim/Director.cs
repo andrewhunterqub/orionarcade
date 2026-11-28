@@ -547,7 +547,8 @@ namespace Loab.Sim
         public static void Roll(Game g, Rng r)
         {
             var s = g.S;
-            if (s.day < 2 || !r.Chance(0.5)) return;
+            // A card most mornings early on; fewer once the bar's established, so a long career doesn't feel like re-runs.
+            if (s.day < 2 || !r.Chance(s.day < 56 ? 0.5 : 0.35)) return;
             var options = new List<CardDef>();
             var weights = new List<float>();
             foreach (var c in Cards)
@@ -555,8 +556,10 @@ namespace Loab.Sim
                 if (c.When != null && !c.When(s)) continue;
                 if (c.Once && s.cardHistory.Contains(c.Id)) continue;
                 int lastIdx = s.cardHistory.LastIndexOf(c.Id);
-                if (lastIdx >= 0 && s.cardHistory.Count - lastIdx < 6) continue; // not too often
-                options.Add(c); weights.Add(c.Weight);
+                if (lastIdx >= 0 && s.cardHistory.Count - lastIdx < 10) continue; // not too often
+                // Variety over a long career (task Z5): the more often a card has come up, the less likely it is.
+                int seen = 0; foreach (var h in s.cardHistory) if (h == c.Id) seen++;
+                options.Add(c); weights.Add(c.Weight / (1f + 0.35f * seen));
             }
             int i = r.WeightedIndex(weights);
             if (i < 0) return;
