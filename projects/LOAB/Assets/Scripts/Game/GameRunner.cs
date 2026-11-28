@@ -241,6 +241,7 @@ namespace Loab.Game
             if (G.Phase == Phase.Service)
             {
                 Audio.Ambience(0);
+                Audio.Music(null, 0);
                 if (!Continue(G.S.mode)) Load(Sim.Game.NewCareer((ulong)DateTime.Now.Ticks, 1));
             }
             else Save();
@@ -307,6 +308,7 @@ namespace Loab.Game
             UpdateGhost();
             UpdateBlur();
             AutoQuality();
+            if (G != null && G.Phase == Phase.Prep) Audio.Music(G.S.music, 0.12f); // a quiet preview while you plan
             Ui.Update();
         }
 
@@ -331,8 +333,11 @@ namespace Loab.Game
                 if (svc.Takings > takings && Time.frameCount % 3 == 0) Audio.Play("till", 0.25f);
             }
             Audio.Ambience(svc.Inside / (float)Mathf.Max(1, svc.Capacity));
+            // The bar's own music under the crowd, scaled by its volume setting (task V1). Bands and the match take over.
+            bool liveAct = svc.Event != null && svc.EventPhase >= 1 && svc.EventPhase <= 3 && (svc.Event.kind == Sim.EventKinds.LiveMusic || svc.Event.kind == Sim.EventKinds.Match);
+            Audio.Music(G.S.music, liveAct ? 0.15f : 0.35f + G.S.volume / 100f * 0.65f);
             G.EndServiceIfDone();
-            if (G.Phase == Phase.Report) { Audio.Ambience(0); Audio.Play("till"); ClearInteraction(); Ui.OnReport(); }
+            if (G.Phase == Phase.Report) { Audio.Ambience(0); Audio.Music(G.S.music, 0.2f); Audio.Play("till"); ClearInteraction(); Ui.OnReport(); }
         }
 
         void HandleKeys()
