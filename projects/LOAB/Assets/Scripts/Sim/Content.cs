@@ -575,6 +575,11 @@ namespace Loab.Sim
             Traits.Add(new TraitDef { Id = "butterfingers", Name = "Butterfingers", Blurb = "Spills and broken glasses follow them around." });
             Traits.Add(new TraitDef { Id = "secret_comic", Name = "Secretly a Comedian", Blurb = "Event nights go better when they're on shift." });
             Traits.Add(new TraitDef { Id = "gossip", Name = "Gossip", Blurb = "Chats a lot. Slower, but regulars love them." });
+            // Task S5
+            Traits.Add(new TraitDef { Id = "night_owl", Name = "Night Owl", Blurb = "Barely tires as the night goes on." });
+            Traits.Add(new TraitDef { Id = "wine_buff", Name = "Wine Buff", Blurb = "Knows their vintages. Wine they serve is noticeably better." });
+            Traits.Add(new TraitDef { Id = "neat_freak", Name = "Neat Freak", Blurb = "Tidies faster, and collects glasses whenever they've a spare second." });
+            Traits.Add(new TraitDef { Id = "workhorse", Name = "Workhorse", Blurb = "Long runs of shifts don't wear them down." });
         }
 
         // ---- Name generation -----------------------------------------------------------------------

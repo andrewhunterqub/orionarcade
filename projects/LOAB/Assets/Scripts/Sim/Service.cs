@@ -971,7 +971,8 @@ namespace Loab.Sim
             int q = 0; foreach (var bp in BarPoints) q += bp.queue.Count;
             if (q > 6 && !m.HasTrait("calm")) f *= 1.15f;
             float fatigue = T / 360f * (1.2f - m.stamina * 0.04f) * (Economy.Heatwave(S) ? 1.4f : 1f)
-                            * (1f + Math.Max(0, m.streak - 5) * 0.12f); // worn out after too many nights in a row
+                            * (m.HasTrait("workhorse") ? 1f : 1f + Math.Max(0, m.streak - 5) * 0.12f) // worn out after too many nights in a row
+                            * (m.HasTrait("night_owl") ? 0.4f : 1f);
             f *= 1f + Math.Max(0, fatigue) * 0.25f;
             f *= 1.15f - m.morale / 100f * 0.25f;
             return Math.Max(0.4f, f);
@@ -1017,7 +1018,7 @@ namespace Loab.Sim
                 a.taskTimer -= Tick;
                 if (a.taskTimer <= 0)
                 {
-                    a.taskTimer = 0.6f;
+                    a.taskTimer = a.m != null && a.m.HasTrait("neat_freak") ? 0.35f : 0.6f;
                     foreach (var inc in Incidents)
                     {
                         if (inc.resolved || inc.kind != IncidentKind.Glasses || inc.count <= 0) continue;
@@ -1124,6 +1125,7 @@ namespace Loab.Sim
             else if (ratio < 0.9f) { c.Mark(Note.Bargain); c.mood += 3; }
             float q = DrinkQuality(S, c.drink);
             if (c.drink.Cat == DrinkCat.Cocktail && !a.IsOwner) q += (a.m.skill - 10) * 1.5f + (a.m.HasTrait("cocktail_nerd") ? 10 : 0);
+            if (c.drink.Cat == DrinkCat.Wine && !a.IsOwner && a.m.HasTrait("wine_buff")) q += 12;
             c.mood += (q - 60f) / 8f;
             if (q > 75 && R.Chance(0.5)) { c.Mark(Note.LovedDrink); Think(c, $"This {c.drink.Name} is excellent."); }
             if (q < 45 && R.Chance(0.5)) { c.Mark(Note.BadDrink); Think(c, $"That {c.drink.Name} tasted a bit off."); }
@@ -1190,7 +1192,8 @@ namespace Loab.Sim
                     else { a.x += dx / dist * step; a.y += dy / dist * step; step = 0; }
                 }
                 if (a.path == null || a.pathIdx >= a.path.Count)
-                    a.taskTimer = t.kind == IncidentKind.Spill ? 1.5f : t.kind == IncidentKind.Toilet ? 4f : t.kind == IncidentKind.Rowdy ? 2f : 0.4f + t.count * 0.15f;
+                    a.taskTimer = (t.kind == IncidentKind.Spill ? 1.5f : t.kind == IncidentKind.Toilet ? 4f : t.kind == IncidentKind.Rowdy ? 2f : 0.4f + t.count * 0.15f)
+                                * (a.m != null && a.m.HasTrait("neat_freak") && t.kind != IncidentKind.Rowdy ? 0.6f : 1f);
                 return;
             }
             a.taskTimer -= Tick;

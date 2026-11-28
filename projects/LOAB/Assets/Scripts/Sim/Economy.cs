@@ -292,12 +292,13 @@ namespace Loab.Sim
             while (m.traits.Count < traits)
             {
                 var t = Content.Traits[r.Range(0, Content.Traits.Count)].Id;
-                if (t == "cocktail_nerd" && role != 0) continue;
+                if ((t == "cocktail_nerd" || t == "wine_buff") && role != 0) continue;
                 if (!m.traits.Contains(t)) m.traits.Add(t);
             }
             m.wage = FairWage(m);
             if (m.HasTrait("always_late") || m.HasTrait("butterfingers")) m.wage -= 8;
             if (m.HasTrait("calm") || m.HasTrait("cocktail_nerd")) m.wage += 6;
+            if (m.HasTrait("night_owl") || m.HasTrait("workhorse") || m.HasTrait("wine_buff")) m.wage += 5;
             return m;
         }
 

@@ -247,7 +247,7 @@ public static class Tests
         (int rowdy, int fines) Weekends(bool door)
         {
             int rowdy = 0, fines = 0;
-            for (ulong seed = 1; seed <= 16; seed++)
+            for (ulong seed = 1; seed <= 40; seed++)
             for (int dow = 4; dow <= 5; dow++)
             {
                 var g = Game.NewCareer(seed, 2);

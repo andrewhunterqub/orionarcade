@@ -698,7 +698,7 @@ namespace Loab.Sim
             {
                 if (m.OffOn(S.DayOfWeek)) { m.streak = 0; m.morale = Math.Min(100, m.morale + 4); continue; }
                 m.streak++;
-                if (m.streak > 5) m.morale = Math.Max(0, m.morale - (m.streak - 5) * 2.5f);
+                if (m.streak > 5 && !m.HasTrait("workhorse")) m.morale = Math.Max(0, m.morale - (m.streak - 5) * 2.5f);
                 if (m.streak == 7) rec.moments.Add($"{m.name} has worked seven nights straight and is flagging. Give them a night off on the Staff tab.");
             }
             if (svc != null)
