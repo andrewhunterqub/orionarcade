@@ -521,7 +521,7 @@ public static class Tests
         Assert(h.OpenSecondVenue("harbour", "Three").error != null, "a third venue shouldn't be possible");
         // The district shapes the crowd and the rent.
         var plain = Game.NewCareer(29, 1); plain.S.day = t.day; plain.S.reputation = t.reputation;
-        Assert(Economy.WeeklyRent(t) > Economy.WeeklyRent(plain.S) * 1.3f, "financial district rent should be higher");
+        Assert(Economy.WeeklyRent(t) > Economy.WeeklyRent(plain.S) * 1.15f, "financial district rent should be higher");
         var a = new float[Content.Segments.Count]; var b = new float[Content.Segments.Count];
         Economy.ExpectedArrivals(t, h.V, a, null, out _); Economy.ExpectedArrivals(plain.S, plain.V, b, null, out _);
         int afterWork = 5, students = 0;

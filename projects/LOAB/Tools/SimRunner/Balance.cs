@@ -58,6 +58,47 @@ public static class Balance
         if (s.day % 3 == 0) g.RestockAll();
     }
 
+    /// Second-venue balance (task X2): play 12 weeks sensibly on Standard, open a second bar in each district
+    /// (reputation topped up to the gate and cash to the fit-out if short, as the harness only tests the districts),
+    /// then play 8 more weeks. Reports bankruptcies and cash at the end per district.
+    public static int SecondVenue(int seeds)
+    {
+        Console.WriteLine("district        bankrupt   cash@+8wk (mean)   min        managed/wk   customers/night (last 2 wks)");
+        var means = new List<double>();
+        bool ok = true;
+        foreach (var dist in Content.Districts)
+        {
+            var cash = new List<double>(); var cust = new List<double>(); var managed = new List<double>(); int bust = 0;
+            for (int i = 0; i < seeds; i++)
+            {
+                ulong seed = 1000 + (ulong)i * 7919;
+                var g = Game.NewCareer(seed, 1);
+                for (int d = 0; d < 84; d++) if (!Tests.PlayDay(g, Strategy("sensible"), null, null)) break;
+                if (g.S.bankrupt) continue;
+                g.S.reputation = Math.Max(g.S.reputation, Game.SecondVenueRep);
+                g.S.cash = Math.Max(g.S.cash, Game.SecondVenueCost + 6000);
+                var (err, h) = g.OpenSecondVenue(dist.Id, "Two");
+                if (err != null) throw new Exception(err);
+                managed.Add(h.S.managedIncome);
+                bool alive = true;
+                for (int d = 0; d < 56 && alive; d++) alive = Tests.PlayDay(h, Strategy("sensible"), null, null);
+                if (!alive || h.S.bankrupt) bust++;
+                cash.Add(h.S.cash);
+                int n = h.S.history.Count;
+                cust.Add(h.S.history.Skip(Math.Max(0, n - 14)).Average(r => r.customers));
+            }
+            double mean = cash.Count > 0 ? cash.Average() : 0;
+            means.Add(mean);
+            if (bust > 0) ok = false;
+            Console.WriteLine($"{dist.Name,-16}{bust,3}/{cash.Count,-6}  £{mean,10:#,0}      £{(cash.Count > 0 ? cash.Min() : 0),9:#,0}   £{(managed.Count > 0 ? managed.Average() : 0),7:#,0}      {(cust.Count > 0 ? cust.Average() : 0),5:0}");
+        }
+        double spread = means.Min() > 0 ? means.Max() / means.Min() : double.PositiveInfinity;
+        Console.WriteLine($"Spread (richest / poorest district): {spread:0.00}x, target under 1.6x");
+        if (spread > 1.6) ok = false;
+        Console.WriteLine(ok ? "SECOND VENUE OK" : "SECOND VENUE OUT OF BAND");
+        return 0;
+    }
+
     public static Run Play(string strategy, int diff, ulong seed, int nights)
     {
         var g = Game.NewCareer(seed, diff);

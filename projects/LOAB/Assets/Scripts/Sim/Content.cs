@@ -139,9 +139,9 @@ namespace Loab.Sim
             new DistrictDef { Id = "harbour", Name = "Old Harbour", Blurb = "Cobbles, gulls and day-trippers. Tourists and couples by the boatload, a busy summer and a quiet winter.",
                 ShareMult = new[] { 0.6f, 0.9f, 0.8f, 0.7f, 1.0f, 0.6f, 2.4f, 1.8f }, RentMult = 1.15f, FootMult = 1.05f },
             new DistrictDef { Id = "campus", Name = "University Quarter", Blurb = "Cheap rent and endless students and creatives, but they count every penny and vanish in the holidays.",
-                ShareMult = new[] { 2.0f, 0.7f, 0.7f, 1.0f, 1.6f, 0.5f, 0.6f, 0.7f }, RentMult = 0.8f, FootMult = 1.0f },
+                ShareMult = new[] { 2.0f, 0.7f, 0.7f, 1.0f, 1.6f, 0.5f, 0.6f, 0.7f }, RentMult = 0.9f, FootMult = 1.0f },
             new DistrictDef { Id = "financial", Name = "Financial District", Blurb = "Expense accounts and after-work rounds. Rammed Thursday and Friday, rent to match.",
-                ShareMult = new[] { 0.4f, 1.9f, 0.5f, 0.9f, 0.6f, 2.6f, 0.8f, 1.0f }, RentMult = 1.4f, FootMult = 1.1f },
+                ShareMult = new[] { 0.4f, 1.9f, 0.5f, 0.9f, 0.6f, 2.6f, 0.8f, 1.0f }, RentMult = 1.25f, FootMult = 1.15f },
         };
         public static DistrictDef District(string id) => string.IsNullOrEmpty(id) ? null : Districts.Find(d => d.Id == id);
 
