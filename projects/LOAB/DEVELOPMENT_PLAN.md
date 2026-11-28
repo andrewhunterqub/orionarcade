@@ -214,6 +214,17 @@ In priority order. The same rules apply: test-first where the logic is in the si
 - [x] **Q2 · End-to-end visual check (S).** Use the Playwright position map to walk the Events tab, the Drinks tab (Cocktail Lab), the Staff tab (rota) and the Vibe tab (reputation track) in the live build, and fix any layout problems.
 - [x] **P5 · Second venue (L, stretch).** As in the original backlog: only once everything above is done.
 
+### Phase 3 (added Sat 28 Nov 09:05, after Phase 2 was finished)
+
+In priority order:
+
+- [ ] **X1 · QA hook for late-game screens (S).** Add a `?qa=late` URL option that, on a new Standard career, jumps to week 20 with reputation 75 and £50,000, so the Playwright walk can reach late-game screens (beer garden card, second-bar card, district modal, Act 3 goals). It only works with the explicit URL option and is documented in the plan. *Done when:* the walk screenshots the garden and second-bar flows in the live build.
+- [ ] **X2 · Second-venue balance (M).** Add a balance strategy that opens a second bar at week 12 in each district and plays 8 more weeks. *Done when:* all 3 districts are viable with sensible play (no bankruptcy in 10 seeds) and none is more than 1.6× the cash of another.
+- [ ] **X3 · Mobile layout check (S).** A Playwright walk in an iPhone viewport (portrait and landscape) through the title, prep, each tab and a night. Fix anything clipped or untappable (targets under about 36px).
+- [ ] **X4 · Maggie tips for new features (S).** One-time mentor tips the first time the player can afford the beer garden, opens the Cocktail Lab, or unlocks the second bar, plus a "welcome to the new district" tip after the move.
+- [ ] **X5 · District flavour (M).** One director card per district (a harbour regatta, campus freshers' fair, a City bonus-day rush) and a district line in the top bar.
+- [ ] **X6 · Performance pass (M).** Count draw calls and frame time in the live build at the default and lowest tiers; combine the static meshes of placed items where it is safe.
+
 **Explicitly out of scope this weekend:** multiplayer and social, monetisation, the food system, outdoor space, localisation, and real art assets.
 
 ---
