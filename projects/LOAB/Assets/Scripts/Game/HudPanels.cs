@@ -198,7 +198,7 @@ namespace Loab.Game
             int tier = Sim.Game.PlinthTier(s0.reputation);
             int[] tierRep = { 0, 20, 40, 60, 80 };
             p.Add(Lbl("REPUTATION TRACK", "section"));
-            var trackRow = Row(Lbl($"Reputation {s0.reputation:0}", "slider-label"), Bar(s0.reputation / 100f, Col(0xffd166)));
+            var trackRow = Row(Lbl($"Reputation {s0.reputation:0}", "row-label"), Bar(s0.reputation / 100f, Col(0xffd166)));
             trackRow.tooltip = "Reputation grows with good nights, great events and happy customers. It unlocks new kit and upgrades your plinth.";
             p.Add(trackRow);
             if (tier < 4) p.Add(Lbl($"Next plinth: {Sim.Game.PlinthNames[tier + 1]} at reputation {tierRep[tier + 1]}.", "card-sub"));
@@ -213,7 +213,7 @@ namespace Loab.Game
             for (int i = 0; i < Content.Segments.Count; i++)
             {
                 var seg = Content.Segments[i];
-                var r = Row(Lbl(seg.Plural, "slider-label"), Bar(v.SegMatch[i], Col(seg.Color)), Lbl($" {v.SegMatch[i] * 100:0}%", "card-sub"));
+                var r = Row(Lbl(seg.Plural, "row-label"), Bar(v.SegMatch[i], Col(seg.Color)), Lbl($" {v.SegMatch[i] * 100:0}%", "card-sub"));
                 r.tooltip = seg.Blurb;
                 p.Add(r);
             }
@@ -222,8 +222,7 @@ namespace Loab.Game
             p.Add(Lbl("THEMES", "section"));
             foreach (var t in v.Themes)
             {
-                var r = Row(Lbl(t.Def.Name, "slider-label"), Bar(t.Progress, t.Active ? Col(0x78dc8c) : Col(0xd4a64a)), Lbl(t.Active ? "  ACTIVE" : $"  {t.Progress * 100:0}%", t.Active ? "toggle-on" : "card-sub"));
-                r.Q<Label>().style.width = 130;
+                var r = Row(Lbl(t.Def.Name, "row-label"), Bar(t.Progress, t.Active ? Col(0x78dc8c) : Col(0xd4a64a)), Lbl(t.Active ? "  ACTIVE" : $"  {t.Progress * 100:0}%", t.Active ? "toggle-on" : "card-sub"));
                 r.tooltip = t.Def.Blurb + $" ({t.Count}/12 matching elements, {t.Share * 100:0}% of the look)";
                 p.Add(r);
             }
@@ -380,12 +379,14 @@ namespace Loab.Game
                 c.Add(Row(Lbl("Morale", "slider-label"), Bar(m.morale / 100f, m.morale < 30 ? Col(0xff6e64) : Col(0x78dc8c)), Lbl($"  Lv {m.level}", "card-sub")));
                 var me = m;
                 // Rota (task S3): which nights they work. Highlighted = working.
-                var rota = Row(Lbl("Works", "slider-label"));
+                var worksLbl = Lbl("Works", "slider-label"); worksLbl.style.width = 44;
+                var rota = Row(worksLbl);
                 rota.AddToClassList("wrap");
                 for (int dow = 0; dow < 7; dow++)
                 {
                     int d = dow;
                     var day = Toggle(Content.DayShort[d], !me.OffOn(d), () => { var e = G.ToggleDayOff(me.uid, d); if (e != null) Flash(e); MarkDirty(); });
+                    day.AddToClassList("btn-day");
                     day.tooltip = me.OffOn(d) ? $"Off on {Content.DayNames[d]}s" : $"Working {Content.DayNames[d]}s";
                     rota.Add(day);
                 }
