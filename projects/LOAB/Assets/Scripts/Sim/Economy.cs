@@ -16,13 +16,13 @@ namespace Loab.Sim
         public const float PriceElasticity = 4.0f;
         /// How strongly footfall rises when prices are below normal ("great value" draws a crowd).
         public const float ValueDraw = 2.2f;
-        public const float BaseFootfall = 270f;
+        public const float BaseFootfall = 260f;
 
         // ---- Difficulty and running costs (task T5) ---------------------------------------------------
-        /// Supplier prices: Relaxed 0.92x, Hardcore 1.07x.
-        public static float CostMult(GameState s) => s.difficulty == 0 ? 0.92f : s.difficulty == 2 ? 1.07f : 1f;
-        /// Footfall: Relaxed 1.08x, Hardcore 0.93x.
-        public static float FootfallMult(GameState s) => s.difficulty == 0 ? 1.08f : s.difficulty == 2 ? 0.93f : 1f;
+        /// Supplier prices: Relaxed 0.92x, Hardcore 1.05x.
+        public static float CostMult(GameState s) => s.difficulty == 0 ? 0.92f : s.difficulty == 2 ? 1.05f : 1f;
+        /// Footfall: Relaxed 1.08x, Hardcore 0.96x.
+        public static float FootfallMult(GameState s) => s.difficulty == 0 ? 1.08f : s.difficulty == 2 ? 0.96f : 1f;
         /// The landlord reviews the rent as the bar's reputation grows, and a bigger unit costs more.
         public static float WeeklyRent(GameState s)
         {

@@ -170,7 +170,7 @@ namespace Loab.Sim
 
         /// Wholesale cost multiplier on the base costs below: gives about 55-65% gross margin at normal prices,
         /// in line with UK pub "wet" margins (was 1.25, about 70%, which made money too easy; task T5).
-        public const float WholesaleMarkup = 1.55f;
+        public const float WholesaleMarkup = 1.6f;
 
         // ---- Cocktail Lab ingredients (task K4) ----
         public static readonly string[] LabBases = { "Gin", "Rum", "Whisky", "Vodka" };

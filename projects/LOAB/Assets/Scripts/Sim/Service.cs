@@ -293,7 +293,7 @@ namespace Loab.Sim
 
         Customer Spawn(Seg seg, bool forEvent)
         {
-            if (Inside >= Capacity)
+            if (Inside >= (DoorStaffOn ? Capacity * 0.9f : Capacity)) // door staff keep it comfortable (task B1)
             {
                 TurnedAway++;
                 if (T - _fullMsgAt > 30) { Say("The bar's at capacity. People are being turned away at the door.", 2); _fullMsgAt = T; }
@@ -795,7 +795,7 @@ namespace Loab.Sim
             float occ = Inside / (float)Capacity;
             float crowdPref = (d.VibePref[Axis.Energy] - 50f) / 50f;
             target += (occ - 0.35f) * 18f * crowdPref - Math.Max(0, occ - 0.85f) * 30f;
-            if (occ > 0.9f && (c.crushed += 1f) >= 15f) c.Mark(Note.Crowded); // a sustained crush, not one busy moment
+            if (occ > 0.95f && (c.crushed += 1f) >= 20f) c.Mark(Note.Crowded); // a sustained crush, not one busy moment
 
             if (c.watching && EventPhase >= 1 && EventPhase <= 3)
             {

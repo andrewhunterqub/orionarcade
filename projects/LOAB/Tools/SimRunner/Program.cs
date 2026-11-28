@@ -78,7 +78,12 @@ public static class Program
         var last = g.LastNight;
         int bartenders = s.staff.Count(m => m.role == 0);
         bool queues = last != null && (last.thoughts.Any(t => t.Contains("slow") || t.Contains("gave up")) || last.walkouts > last.customers * 0.04f);
-        if (queues && bartenders < 4 && s.cash > 2500)
+        // Staff to demand: about one bartender per 45 customers on the busiest recent night, up to the bar's serving points.
+        int busiest = s.history.Skip(Math.Max(0, s.history.Count - 7)).Select(h => h.customers).DefaultIfEmpty(0).Max();
+        int counters = s.items.Count(i => Content.Item(i.id).Fn == ItemFn.BarCounter);
+        int wanted = Math.Min(counters * 3, Math.Max(1, (int)Math.Ceiling(busiest / 45f)));
+        float wageBill = s.staff.Sum(m => m.wage) * 7;
+        if ((queues || bartenders < wanted) && bartenders < Math.Max(4, wanted) && s.cash > 2500 + wageBill * 0.5f)
         {
             var a = s.applicants.Where(x => x.role == 0).OrderByDescending(x => x.speed).FirstOrDefault();
             if (a != null) g.Hire(a.uid);
@@ -91,6 +96,12 @@ public static class Program
             st.daysOff = 1 << (i % 2);
         }
         int floor = s.staff.Count(m => m.role == 1);
+        // Packed out? Door security keeps the room comfortable.
+        if (last != null && last.thoughts.Any(t => t.Contains("crowded")) && !s.staff.Any(m => m.role == Roles.Door) && s.cash > 8000)
+        {
+            var a = s.applicants.FirstOrDefault(x => x.role == Roles.Door) ?? s.applicants.LastOrDefault();
+            if (a != null) { a.role = Roles.Door; g.Hire(a.uid); }
+        }
         if (last != null && last.thoughts.Any(t => t.Contains("dirty")) && s.cleanliness < 80 && s.cash > 4000) g.DeepClean();
         bool dirtyComplaints = last != null && last.thoughts.Any(t => t.Contains("dirty"));
         // Hire floor staff once open a few nights, and add more if the report keeps saying it's dirty.
@@ -99,7 +110,7 @@ public static class Program
             var a = s.applicants.FirstOrDefault(x => x.role == 1) ?? s.applicants.FirstOrDefault();
             if (a != null) { a.role = 1; g.Hire(a.uid); }
         }
-        if (last != null && last.thoughts.Any(t => t.Contains("slow")) && bartenders >= 3 && s.items.Count(i => i.id == "bar_counter") < 2 && s.cash > 5000)
+        if (last != null && last.thoughts.Any(t => t.Contains("slow")) && bartenders >= counters * 3 - 1 && counters < 3 && s.cash > 5000)
             TryPlace(g, "bar_counter");
         if (last != null && last.thoughts.Any(t => t.Contains("seat")) && s.cash > 3000)
             TryPlace(g, "long_table");
