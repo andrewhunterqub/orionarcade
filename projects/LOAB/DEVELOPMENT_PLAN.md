@@ -301,6 +301,19 @@ There are about 64 hourly sessions. Times are UK time. If something runs over, c
 - **Visual QA on Monday:** any task marked "needs visual QA" in the log.
 - **Design decisions made autonomously** (to be confirmed by the owner) are recorded in the log with the reasoning, for example how Open Question 4 was resolved as tap commands.
 
+### Decisions waiting for the owner (kept up to date)
+
+| # | Decision | What was done for now | Options | Log entry |
+|---|---|---|---|---|
+| D1 | **Pricing:** a 15% premium bar beats a sensible one about 2× by week 12, because demand outstrips what the room can serve. | Left as is. The pricing balance band fails on purpose. A full-house hint nudges players to raise prices (Y2). | (a) accept it, with the hint, as now; (b) bring footfall closer to capacity; (c) make discounts build reputation and awareness faster | Sat 07:00, Sat 10:54 |
+| D2 | **Careless-play band:** "careless Standard goes bankrupt" was redefined as "careless ends with under 35% of sensible cash". | Band redefined; it passes. | Keep it, or make careless play harsher | B-series log |
+| D3 | **Event flop band** widened to 15–35%. | Passes at 18%. | Keep it, or make acts more volatile | B-series log |
+| D4 | **New crowds** (after-work, tourists, couples) were added on top of the original crowd shares, not taken out of them. | Total footfall is a little higher; balance was re-tuned around it. | Keep it, or rescale the shares to the original total | Fri log |
+| D5 | **Second venue scope:** a late-career move (the manager runs the first bar for 30% of its profit), not two bars simulated at once. | Built and balanced across 3 districts (spread 1.34×). | Keep it, or plan a true multi-venue game (large) | Sat 09:00 |
+| D6 | **Second-bar unlock:** Bar of the Year, or reputation 85 (was 70). | Strong scripted play still unlocks it around weeks 11–18. | Keep it, or make it Bar of the Year only | Sat 11:56 |
+| D7 | **Late-game money and career length:** strong play ends year one with £260–355k and every goal done. | Nothing yet (Z2). | (a) prestige builds with upkeep; (b) steeper rent reviews above reputation 80; (c) a further goal chain; (d) slow reputation growth after 70 | Sat 11:56 |
+| D8 | **`?qa=late` URL option:** anyone who adds it to the URL gets a late-game start (week 20, reputation 88, £50k). It's there for visual checks. | Left in: harmless, single-player. | Keep it, or only allow it on a preview build | Sat 09:25 |
+
 ---
 
 ## 9. Handover (written Monday morning)
