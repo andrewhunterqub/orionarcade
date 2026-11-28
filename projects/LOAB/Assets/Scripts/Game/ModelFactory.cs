@@ -102,6 +102,88 @@ namespace Loab.Game
         static GameObject Box(Transform p, float x, float y, float z, float sx, float sy, float sz, Material m) =>
             Part(p, PrimitiveType.Cube, V(x, y, z), V(sx, sy, sz), m);
 
+        // ---- Bevelled boxes (visual brief, task V3): hero props (bar counters, table tops, booth cushions)
+        // get chamfered edges that catch the light. Built at the exact size so the bevel isn't stretched;
+        // meshes are cached by size. Flat-shaded: 6 faces, 12 edge strips and 8 corner triangles.
+        public static bool Bevels = true;
+        static readonly Dictionary<long, Mesh> _bevelMeshes = new Dictionary<long, Mesh>();
+
+        static GameObject BevelBox(Transform p, float x, float y, float z, float sx, float sy, float sz, Material m, float bevel = 0.025f)
+        {
+            float b = Mathf.Min(bevel, Mathf.Min(sx, Mathf.Min(sy, sz)) * 0.3f);
+            if (!Bevels || b < 0.004f) return Box(p, x, y, z, sx, sy, sz, m);
+            long key = ((long)Mathf.RoundToInt(sx * 500) << 40) ^ ((long)Mathf.RoundToInt(sy * 500) << 20) ^ Mathf.RoundToInt(sz * 500) ^ ((long)Mathf.RoundToInt(b * 1000) << 58);
+            if (!_bevelMeshes.TryGetValue(key, out var mesh) || mesh == null)
+            {
+                mesh = BevelMesh(sx * 0.5f, sy * 0.5f, sz * 0.5f, b);
+                _bevelMeshes[key] = mesh;
+            }
+            var go = new GameObject("Bevel");
+            go.transform.SetParent(p, false);
+            go.transform.localPosition = V(x, y, z);
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            go.AddComponent<MeshRenderer>().sharedMaterial = m;
+            return go;
+        }
+
+        static Mesh BevelMesh(float hx, float hy, float hz, float b)
+        {
+            var verts = new List<Vector3>();
+            var tris = new List<int>();
+            void Poly(params Vector3[] pts)
+            {
+                // Fan-triangulate, wound to face outward (the box is convex and centred on the origin).
+                var c = Vector3.zero; foreach (var q in pts) c += q; c /= pts.Length;
+                var n = Vector3.Cross(pts[1] - pts[0], pts[2] - pts[0]);
+                bool flip = Vector3.Dot(n, c) < 0;
+                int i0 = verts.Count;
+                verts.AddRange(pts);
+                for (int i = 1; i < pts.Length - 1; i++)
+                {
+                    if (flip) { tris.Add(i0); tris.Add(i0 + i + 1); tris.Add(i0 + i); }
+                    else { tris.Add(i0); tris.Add(i0 + i); tris.Add(i0 + i + 1); }
+                }
+            }
+            var h = new Vector3(hx, hy, hz);
+            var hi = h - Vector3.one * b;
+            // Faces: axis a at ±h, other two axes spanning ±(h - b).
+            for (int a = 0; a < 3; a++)
+                for (int sa = -1; sa <= 1; sa += 2)
+                {
+                    int u = (a + 1) % 3, v = (a + 2) % 3;
+                    var pts = new Vector3[4];
+                    int k = 0;
+                    foreach (var (su, sv) in new[] { (-1, -1), (1, -1), (1, 1), (-1, 1) })
+                    {
+                        var q = Vector3.zero; q[a] = sa * h[a]; q[u] = su * hi[u]; q[v] = sv * hi[v];
+                        pts[k++] = q;
+                    }
+                    Poly(pts);
+                }
+            // Edge strips between faces on axes a and c, running along axis e.
+            for (int e = 0; e < 3; e++)
+            {
+                int a = (e + 1) % 3, c = (e + 2) % 3;
+                for (int sa = -1; sa <= 1; sa += 2)
+                    for (int sc = -1; sc <= 1; sc += 2)
+                    {
+                        Vector3 P(float ea, float ca, float ee) { var q = Vector3.zero; q[a] = ea; q[c] = ca; q[e] = ee; return q; }
+                        Poly(P(sa * h[a], sc * hi[c], -hi[e]), P(sa * h[a], sc * hi[c], hi[e]), P(sa * hi[a], sc * h[c], hi[e]), P(sa * hi[a], sc * h[c], -hi[e]));
+                    }
+            }
+            // Corner triangles.
+            for (int sx = -1; sx <= 1; sx += 2)
+                for (int sy = -1; sy <= 1; sy += 2)
+                    for (int sz = -1; sz <= 1; sz += 2)
+                        Poly(new Vector3(sx * h.x, sy * hi.y, sz * hi.z), new Vector3(sx * hi.x, sy * h.y, sz * hi.z), new Vector3(sx * hi.x, sy * hi.y, sz * h.z));
+            var mesh = new Mesh { name = "bevel" };
+            mesh.SetVertices(verts);
+            mesh.SetTriangles(tris, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
         static GameObject BoxR(Transform p, Vector3 pos, Vector3 size, Material m, Vector3 euler) =>
             Part(p, PrimitiveType.Cube, pos, size, m, euler);
 
@@ -272,8 +354,8 @@ namespace Loab.Game
             var chrome = M(Chrome);
 
             // Front counter: z -0.95..-0.15, top at ~1.06.
-            Box(t, 0, 0.5f, -0.56f, 2.86f, 1.0f, 0.72f, body);
-            Box(t, 0, 1.03f, -0.55f, 2.92f, 0.06f, 0.8f, topM);
+            BevelBox(t, 0, 0.5f, -0.56f, 2.86f, 1.0f, 0.72f, body, 0.03f);
+            BevelBox(t, 0, 1.03f, -0.55f, 2.92f, 0.06f, 0.8f, topM, 0.02f);
             for (int i = -1; i <= 1; i++) Box(t, i * 0.95f, 0.48f, -0.925f, 0.8f, 0.58f, 0.02f, panel);
             Box(t, 0, 0.88f, -0.93f, 2.86f, 0.06f, 0.03f, accent);
             if (neon)
@@ -334,7 +416,7 @@ namespace Loab.Game
         {
             var wood = M(d.Color);
             var dark = M(d.Color2);
-            Box(t, 0, 0.74f, 0, 1.0f, 0.06f, 0.86f, wood);
+            BevelBox(t, 0, 0.74f, 0, 1.0f, 0.06f, 0.86f, wood, 0.02f);
             Cyl(t, 0, 0.36f, 0, 0.1f, 0.7f, dark);
             Cyl(t, 0, 0.02f, 0, 0.5f, 0.04f, dark);
             foreach (var s in Seats(d)) Stool(t, s.x, s.z, 0.45f, 0.26f, wood, dark);
@@ -347,7 +429,7 @@ namespace Loab.Game
             var seats = Seats(d);
             float acr = seats.Length > 1 ? Mathf.Abs(seats[0].z) : 0.38f;
             float len = d.W - 0.2f, legX = len / 2f - 0.3f;
-            Box(t, 0, 0.74f, 0, len, 0.06f, 0.42f, wood);
+            BevelBox(t, 0, 0.74f, 0, len, 0.06f, 0.42f, wood, 0.02f);
             Box(t, -legX, 0.355f, 0, 0.08f, 0.71f, 0.32f, wood);
             Box(t, legX, 0.355f, 0, 0.08f, 0.71f, 0.32f, wood);
             for (int s = -1; s <= 1; s += 2)
@@ -427,11 +509,11 @@ namespace Loab.Game
             for (int s = -1; s <= 1; s += 2)
             {
                 Box(t, 0, 0.155f, s * (acr - 0.13f), wdt, 0.31f, 0.3f, wood);
-                Box(t, 0, 0.38f, s * (acr - 0.13f), wdt, 0.14f, 0.3f, leather);
-                Box(t, 0, 0.83f, s * (acr + 0.05f), wdt, 0.76f, 0.08f, leather);
+                BevelBox(t, 0, 0.38f, s * (acr - 0.13f), wdt, 0.14f, 0.3f, leather, 0.04f);
+                BevelBox(t, 0, 0.83f, s * (acr + 0.05f), wdt, 0.76f, 0.08f, leather, 0.03f);
                 Box(t, 0, 1.23f, s * (acr + 0.05f), wdt + 0.04f, 0.05f, 0.12f, wood);
             }
-            Box(t, 0, 0.74f, 0, wdt - 0.4f, 0.06f, 0.7f, wood);
+            BevelBox(t, 0, 0.74f, 0, wdt - 0.4f, 0.06f, 0.7f, wood, 0.02f);
             Cyl(t, 0, 0.36f, 0, 0.12f, 0.7f, M(Black));
             Box(t, 0, 0.02f, 0, 0.6f, 0.04f, 0.4f, M(Black));
             Cyl(t, 0.35f, 0.79f, 0, 0.08f, 0.04f, M(Brass));
