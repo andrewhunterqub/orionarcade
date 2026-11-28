@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 
@@ -383,6 +384,38 @@ namespace Loab.Sim
             });
             Cards.Add(new CardDef
             {
+                Id = "awards", Title = "The City Bar Awards", Art = "critic", Weight = 50f,
+                Format = g => $"An embossed invitation: {g.S.barName} has been shortlisted for Bar of the Year. The judges have been in, incognito, all season. The ceremony is tonight.",
+                // The ceremony is once a year, in the last week of summer.
+                When = s => Goals.Career.Count > s.goalIndex && Goals.Career[s.goalIndex].Text.Contains("Bar of the Year") && s.mode == 0
+                            && s.Season == 3 && s.day % 28 >= 21 && (s.GetFlag("awards_tried") == 0 || s.day - s.GetFlag("awards_tried") >= 28),
+                Options =
+                {
+                    Opt("Put on your best shirt and go", "The judges' verdict is based on your whole season: rating, reputation, how happy people have been, and what they say about you.", g =>
+                    {
+                        g.S.SetFlag("awards_tried", g.S.day);
+                        int score = AwardsScore(g.S);
+                        g.S.SetFlag("awards_score", score);
+                        if (score >= AwardsWinScore)
+                        {
+                            g.S.SetFlag("bar_of_year", 1);
+                            g.S.cash += 5000;
+                            g.S.reputation = Math.Min(100, g.S.reputation + 8);
+                            g.AddTagPublic("Bar of the Year");
+                            if (!g.S.unlockedItems.Contains("award_trophy")) g.S.unlockedItems.Add("award_trophy");
+                            g.TryAutoPlace("award_trophy");
+                        }
+                        else
+                        {
+                            g.S.reputation = Math.Min(100, g.S.reputation + 2);
+                            g.AddTagPublic("Bar of the Year Nominee");
+                        }
+                    }),
+                    Opt("Not this year", "Stay behind the bar. There's always next summer.", g => g.S.SetFlag("awards_tried", g.S.day)),
+                },
+            });
+            Cards.Add(new CardDef
+            {
                 Id = "bailiff", Title = "Final demand", Art = "letter", Weight = 0, When = s => false,
                 Format = g => $"A letter in red ink. You're £{-g.S.cash:#,0} overdrawn and the bank wants it back. Get above £0 by {Content.DayNames[Math.Max(0, g.FinalDemandDeadline) % 7]} ({g.FinalDemandDays} days), or the bailiffs take the keys.",
                 Options =
@@ -434,6 +467,27 @@ namespace Loab.Sim
             StaffMember best = null;
             foreach (var m in g.S.staff) if (best == null || m.speed + m.charm + m.skill > best.speed + best.charm + best.skill) best = m;
             return best;
+        }
+
+        public static int KindsHosted(GameState s)
+        {
+            int n = 0;
+            for (int k = 0; k < EventKinds.Count; k++) if (s.GetFlag(EventKinds.FlagKey[k] + "_hosted") > 0) n++;
+            return n;
+        }
+
+        // ---- Bar of the Year (task P2) ----
+        public const int AwardsWinScore = 126;
+
+        /// The judges' score for the season so far: rating, reputation, recent satisfaction and good reputation tags.
+        public static int AwardsScore(GameState s)
+        {
+            float sat = 0; int n = 0;
+            for (int i = s.history.Count - 1; i >= 0 && n < 28; i--, n++) sat += s.history[i].satisfaction;
+            sat = n > 0 ? sat / n : 50;
+            int goodTags = 0; foreach (var t in s.tags) if (!Economy.IsBadTag(t)) goodTags++;
+            int badTags = s.tags.Count - goodTags;
+            return (int)Math.Round(s.rating * 14 + s.reputation * 0.4f + sat * 0.45f + goodTags * 2 - badTags * 4);
         }
 
         public static void Roll(Game g, Rng r)
@@ -495,10 +549,27 @@ namespace Loab.Sim
                 Mentor = "Look at that base! People are starting to think of this place as somewhere special." },
             new GoalDef { Text = "Act 2: knock through into the unit next door", Reward = 1500, Done = g => g.S.gridW > 16,
                 Mentor = "More room, more trade, more trouble. I wouldn't have it any other way." },
-            new GoalDef { Text = "Act 2: earn 12 regulars", Reward = 1000, Done = g => g.S.regulars.Count >= 12,
-                Mentor = "Twelve regulars. That's a darts team, a quiz team and a few strays. Lovely." },
-            new GoalDef { Text = "Act 2: reach a Walnut plinth (reputation 60) and a 4.2★ rating", Reward = 2500, Done = g => g.S.reputation >= 60 && g.S.rating >= 4.2f,
+            new GoalDef { Text = "Act 2: host three different kinds of event night", Reward = 800, Done = g => Director.KindsHosted(g.S) >= 3,
+                Mentor = "Quiz one night, a band the next. Give people a reason to come back on a Tuesday." },
+            new GoalDef { Text = "Act 2: earn 16 regulars", Reward = 1000, Done = g => g.S.regulars.Count >= 16,
+                Mentor = "Sixteen regulars. That's a darts team, a quiz team and a few strays. Lovely." },
+            new GoalDef { Text = "Act 2: build up £20,000 in the bank", Reward = 1500, Done = g => g.S.cash >= 20000,
+                Mentor = "Twenty thousand. You could buy a new van with that. Don't. Buy a better glass washer." },
+            new GoalDef { Text = "Act 2: reach a Walnut plinth (reputation 65) and a 4.3★ rating", Reward = 2500, Done = g => g.S.reputation >= 65 && g.S.rating >= 4.3f,
                 Mentor = "Act Two complete. You've made a name for yourself. Bar of the Year next? I'd bet on it." },
+            // ---- Act 3: Bar of the Year (task P2)
+            new GoalDef { Text = "Act 3: a viral hit with an event night", Reward = 1500, Done = g => EventKinds.ViralTag.Any(t => g.S.tags.Contains(t)),
+                Mentor = "Half the city's seen the clips. The other half will by Friday." },
+            new GoalDef { Text = "Act 3: 25 regulars", Reward = 1500, Done = g => g.S.regulars.Count >= 25,
+                Mentor = "Twenty-five regulars. They've started calling it 'ours', not 'yours'. Take that as a compliment." },
+            new GoalDef { Text = "Act 3: make £5,000 profit in a single week", Reward = 2000, Done = g => Economy.LastWeek(g.S).Profit >= 5000,
+                Mentor = "Five grand in a week. My accountant would have wept." },
+            new GoalDef { Text = "Act 3: earn a Marble plinth (reputation 80)", Reward = 2500, Done = g => g.S.reputation >= 80,
+                Mentor = "Marble. Who'd have thought it, from this old place." },
+            new GoalDef { Text = "Act 3: a 4.5★ BarHopper rating (60+ reviews)", Reward = 2500, Done = g => g.S.rating >= 4.5f && g.S.reviewCount >= 60,
+                Mentor = "Four and a half stars. The judges will have noticed. Keep your eye on the post." },
+            new GoalDef { Text = "Act 3: win Bar of the Year at the city awards", Reward = 5000, Done = g => g.S.GetFlag("bar_of_year") > 0,
+                Mentor = "Bar of the Year. I'm not crying, you're crying. Thirty years I ran this place and never got close. You did it, love." },
         };
     }
 

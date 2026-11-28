@@ -421,7 +421,7 @@ namespace Loab.Game
             Tip("report");
         }
 
-        static bool IsBadTag(string t) => t == "Overpriced" || t == "Slow Service" || t == "Sticky Tables" || t == "Rough on a Saturday";
+        static bool IsBadTag(string t) => Economy.IsBadTag(t);
 
         VisualElement Kpi(string value, string label)
         {

@@ -881,6 +881,16 @@ namespace Loab.Sim
                 if (S.GetFlag("sig_sold") >= 120 && !S.tags.Contains("Signature Cocktails")) { AddTag("Signature Cocktails"); rec.moments.Add("People are coming in just for your signature cocktails."); }
             }
 
+            // The awards ceremony was this morning's card; announce the verdict in tonight's report (task P2).
+            if (S.GetFlag("awards_tried") == S.day && S.GetFlag("awards_score") > 0)
+            {
+                int score = S.GetFlag("awards_score");
+                rec.moments.Insert(0, S.GetFlag("bar_of_year") > 0 && S.tags.Contains("Bar of the Year") && score >= Director.AwardsWinScore
+                    ? $"BAR OF THE YEAR! The judges scored you {score}. The trophy's on the bar and £5,000 is in the bank."
+                    : $"Bar of the Year went elsewhere. The judges scored you {score} (the winner needed {Director.AwardsWinScore}). There's always next summer.");
+                S.SetFlag("awards_score", 0);
+            }
+
             // Tonight's verdict, judged against earlier nights (before tonight joins the history).
             if (svc != null) Economy.Verdict(S, rec, svc.NoteCounts, svc.Arrivals);
 

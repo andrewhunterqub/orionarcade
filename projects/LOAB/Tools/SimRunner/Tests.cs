@@ -38,6 +38,7 @@ public static class Tests
         Test("events: live music, karaoke and the big match run end to end", NewEvents);
         Test("director: every option of every card applies cleanly on a mid-game bar", AllCards);
         Test("content: ids unique, themes and suppliers exist, footprints and prices sane", ContentIntegrity);
+        Test("awards: once a year at the end of summer; a strong season wins the trophy", Awards);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -439,6 +440,31 @@ public static class Tests
         foreach (var st in Content.Floors.Concat(Content.Walls)) foreach (var t in st.Themes) Assert(themeIds.Contains(t), $"{st.Id}: unknown theme {t}");
         foreach (var m in Content.Music) Assert(m.SegLikes.Length == Content.Segments.Count, $"music {m.Id}: {m.SegLikes.Length} segment likes");
         foreach (var th in Content.Themes) Assert(Content.Items.Count(i => i.Themes.Contains(th.Id)) >= 6, $"theme {th.Id} has under 6 items");
+    }
+
+    static void Awards()
+    {
+        var g = Game.NewCareer(65, 1);
+        g.S.goalIndex = Goals.Career.FindIndex(x => x.Text.Contains("Bar of the Year"));
+        Assert(g.S.goalIndex > 0, "no Bar of the Year goal");
+        var card = Director.Get("awards");
+        g.S.day = 3 * 28 + 10; Assert(!card.When(g.S), "awards offered mid-summer");
+        g.S.day = 3 * 28 + 22; Assert(card.When(g.S), "awards not offered in the last week of summer");
+        // A strong season wins.
+        g.S.rating = 4.8f; g.S.reputation = 90; g.S.tags.AddRange(new[] { "Great Service", "Best Comedy Night", "Hidden Gem" });
+        for (int i = 0; i < 28; i++) g.S.history.Add(new NightRecord { day = i, satisfaction = 80 });
+        Assert(Director.AwardsScore(g.S) >= Director.AwardsWinScore, $"strong season scored {Director.AwardsScore(g.S)}");
+        g.S.pendingCard = "awards";
+        Assert(g.ChooseCard(0) == null, "couldn't attend");
+        Assert(g.S.GetFlag("bar_of_year") == 1 && g.S.items.Exists(i => i.id == "award_trophy"), "won but no trophy");
+        g.CheckGoals();
+        Assert(g.S.goalIndex == Goals.Career.Count, "Bar of the Year goal not completed");
+        g.OpenDoors(); int t = 0; while (g.Phase == Phase.Service && t++ < 20000) { g.Svc.Step(); g.EndServiceIfDone(); }
+        Assert(g.LastNight.moments.Exists(m => m.StartsWith("BAR OF THE YEAR")), "no announcement in the report");
+        // A weak season doesn't.
+        var h = Game.NewCareer(66, 1);
+        h.S.rating = 3.2f; h.S.reputation = 60; h.S.tags.Add("Slow Service");
+        Assert(Director.AwardsScore(h.S) < Director.AwardsWinScore, $"weak season scored {Director.AwardsScore(h.S)}");
     }
 
     static void CashCrisisArc()

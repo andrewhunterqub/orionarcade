@@ -383,6 +383,8 @@ namespace Loab.Sim
             // Everywhere
             Add("string_lights", "Warm String Lights", ItemFn.Decor, 1, 1, 70, 0, 0, 0, V(1, 1, 0, 3, 1), T("pub", "craft", "lounge"), "festoon", 0xffb35c, 0xffb35c,
                 blurb: "Instant cosy.");
+            Add("award_trophy", "Bar of the Year Trophy", ItemFn.Decor, 1, 1, 0, 0, 0, 2, V(2, 6, 0, 3, 4), T(), "trophies", 0x2b1b10, 0xffd700,
+                blurb: "Gold-plated, slightly wonky, priceless.", hidden: true);
             Add("community_board", "Community Noticeboard", ItemFn.Decor, 1, 1, 60, 0, 0, 0, V(0, -1, -3, 3, 3), T("pub"), "chalkboard", 0x8a6a42, 0xf1f1f1,
                 blurb: "Lost cats, guitar lessons and this week's quiz scores.");
             Add("dog_bed", "Biscuit's Bed", ItemFn.Decor, 1, 1, 0, 0, 0, 1, V(0, 0, 0, 3, 6), T("pub"), "dogbed", 0x8a5a33, 0xd9a066, blurb: "Home of the bar's unofficial mascot.", hidden: true);

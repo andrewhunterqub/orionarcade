@@ -144,6 +144,8 @@ namespace Loab.Sim
             return t;
         }
 
+        public static bool IsBadTag(string t) => t == "Overpriced" || t == "Slow Service" || t == "Sticky Tables" || t == "Rough on a Saturday";
+
         // ---- Tonight's verdict (task L5) ---------------------------------------------------------------
 
         static readonly Note[] Complaints =
