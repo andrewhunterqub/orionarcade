@@ -352,6 +352,19 @@ namespace Loab.Game
             _cash.EnableInClassList("neg", s.cash < 0);
             _rating.text = $"{Stars(s.rating)} {s.rating:0.0}";
             _rep.text = $"{s.reputation:0}";
+            // Every number explains itself (brief 13.1, task U4).
+            int daysToRent = (6 - s.DayOfWeek + 7) % 7;
+            _cash.tooltip = $"Cash in the bank. Rent of {Money(Economy.WeeklyRent(s))} is due {(daysToRent == 0 ? "tonight" : daysToRent == 1 ? "tomorrow night" : $"on Sunday, in {daysToRent} days")}."
+                            + (s.loanBalance > 0 ? $" Loan: {Money(s.loanBalance)} left at {Money(s.loanDaily)} a night." : "");
+            if ((int)s.reputation != _repTipFor) // only rebuilt when reputation changes, not every frame
+            {
+                _repTipFor = (int)s.reputation;
+                var nextUnlock = G.UpcomingUnlocks(1);
+                _rep.tooltip = $"Reputation {s.reputation:0}/100. Your plinth: {Sim.Game.PlinthNames[Sim.Game.PlinthTier(s.reputation)]}."
+                               + (nextUnlock.Count > 0 ? $" Next unlock at {nextUnlock[0].rep}: {nextUnlock[0].items[0].Name}." : "")
+                               + " It grows with good nights and great events, and drops after bad ones.";
+            }
+            _rating.tooltip = $"Your BarHopper rating: the average of your latest reviews ({s.reviewCount} so far). One bad night won't sink it; a bad week will.";
             var gl = G.CurrentGoal;
             var sc = G.Scenario;
             if (sc != null)
@@ -370,6 +383,7 @@ namespace Loab.Game
                 _clock.text = Service.Clock(Mathf.Min(svc.T, svc.CloseAt));
                 _custVal.text = $"{svc.Inside}/{svc.Capacity}";
                 _custLabel.text = "inside";
+                _custVal.tooltip = $"Customers inside now / how many the room holds. {svc.Arrivals} have come in tonight; above about 90% full, people start finding it too crowded.";
                 for (int i = 0; i < _speedBtns.Count; i++)
                 {
                     bool on = i == 0 ? _run.Paused : !_run.Paused && Mathf.Approximately(_run.SpeedMult, i == 1 ? 1 : i == 2 ? 2 : 4);
@@ -390,6 +404,9 @@ namespace Loab.Game
                 float exp = Economy.ExpectedTotal(s, G.V);
                 _custVal.text = $"~{exp:0}";
                 _custLabel.text = "expected tonight";
+                var cal = Calendar.Today(s);
+                _custVal.tooltip = $"A rough forecast: {Content.DayNames[s.DayOfWeek]}s, {s.weather.ToLowerInvariant()} weather, your vibe, reputation and awareness"
+                                   + (cal != null ? $", and {cal.Name}" : "") + (s.events.Exists(e => e.day == s.day) ? ", plus tonight's event" : "") + ".";
             }
 
             // Bar name on the hanging sign outside (a screen-space label pinned to the board).
@@ -458,6 +475,7 @@ namespace Loab.Game
             _camBox.Add(b);
         }
 
+        int _repTipFor = -1;
         public bool ColourBlind => _root.ClassListContains("cb");
         public void SetColourBlind(bool on)
         {
