@@ -328,6 +328,7 @@ namespace Loab.Game
             else if (G.S.cash < 1500) Tip("cash");
             if (Calendar.Today(G.S) != null) Tip("calendar");
             if (G.LastNight != null && G.LastNight.thoughts.Exists(t => t.Contains("slow") || t.Contains("gave up"))) Tip("staff");
+            if (G.LastNight != null && G.LastNight.problem != null && G.LastNight.problem.StartsWith("Full house")) Tip("full_house");
             if (!G.S.garden && G.S.reputation >= Economy.GardenRep && G.S.cash >= Economy.GardenCost) Tip("garden");
             if (G.SecondVenueUnlocked && G.S.cash >= Sim.Game.SecondVenueCost) Tip("second_bar");
             if (G.S.venues > 1) Tip("new_district");

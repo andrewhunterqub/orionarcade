@@ -654,6 +654,7 @@ namespace Loab.Sim
             { "staff", "One bartender can manage about 30 drinks an hour. If queues are long, hire more. Floor staff collect glasses and mop spills." },
             { "cash", "Cash is getting low. Watch your wages and stock spending. Rent's due every Sunday night." },
             { "card", "Every so often something happens: an opportunity, a problem, or a dog. Choose wisely." },
+            { "full_house", "Turning people away? That's a nice problem. When you're full most nights, put your prices up a touch. The ones who get in won't mind, and you'll take more for less work." },
             // New features (task X4)
             { "garden", "There's a scruffy yard out the back. Put a beer garden in from the Build tab: more room, and a goldmine on a sunny summer evening. Rain empties it, and in winter you'll want heaters." },
             { "second_bar", "You've built something special here. If you fancy it, the Money tab lets you hand this place to a manager and open a second bar somewhere new. Big step. Think about which crowd you want." },

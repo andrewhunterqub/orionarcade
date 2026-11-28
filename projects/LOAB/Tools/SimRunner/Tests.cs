@@ -42,6 +42,7 @@ public static class Tests
         Test("unlocks: the reputation track lists the next thresholds in order", Unlocks);
         Test("staffing guidance: more bartenders for busier nights, capped by serving points, rota-aware", StaffingGuidance);
         Test("beer garden: reputation-gated, weather and season rules, more room and more summer trade", BeerGarden);
+        Test("full house: turning people away suggests a price rise, unless prices are already up", FullHouse);
         Test("second venue: gated, carries cash and recipes, district changes the crowd and rent, manager pays weekly", SecondVenue);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
@@ -548,6 +549,18 @@ public static class Tests
         Assert(!fair.When(st), "freshers' fair outside the University Quarter");
         st.district = "campus"; Assert(fair.When(st), "no freshers' fair on campus in autumn");
         st.day = 28 + 3; Assert(!fair.When(st), "freshers' fair in winter");
+    }
+
+    static void FullHouse()
+    {
+        var g = Game.NewCareer(37, 1);
+        var rec = new NightRecord { turnedAway = 25 };
+        Economy.Verdict(g.S, rec, new int[(int)Note.Count], 200);
+        Assert(rec.problem != null && rec.problem.StartsWith("Full house") && rec.fix.Contains("prices up"), "no full-house pricing hint");
+        foreach (var m in g.S.menu) m.price = Content.Drink(m.id).DefaultPrice * 1.2f;
+        var rec2 = new NightRecord { turnedAway = 25 };
+        Economy.Verdict(g.S, rec2, new int[(int)Note.Count], 200);
+        Assert(rec2.problem == null, "suggested a rise when prices are already 20% up");
     }
 
     static void BeerGarden()

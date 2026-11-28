@@ -226,6 +226,13 @@ namespace Loab.Sim
                 rec.problem = ProblemText(worst, worstCount, arrivals);
                 rec.fix = FixFor(worst);
             }
+            // No real complaint but people were turned away: a full house is a pricing opportunity
+            // (the "when you're full, raise prices" finding from the balance work, task Y2).
+            else if (rec.turnedAway >= 10 && MenuPriceRatio(s) < 1.1f)
+            {
+                rec.problem = $"Full house: {rec.turnedAway} people were turned away at the door.";
+                rec.fix = "When you're full every night, nudge prices up about 10% in the Drinks tab. The people who get in pay a bit more, and it's calmer.";
+            }
 
             // Best thing: a record, a big event, or what people loved most.
             float bestTakings = 0; int mostCustomers = 0;
@@ -241,6 +248,20 @@ namespace Loab.Sim
                     if (noteCounts[(int)n] > bestCount) { best = n; bestCount = noteCounts[(int)n]; }
                 if (best != Note.Count && arrivals > 0 && bestCount >= Math.Max(3, arrivals * 0.1f)) rec.highlight = PraiseText(best, bestCount, arrivals);
             }
+        }
+
+        /// Average price of what's on the menu, relative to the usual price (1 = normal).
+        public static float MenuPriceRatio(GameState s)
+        {
+            float sum = 0; int n = 0;
+            foreach (var m in s.menu)
+            {
+                if (!m.onMenu) continue;
+                var d = Content.Drink(m.id);
+                if (d == null || d.DefaultPrice <= 0) continue;
+                sum += m.price / d.DefaultPrice; n++;
+            }
+            return n == 0 ? 1f : sum / n;
         }
 
         static string Pct(int count, int total) => $"{Math.Round(100f * count / Math.Max(1, total))}%";
