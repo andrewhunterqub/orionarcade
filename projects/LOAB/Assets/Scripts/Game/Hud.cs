@@ -103,6 +103,9 @@ namespace Loab.Game
         }
 
         static Color Col(uint rgb) => WorldView.ToColor(rgb);
+        // Good and bad bar fills follow the colour-blind setting (blue and orange instead of green and red).
+        Color GoodCol => ColourBlind ? Col(0x6eb4ff) : Col(0x78dc8c);
+        Color BadCol => ColourBlind ? Col(0xffaa3c) : Col(0xff6e64);
 
         public static string Stars(float rating)
         {
@@ -725,7 +728,7 @@ namespace Loab.Game
                 var head = Row(Lbl(c.name, "card-title"), Spacer(), Btn("x", () => _run.Inspected = null, "btn-small"));
                 _inspector.Add(head);
                 _inspector.Add(Lbl(c.regular != null ? $"Regular  -  {c.def.Name}  -  {c.regular.visits} visits" : c.def.Name, "card-sub"));
-                _inspector.Add(Row(Lbl("Mood", "slider-label"), Bar(c.mood / 100f, c.mood < 35 ? Col(0xff6e64) : c.mood < 60 ? Col(0xffb347) : Col(0x78dc8c))));
+                _inspector.Add(Row(Lbl("Mood", "slider-label"), Bar(c.mood / 100f, c.mood < 35 ? BadCol : c.mood < 60 ? Col(0xffd166) : GoodCol)));
                 _inspector.Add(Row(Lbl("Thirst", "slider-label"), Bar(c.thirst, Col(0x4cc9f0))));
                 _inspector.Add(Row(Lbl("Toilet", "slider-label"), Bar(c.bladder, Col(0xc8a2ff))));
                 _inspector.Add(Lbl($"Drinks: {c.drinks}   Spent: £{c.spent:0.00}   Budget left: £{Mathf.Max(0, c.budget - c.spent):0}", "card-sub"));

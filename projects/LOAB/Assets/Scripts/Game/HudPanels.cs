@@ -222,7 +222,7 @@ namespace Loab.Game
             p.Add(Lbl("THEMES", "section"));
             foreach (var t in v.Themes)
             {
-                var r = Row(Lbl(t.Def.Name, "row-label"), Bar(t.Progress, t.Active ? Col(0x78dc8c) : Col(0xd4a64a)), Lbl(t.Active ? "  ACTIVE" : $"  {t.Progress * 100:0}%", t.Active ? "toggle-on" : "card-sub"));
+                var r = Row(Lbl(t.Def.Name, "row-label"), Bar(t.Progress, t.Active ? GoodCol : Col(0xd4a64a)), Lbl(t.Active ? "  ACTIVE" : $"  {t.Progress * 100:0}%", t.Active ? "toggle-on" : "card-sub"));
                 r.tooltip = t.Def.Blurb + $" ({t.Count}/12 matching elements, {t.Share * 100:0}% of the look)";
                 p.Add(r);
             }
@@ -303,7 +303,7 @@ namespace Loab.Game
                 float q = Service.DrinkQuality(G.S, d);
                 int par = m.onMenu ? G.ParLevel(m.id) : 0;
                 var stockLbl = Lbl($"{m.stock} in stock  -  quality {q:0}", "drink-meta");
-                if (m.onMenu && m.stock < par * 0.6f) stockLbl.style.color = Col(0xff8a80);
+                if (m.onMenu && m.stock < par * 0.6f) stockLbl.AddToClassList("bad-text");
                 nameCol.Add(stockLbl);
                 row.Add(nameCol);
                 row.Add(Spacer());
@@ -311,7 +311,7 @@ namespace Loab.Game
                 var price = Lbl($"£{m.price:0.00}", "price");
                 price.style.width = 46; price.style.unityTextAlign = TextAnchor.MiddleCenter;
                 float ratio = m.price / d.DefaultPrice;
-                if (ratio > 1.2f) price.style.color = Col(0xff8a80);
+                if (ratio > 1.2f) price.AddToClassList("bad-text");
                 else if (ratio < 0.9f) price.style.color = Col(0x4cc9f0);
                 price.tooltip = $"Usual price £{d.DefaultPrice:0.00}. Margin {(1 - d.UnitCost / m.price) * 100:0}%";
                 row.Add(price);
@@ -376,7 +376,7 @@ namespace Loab.Game
             c.Add(traits);
             if (!applicant)
             {
-                c.Add(Row(Lbl("Morale", "slider-label"), Bar(m.morale / 100f, m.morale < 30 ? Col(0xff6e64) : Col(0x78dc8c)), Lbl($"  Lv {m.level}", "card-sub")));
+                c.Add(Row(Lbl("Morale", "slider-label"), Bar(m.morale / 100f, m.morale < 30 ? BadCol : GoodCol), Lbl($"  Lv {m.level}", "card-sub")));
                 var me = m;
                 // Rota (task S3): which nights they work. Highlighted = working.
                 var worksLbl = Lbl("Works", "slider-label"); worksLbl.style.width = 44;

@@ -291,3 +291,10 @@
 .cb .chip-bad { background-color: rgba(255, 170, 60, 0.2); color: rgb(255, 190, 110); }
 .cb .btn-good { background-color: rgb(40, 90, 150); border-color: rgb(110, 180, 255); }
 .cb .btn-good:hover { background-color: rgb(52, 110, 180); }
+.cb .price, .cb .toggle-on { color: rgb(110, 180, 255); }
+.cb .price.bad-text { color: rgb(255, 170, 60); }
+.cb .btn-bad { background-color: rgb(140, 80, 20); border-color: rgb(255, 170, 60); }
+.cb .toast-good { border-color: rgb(110, 180, 255); }
+.cb .toast-bad { border-color: rgb(255, 170, 60); }
+.cb .chart-bar { background-color: rgb(110, 180, 255); }
+.cb .chart-bar-neg { background-color: rgb(255, 170, 60); }

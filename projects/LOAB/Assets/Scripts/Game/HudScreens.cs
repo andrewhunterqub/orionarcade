@@ -358,7 +358,7 @@ namespace Loab.Game
                 bool won = s.scenarioResult == 1;
                 var head = Lbl(won ? $"SCENARIO COMPLETE: {sc.Name}!" : $"OUT OF TIME: {sc.Name}", "big-num");
                 head.style.fontSize = 22;
-                head.style.color = won ? new Color(0.47f, 0.86f, 0.55f) : new Color(1f, 0.43f, 0.39f);
+                head.AddToClassList(won ? "good-text" : "bad-text");
                 c.Add(head);
                 c.Add(Lbl(won ? $"Done in {G.ScenarioDay + 1} of {sc.Days} days. You can keep running the bar, or head back to the title for another challenge."
                               : $"{sc.Progress(G)}. Close, but the deadline has passed. Keep playing for fun, or try again.", "body"));
