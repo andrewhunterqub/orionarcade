@@ -249,7 +249,7 @@
 .drink-name { width: 128px; font-size: 13px; -unity-font-style: bold; }
 .drink-meta { font-size: 11px; color: rgb(200, 180, 155); }
 .chart { height: 90px; flex-direction: row; align-items: flex-end; margin-top: 6px; border-bottom-width: 1px; border-color: rgba(255,255,255,0.2); }
-.chart-bar { flex-grow: 1; margin: 0 2px; background-color: rgb(120, 220, 140); border-radius: 3px 3px 0 0; }
+.chart-bar { flex-grow: 1; max-width: 18px; margin: 0 2px; background-color: rgb(120, 220, 140); border-radius: 3px 3px 0 0; }
 .chart-bar-neg { background-color: rgb(255, 110, 100); }
 .toggle-on { color: rgb(120, 220, 140); }
 .toggle-off { color: rgb(160, 140, 120); }
