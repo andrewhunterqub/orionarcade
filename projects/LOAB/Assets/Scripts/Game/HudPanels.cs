@@ -648,7 +648,7 @@ namespace Loab.Game
                 p.Add(Lbl("YOUR CAREER", "section"));
                 string Day(int d) => d < 0 ? "" : $" ({Content.DayShort[d % 7]} wk{d / 7 + 1})";
                 int seasons = st.firstDay < 0 ? 1 : (s.day - st.firstDay) / 28 + 1;
-                p.Add(Row(Lbl("Nights", "row-label"), Lbl($"{st.nights:#,0} over {seasons} season{(seasons == 1 ? "" : "s")}", "card-sub")));
+                p.Add(Row(Lbl("Nights", "row-label"), Lbl($"{st.nights:#,0} night{(st.nights == 1 ? "" : "s")}, " + (seasons == 1 ? "1st season" : $"{seasons} seasons"), "card-sub")));
                 p.Add(Row(Lbl("Customers", "row-label"), Lbl($"{st.customers:#,0} served {st.drinks:#,0} drinks", "card-sub")));
                 p.Add(Row(Lbl("Takings", "row-label"), Lbl($"{Money(st.takings)} ({Money(st.profit)} profit)", "card-sub")));
                 p.Add(Row(Lbl("Best night", "row-label"), Lbl($"{Money(st.bestTakings)}{Day(st.bestTakingsDay)}", "card-sub")));
