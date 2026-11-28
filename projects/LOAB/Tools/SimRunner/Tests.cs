@@ -466,7 +466,7 @@ public static class Tests
         Assert(g.ChooseCard(0) == null, "couldn't attend");
         Assert(g.S.GetFlag("bar_of_year") == 1 && g.S.items.Exists(i => i.id == "award_trophy"), "won but no trophy");
         g.CheckGoals();
-        Assert(g.S.goalIndex == Goals.Career.Count, "Bar of the Year goal not completed");
+        Assert(Goals.Career[g.S.goalIndex].Text.StartsWith("Act 4: open a second bar"), "Bar of the Year goal not completed: now on " + Goals.Career[g.S.goalIndex].Text);
         g.OpenDoors(); int t = 0; while (g.Phase == Phase.Service && t++ < 20000) { g.Svc.Step(); g.EndServiceIfDone(); }
         Assert(g.LastNight.moments.Exists(m => m.StartsWith("BAR OF THE YEAR")), "no announcement in the report");
         // A weak season doesn't.
@@ -531,6 +531,17 @@ public static class Tests
         while (h.S.DayOfWeek != 6) PlayDay(h, true);
         PlayDay(h, true);
         Assert(h.S.history[h.S.history.Count - 1].moments.Exists(m => m.Contains("£1,234")), "no manager payment message");
+        // Act 4: the goal chain follows the move, and Bar of the Year at the new bar finishes the career.
+        int open = Goals.Career.FindIndex(x => x.Text.StartsWith("Act 4: open a second bar"));
+        h.S.goalIndex = open; h.CheckGoals();
+        Assert(h.S.goalIndex > open, "opening the second bar didn't complete its goal");
+        h.S.goalIndex = Goals.Career.Count - 1;
+        h.S.rating = 4.8f; h.S.reputation = 90; h.S.tags.AddRange(new[] { "Great Service", "Best Comedy Night", "Hidden Gem" });
+        for (int i = 0; i < 28; i++) h.S.history.Add(new NightRecord { day = i, satisfaction = 80 });
+        h.S.pendingCard = "awards";
+        Assert(h.ChooseCard(0) == null, "couldn't attend the awards at the new bar");
+        h.CheckGoals();
+        Assert(h.S.GetFlag("bar_of_year_2") == 1 && h.S.goalIndex == Goals.Career.Count, "second Bar of the Year didn't finish Act 4");
         // District cards only turn up in their own district, in season.
         var fair = Director.Cards.Find(c => c.Id == "freshers_fair");
         var st = Game.NewCareer(31, 1).S; st.day = 3;

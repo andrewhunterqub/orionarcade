@@ -452,6 +452,7 @@ namespace Loab.Sim
                         if (score >= AwardsWinScore)
                         {
                             g.S.SetFlag("bar_of_year", 1);
+                            if (g.S.venues > 1) g.S.SetFlag("bar_of_year_2", 1);
                             g.S.cash += 5000;
                             g.S.reputation = Math.Min(100, g.S.reputation + 8);
                             g.AddTagPublic("Bar of the Year");
@@ -623,6 +624,17 @@ namespace Loab.Sim
                 Mentor = "Four and a half stars. The judges will have noticed. Keep your eye on the post." },
             new GoalDef { Text = "Act 3: win Bar of the Year at the city awards", Reward = 5000, Done = g => g.S.GetFlag("bar_of_year") > 0,
                 Mentor = "Bar of the Year. I'm not crying, you're crying. Thirty years I ran this place and never got close. You did it, love." },
+            // ---- Act 4: a second bar (task Y1). Ends with Bar of the Year again, for the new place.
+            new GoalDef { Text = "Act 4: open a second bar (Money tab)", Reward = 0, Done = g => g.S.venues > 1,
+                Mentor = "A second bar! Your manager's got the old place. Now, this lot round here don't know you from Adam. Win them over." },
+            new GoalDef { Text = "Act 4: 15 regulars at your new bar", Reward = 1500, Done = g => g.S.venues > 1 && g.S.regulars.Count >= 15,
+                Mentor = "Regulars already. That's the moment a bar stops being new and starts being somewhere." },
+            new GoalDef { Text = "Act 4: reach reputation 50 at your new bar", Reward = 2000, Done = g => g.S.venues > 1 && g.S.reputation >= 50,
+                Mentor = "Half the city knows both your bars now. Not bad for someone who quit the day job." },
+            new GoalDef { Text = "Act 4: make £8,000 in a week across both bars", Reward = 2500, Done = g => g.S.venues > 1 && Economy.LastWeek(g.S).Profit + g.S.managedIncome >= 8000,
+                Mentor = "Eight grand in a week. You're not running a bar anymore, love, you're running a business." },
+            new GoalDef { Text = "Act 4: win Bar of the Year again, with your new bar", Reward = 5000, Done = g => g.S.GetFlag("bar_of_year_2") > 0,
+                Mentor = "Twice! With two different bars! I'll have to tell the whole Docklands. Pour us one, would you?" },
         };
     }
 
