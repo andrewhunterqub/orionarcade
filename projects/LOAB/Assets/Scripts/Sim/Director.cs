@@ -589,6 +589,10 @@ namespace Loab.Sim
             { "staff", "One bartender can manage about 30 drinks an hour. If queues are long, hire more. Floor staff collect glasses and mop spills." },
             { "cash", "Cash is getting low. Watch your wages and stock spending. Rent's due every Sunday night." },
             { "card", "Every so often something happens: an opportunity, a problem, or a dog. Choose wisely." },
+            // New features (task X4)
+            { "garden", "There's a scruffy yard out the back. Put a beer garden in from the Build tab: more room, and a goldmine on a sunny summer evening. Rain empties it, and in winter you'll want heaters." },
+            { "second_bar", "You've built something special here. If you fancy it, the Money tab lets you hand this place to a manager and open a second bar somewhere new. Big step. Think about which crowd you want." },
+            { "new_district", "New room, new crowd. Have a look at the Vibe tab: this part of town doesn't drink like the old place. Your manager will send money over every Sunday, so don't panic about the first few weeks." },
             // First visit to each tab (task U1)
             { "tab_build", "This is where you change the place. Tap an item, then tap the floor. Everything you add shifts the Vibe, and some things only unlock as your reputation grows." },
             { "tab_vibe", "The Vibe tab tells you who'll love your bar. Match a crowd, or build towards a theme: get one recognised and the right people will seek you out. The reputation track shows what unlocks next." },
