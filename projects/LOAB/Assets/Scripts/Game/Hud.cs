@@ -52,6 +52,7 @@ namespace Loab.Game
             _root = _doc.rootVisualElement;
             _root.styleSheets.Add(Resources.Load<StyleSheet>("UI/Loab"));
             _root.AddToClassList("root");
+            _root.EnableInClassList("mobile", Application.isMobilePlatform); // compact layout for the bigger phone UI (task X3)
             ps.scale = UiScale(PlayerPrefs.GetInt("loab_large_text", 0) == 1);
             _root.EnableInClassList("cb", PlayerPrefs.GetInt("loab_cb", 0) == 1); // colour-blind friendly palette (task U2)
             _root.pickingMode = PickingMode.Ignore;

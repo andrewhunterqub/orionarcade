@@ -24,7 +24,7 @@
         "tycoon"
       ],
       "added": "2026-11-27",
-      "controls": "Mouse: click to build and interact, drag to pan, scroll to zoom. Q/E rotate, Space pauses, H hides the UI.",
+      "controls": "Mouse or touch: click or tap to build and interact, drag to pan, scroll or pinch to zoom. Keyboard: Q/E rotate, Space pauses, H hides the UI. On a phone, play with it held sideways.",
       "build": {
         "loader": "Build/loab.loader.js",
         "framework": "Build/loab.framework.js.unityweb",
@@ -32,7 +32,6 @@
         "code": "Build/loab.wasm.unityweb"
       },
       "thumbnail": "thumbnail.jpg",
-      "mobile": false,
       "version": "0.1.0"
     },
     {
