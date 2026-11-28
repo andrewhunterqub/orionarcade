@@ -333,7 +333,7 @@ namespace Loab.Game
                 head.style.fontSize = 22;
                 head.style.color = won ? new Color(0.47f, 0.86f, 0.55f) : new Color(1f, 0.43f, 0.39f);
                 c.Add(head);
-                c.Add(Lbl(won ? $"Done in {s.day + 1} of {sc.Days} days. You can keep running the bar, or head back to the title for another challenge."
+                c.Add(Lbl(won ? $"Done in {G.ScenarioDay + 1} of {sc.Days} days. You can keep running the bar, or head back to the title for another challenge."
                               : $"{sc.Progress(G)}. Close, but the deadline has passed. Keep playing for fun, or try again.", "body"));
                 // Move on to the next morning first, so the result is saved.
                 c.Add(Row(Btn("Back to title", () => { _run.NextDay(); ShowTitle(); }, "btn-small"), Btn("Try another scenario", () => { _run.NextDay(); ShowScenarios(); }, "btn-small")));

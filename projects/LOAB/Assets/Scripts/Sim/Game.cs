@@ -165,13 +165,18 @@ namespace Loab.Sim
             var g = NewCareer(seed, 1);
             g.S.mode = 2;
             g.S.scenario = id;
+            g.S.day = def?.StartDay ?? 0;
+            g.S.SetFlag("start_cash", 0);
             def?.Setup(g.S);
+            g.S.SetFlag("start_cash", (int)g.S.cash);
             g.Recompute();
             return g;
         }
 
         public ScenarioDef Scenario => S.mode == 2 ? Scenarios.Get(S.scenario) : null;
-        public int ScenarioDaysLeft => Scenario == null ? 0 : Math.Max(0, Scenario.Days - S.day);
+        public int ScenarioDaysLeft => Scenario == null ? 0 : Math.Max(0, Scenario.Days - (S.day - Scenario.StartDay));
+        /// Days played in the current scenario (scenarios can start mid-year, task P3).
+        public int ScenarioDay => Scenario == null ? S.day : S.day - Scenario.StartDay;
         public bool ScenarioJustEnded;
 
         public static Game NewSandbox(ulong seed)
@@ -872,6 +877,9 @@ namespace Loab.Sim
                     m.demandAvg = m.demandAvg <= 0 ? tonight : m.demandAvg * 0.6f + tonight * 0.4f;
                 }
 
+            // Alcohol-free sales, for the Dry January scenario (task P3).
+            foreach (var m in S.menu) if (Content.Drink(m.id).Cat == DrinkCat.AlcoholFree && m.soldTonight > 0) S.SetFlag("af_sold", S.GetFlag("af_sold") + m.soldTonight);
+
             // Signature cocktails (task K4): sell enough and they become part of the bar's reputation.
             int sigSold = 0;
             foreach (var m in S.menu) if (Content.Drink(m.id).Signature) sigSold += m.soldTonight;
@@ -944,7 +952,7 @@ namespace Loab.Sim
             if (sc != null && S.scenarioResult == 0)
             {
                 if (sc.Won(this)) { S.scenarioResult = 1; ScenarioJustEnded = true; }
-                else if (S.day >= sc.Days - 1) { S.scenarioResult = 2; ScenarioJustEnded = true; }
+                else if (S.day - sc.StartDay >= sc.Days - 1) { S.scenarioResult = 2; ScenarioJustEnded = true; }
             }
             LastNight = rec;
             Svc = svc;
