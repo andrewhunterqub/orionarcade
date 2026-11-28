@@ -211,7 +211,7 @@ In priority order. The same rules apply: test-first where the logic is in the si
 - [x] **O1 · Beer garden (L, brief 6.5).** An outdoor extension behind the bar with seasonal demand (big in summer, closed in winter unless you buy heaters), outdoor seating and festoon lights, and weather that matters (rain empties it). Model it as a second small grid zone reachable from a back door. *Done when:* tested in the simulation, with a footfall uplift only in good weather and costs that make it a real decision.
 - [x] **V3 · Visual brief extras (M).** Carried over from the original backlog: bevelled hero props, soft bloom on glowing items, a paper-grain overlay, each gated by quality level. Visual QA in the live build is a must.
 - [x] **Q1 · Colour-blind coverage (S).** Move the remaining inline red and green colours in the older panels to the `good-text` and `bad-text` classes so the palette covers everything.
-- [ ] **Q2 · End-to-end visual check (S).** Use the Playwright position map to walk the Events tab, the Drinks tab (Cocktail Lab), the Staff tab (rota) and the Vibe tab (reputation track) in the live build, and fix any layout problems.
+- [x] **Q2 · End-to-end visual check (S).** Use the Playwright position map to walk the Events tab, the Drinks tab (Cocktail Lab), the Staff tab (rota) and the Vibe tab (reputation track) in the live build, and fix any layout problems.
 - [ ] **P5 · Second venue (L, stretch).** As in the original backlog: only once everything above is done.
 
 **Explicitly out of scope this weekend:** multiplayer and social, monetisation, the food system, outdoor space, localisation, and real art assets.
