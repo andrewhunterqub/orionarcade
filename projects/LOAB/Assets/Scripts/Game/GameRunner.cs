@@ -23,6 +23,8 @@ namespace Loab.Game
         public bool Moving;         // moving the selected item
         public Customer Inspected;
         public float SpeedMult = 1f;
+        /// Night length setting (task U2): 1 = six real minutes at 1x, 0.6 = ten minutes.
+        public float Pace = 1f;
         public bool Paused;
 
         Vector2 _downPos;
@@ -65,6 +67,7 @@ namespace Loab.Game
             Blur.Mat = Resources.Load<Material>("Materials/TiltShift");
             Blur.Enabled = PlayerPrefs.GetInt("loab_blur", 1) == 1;
             WorldView.CharView.StopMotion = PlayerPrefs.GetInt("loab_stopmo", 0) == 1;
+            Pace = PlayerPrefs.GetInt("loab_long_nights", 0) == 1 ? 0.6f : 1f;
             World = WorldView.Create(G, Rig);
         }
 
@@ -313,7 +316,7 @@ namespace Loab.Game
             if (!Paused)
             {
                 // 1x = one game minute per real second (a 6-minute evening).
-                _tickAcc += Time.deltaTime * SpeedMult / Service.Tick;
+                _tickAcc += Time.deltaTime * SpeedMult * Pace / Service.Tick;
                 int steps = Mathf.Min((int)_tickAcc, 400);
                 _tickAcc -= steps;
                 int before = svc.Messages.Count;

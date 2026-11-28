@@ -53,6 +53,7 @@ namespace Loab.Game
             _root.styleSheets.Add(Resources.Load<StyleSheet>("UI/Loab"));
             _root.AddToClassList("root");
             if (PlayerPrefs.GetInt("loab_large_text", 0) == 1) ps.scale = 1.18f;
+            _root.EnableInClassList("cb", PlayerPrefs.GetInt("loab_cb", 0) == 1); // colour-blind friendly palette (task U2)
             _root.pickingMode = PickingMode.Ignore;
             BuildChrome();
         }
@@ -455,6 +456,13 @@ namespace Loab.Game
             var b = Btn(label, act, "btn-small");
             b.style.width = 34; b.style.height = 30; b.tooltip = tip;
             _camBox.Add(b);
+        }
+
+        public bool ColourBlind => _root.ClassListContains("cb");
+        public void SetColourBlind(bool on)
+        {
+            _root.EnableInClassList("cb", on);
+            PlayerPrefs.SetInt("loab_cb", on ? 1 : 0);
         }
 
         public void SetLargeText(bool on)

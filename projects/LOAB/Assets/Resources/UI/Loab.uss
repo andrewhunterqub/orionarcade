@@ -277,3 +277,13 @@
 .badge-bad { background-color: rgb(230, 57, 70); }
 .badge-warn { background-color: rgb(244, 162, 47); }
 .badge-good { background-color: rgb(46, 170, 90); }
+
+/* Good / bad text, and the colour-blind friendly palette (task U2): blue for good, orange for bad. */
+.good-text { color: rgb(110, 231, 168); }
+.bad-text { color: rgb(255, 138, 128); }
+.cb .cash, .cb .good-text { color: rgb(110, 180, 255); }
+.cb .neg, .cb .bad-text { color: rgb(255, 170, 60); }
+.cb .chip-good { background-color: rgba(110, 180, 255, 0.2); color: rgb(150, 205, 255); }
+.cb .chip-bad { background-color: rgba(255, 170, 60, 0.2); color: rgb(255, 190, 110); }
+.cb .btn-good { background-color: rgb(40, 90, 150); border-color: rgb(110, 180, 255); }
+.cb .btn-good:hover { background-color: rgb(52, 110, 180); }

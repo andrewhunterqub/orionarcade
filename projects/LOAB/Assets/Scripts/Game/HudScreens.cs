@@ -123,6 +123,27 @@ namespace Loab.Game
             m.Add(Btn("Close", () => { if (fromTitle) ShowTitle(); else CloseOverlay(); }, "btn-primary", "option"));
         }
 
+        void ShowShortcuts()
+        {
+            var m = Modal("Keyboard shortcuts", null);
+            (string key, string what)[] keys =
+            {
+                ("W A S D / arrows", "Pan the camera"),
+                ("Q / E", "Rotate the view"),
+                ("Mouse wheel", "Zoom"),
+                ("R", "Rotate the selected item"),
+                ("Delete / Backspace", "Sell the selected item"),
+                ("Ctrl+Z / Ctrl+Y", "Undo / redo building"),
+                ("Space", "Pause or resume service"),
+                ("1 / 2 / 3", "Service speed 1x / 2x / 4x"),
+                ("Enter", "Next day (from the report)"),
+                ("H", "Hide the interface (photo mode)"),
+                ("Esc", "Cancel placing or close the side panel"),
+            };
+            foreach (var (key, what) in keys) m.Add(Row(Lbl(key, "card-title"), Spacer(), Lbl(what, "body")));
+            m.Add(Btn("Back", () => ShowPause(), "btn-primary", "option"));
+        }
+
         void ShowPause()
         {
             var m = Modal("Paused", null);
@@ -139,6 +160,14 @@ namespace Loab.Game
                 PlayerPrefs.SetInt("loab_stopmo", WorldView.CharView.StopMotion ? 1 : 0);
                 ShowPause();
             }, "option"));
+            m.Add(Btn(_run.Pace < 0.99f ? "Night length: 10 minutes" : "Night length: 6 minutes", () =>
+            {
+                _run.Pace = _run.Pace < 0.99f ? 1f : 0.6f;
+                PlayerPrefs.SetInt("loab_long_nights", _run.Pace < 0.99f ? 1 : 0);
+                ShowPause();
+            }, "option"));
+            m.Add(Btn(ColourBlind ? "Colour-blind friendly colours: ON" : "Colour-blind friendly colours: OFF", () => { SetColourBlind(!ColourBlind); ShowPause(); }, "option"));
+            m.Add(Btn("Keyboard shortcuts", () => ShowShortcuts(), "option"));
             m.Add(Btn(G.Phase == Phase.Service ? "Quit to title (abandons tonight)" : "Save and quit to title", () => _run.QuitToTitle(), "option"));
             if (G.Phase == Phase.Service) m.Add(Lbl("Your progress is saved at the start of each day.", "hint"));
         }
@@ -207,14 +236,12 @@ namespace Loab.Game
             c.Add(Lbl("TONIGHT'S VERDICT", "section"));
             if (!string.IsNullOrEmpty(n.highlight))
             {
-                var good = Lbl("Best: " + n.highlight, "body");
-                good.style.color = Col(0x6ee7a8);
+                var good = Lbl("Best: " + n.highlight, "body", "good-text");
                 c.Add(good);
             }
             if (!string.IsNullOrEmpty(n.problem))
             {
-                var bad = Lbl("Problem: " + n.problem, "body");
-                bad.style.color = Col(0xff8a80);
+                var bad = Lbl("Problem: " + n.problem, "body", "bad-text");
                 c.Add(bad);
                 if (!string.IsNullOrEmpty(n.fix)) c.Add(Lbl($"{Mentor.Name}: \"{n.fix}\"", "card-sub"));
             }
