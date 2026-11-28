@@ -531,6 +531,12 @@ public static class Tests
         while (h.S.DayOfWeek != 6) PlayDay(h, true);
         PlayDay(h, true);
         Assert(h.S.history[h.S.history.Count - 1].moments.Exists(m => m.Contains("£1,234")), "no manager payment message");
+        // District cards only turn up in their own district, in season.
+        var fair = Director.Cards.Find(c => c.Id == "freshers_fair");
+        var st = Game.NewCareer(31, 1).S; st.day = 3;
+        Assert(!fair.When(st), "freshers' fair outside the University Quarter");
+        st.district = "campus"; Assert(fair.When(st), "no freshers' fair on campus in autumn");
+        st.day = 28 + 3; Assert(!fair.When(st), "freshers' fair in winter");
     }
 
     static void BeerGarden()

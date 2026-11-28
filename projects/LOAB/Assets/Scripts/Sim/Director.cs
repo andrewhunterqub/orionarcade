@@ -28,6 +28,11 @@ namespace Loab.Sim
 
         public static CardDef Get(string id) => Cards.Find(c => c.Id == id);
 
+        static void Aware(GameState s, int seg, float add)
+        {
+            if (seg < s.awareness.Length) s.awareness[seg] = Math.Min(1f, s.awareness[seg] + add);
+        }
+
         static CardOption Opt(string label, string detail, Action<Game> apply, Func<Game, string> can = null) =>
             new CardOption { Label = label, Detail = detail, Apply = apply, CanChoose = can };
 
@@ -325,6 +330,54 @@ namespace Loab.Sim
                 {
                     Opt("Let them park", "They pay you £50 a week, and weekends get busier.", g => g.S.SetFlag("food_truck", 1)),
                     Opt("No thanks", "Your bar, your rules.", g => { }),
+                },
+            });
+            // ---- District cards (second venue, task X5) ----------------------------------------------
+            Cards.Add(new CardDef
+            {
+                Id = "regatta", Title = "Harbour regatta", Art = "glass", Weight = 1.2f,
+                Text = "The harbour regatta is on this weekend: boats, bunting and thousands of day-trippers on the quay. The organisers are after sponsors.",
+                When = s => s.district == "harbour" && (s.Season == 2 || s.Season == 3) && s.day % 28 < 7,
+                Options =
+                {
+                    Opt("Sponsor a boat (£800)", "Your name on a sail. Tourists and couples hear about you, and the town notices.", g =>
+                    {
+                        g.Spend(800, "Regatta sponsorship");
+                        Aware(g.S, 6, 0.12f); Aware(g.S, 7, 0.08f);
+                        g.S.reputation = Math.Min(100, g.S.reputation + 2);
+                    }, g => g.S.cash < 800 ? "Not enough cash" : null),
+                    Opt("Just make the most of it", "A chalkboard on the quay. It's free.", g => Aware(g.S, 6, 0.04f)),
+                },
+            });
+            Cards.Add(new CardDef
+            {
+                Id = "freshers_fair", Title = "Freshers' fair", Art = "clipboard", Weight = 1.4f,
+                Text = "The students' union fair is next week. Every society, every club, and several thousand new students looking for a local.",
+                When = s => s.district == "campus" && s.Season == 0 && s.day % 28 < 10,
+                Options =
+                {
+                    Opt("Take a stall (£300)", "Free shots and a loyalty card. Students and creatives find out about you.", g =>
+                    {
+                        g.Spend(300, "Freshers' fair stall");
+                        Aware(g.S, 0, 0.18f); Aware(g.S, 4, 0.08f);
+                    }, g => g.S.cash < 300 ? "Not enough cash" : null),
+                    Opt("Leave it to the chains", "They'll find you eventually.", g => { }),
+                },
+            });
+            Cards.Add(new CardDef
+            {
+                Id = "bonus_day", Title = "Bonus day", Art = "phone", Weight = 1.2f,
+                Text = "It's bonus week in the City. The trading floors empty at five and everyone wants to be seen buying a round.",
+                When = s => s.district == "financial" && s.Season == 1 && s.day % 28 < 10,
+                Options =
+                {
+                    Opt("Champagne night (£600)", "Fizz on ice and a guest list. The after-work crowd and young professionals take note.", g =>
+                    {
+                        g.Spend(600, "Champagne night");
+                        Aware(g.S, 5, 0.12f); Aware(g.S, 1, 0.1f);
+                        g.S.reputation = Math.Min(100, g.S.reputation + 1);
+                    }, g => g.S.cash < 600 ? "Not enough cash" : null),
+                    Opt("Business as usual", "They'll come anyway. Probably.", g => { }),
                 },
             });
             Cards.Add(new CardDef
