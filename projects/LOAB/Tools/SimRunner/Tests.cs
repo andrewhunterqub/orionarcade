@@ -43,6 +43,7 @@ public static class Tests
         Test("staffing guidance: more bartenders for busier nights, capped by serving points, rota-aware", StaffingGuidance);
         Test("beer garden: reputation-gated, weather and season rules, more room and more summer trade", BeerGarden);
         Test("full house: turning people away suggests a price rise, unless prices are already up", FullHouse);
+        Test("second bar survives save and load; old saves without its fields load as the first bar", SecondVenueSave);
         Test("second venue: gated, carries cash and recipes, district changes the crowd and rent, manager pays weekly", SecondVenue);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
@@ -549,6 +550,30 @@ public static class Tests
         Assert(!fair.When(st), "freshers' fair outside the University Quarter");
         st.district = "campus"; Assert(fair.When(st), "no freshers' fair on campus in autumn");
         st.day = 28 + 3; Assert(!fair.When(st), "freshers' fair in winter");
+    }
+
+    static void SecondVenueSave()
+    {
+        var g = Game.NewCareer(41, 1);
+        for (int i = 0; i < 7; i++) PlayDay(g, true);
+        g.S.cash = 60000; g.S.reputation = 80;
+        var (err, h) = g.OpenSecondVenue("harbour", "Quayside");
+        Assert(err == null, err);
+        h.S.managedIncome = 1500;
+        PlayDay(h, true);
+        var json = Snapshot(h);
+        var back = new Game(JsonSerializer.Deserialize<GameState>(json, Json));
+        Assert(back.S.district == "harbour" && back.S.venues == 2 && back.S.firstBarName == g.S.barName && back.S.managedIncome == 1500 && back.S.barName == "Quayside", "second-bar fields lost on load");
+        Assert(Snapshot(back) == json, "state changed just by loading it");
+        Assert(!back.SecondVenueUnlocked, "a loaded second bar offers a third");
+        // An old save, from before the second bar existed.
+        var node = System.Text.Json.Nodes.JsonNode.Parse(Snapshot(g)).AsObject();
+        foreach (var k in new[] { "district", "venues", "firstBarName", "managedIncome" }) node.Remove(k);
+        var old = new Game(JsonSerializer.Deserialize<GameState>(node.ToJsonString(), Json));
+        Assert(string.IsNullOrEmpty(old.S.district) && old.S.venues <= 1 && old.S.managedIncome == 0, "old save didn't load as the first bar");
+        Assert(old.SecondVenueUnlocked, "old save at reputation 80 should be able to open a second bar");
+        Assert(Economy.DistrictShare(old.S, 0) == 1f, "old save picked up a district mix");
+        PlayDay(old, true);
     }
 
     static void FullHouse()
