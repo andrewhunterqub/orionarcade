@@ -116,6 +116,7 @@ namespace Loab.Game
                 float x = cx - w / 2f - 0.8f + i * (w + 1.6f) / 10f;
                 float sag = Mathf.Sin(i / 10f * Mathf.PI) * 0.35f;
                 Part(st, PrimitiveType.Sphere, new Vector3(x, 2.5f - sag, z0 + 2.6f), new Vector3(0.12f, 0.12f, 0.12f), glow);
+                Halo(st, new Vector3(x, 2.5f - sag, z0 + 2.6f), 0.7f, 0xFFD27A, 0.8f);
             }
         }
 
@@ -178,6 +179,7 @@ namespace Loab.Game
             Part(st, PrimitiveType.Cube, new Vector3(dx, 0.005f, -0.25f), new Vector3(0.9f, 0.02f, 0.5f), ModelFactory.Mat(0xA8573A));
             Part(st, PrimitiveType.Cylinder, new Vector3(dx - 3f, 1.4f, -2.6f), new Vector3(0.12f, 1.4f, 0.12f), ModelFactory.Mat(0x2b2b2b));
             Part(st, PrimitiveType.Sphere, new Vector3(dx - 3f, 2.9f, -2.6f), new Vector3(0.4f, 0.4f, 0.4f), ModelFactory.Glow(0xFFD27A, 2f));
+            Halo(st, new Vector3(dx - 3f, 2.9f, -2.6f), 1.8f, 0xFFD27A);
             // Hanging pub sign: bottle green with cream lettering (brief 7.1)
             Part(st, PrimitiveType.Cube, new Vector3(dx + 1.4f, 1.5f, -0.75f), new Vector3(0.1f, 3f, 0.1f), ModelFactory.Mat(0x2b1b10));
             Part(st, PrimitiveType.Cube, new Vector3(dx + 1.0f, 2.95f, -0.75f), new Vector3(0.9f, 0.08f, 0.08f), ModelFactory.Mat(0x2b1b10));
@@ -308,6 +310,33 @@ namespace Loab.Game
             _walls.Add((wall.transform, side, cap.transform));
         }
 
+        // ---- Halos (visual brief, task V3): soft additive glows around lamps, bulbs and glowing kit.
+        static Material _haloMat;
+        public static bool HalosOn = true;
+        static void Halo(Transform parent, Vector3 localPos, float size, uint rgb, float strength = 1f)
+        {
+            if (_haloMat == null) _haloMat = Resources.Load<Material>("Materials/Halo");
+            if (_haloMat == null) return;
+            var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            go.name = "Halo";
+            Destroy(go.GetComponent<Collider>());
+            // Static scenery is batched (world-space vertices), which would break the camera-facing trick,
+            // so halos on it hang off the room root instead.
+            var world = parent.TransformPoint(localPos);
+            if (parent.name == "Static" && parent.parent != null) parent = parent.parent;
+            go.transform.SetParent(parent, false);
+            go.transform.position = world;
+            float ps = Mathf.Max(0.0001f, parent.lossyScale.x);
+            go.transform.localScale = Vector3.one * (size / ps);
+            var r = go.GetComponent<Renderer>();
+            r.sharedMaterial = _haloMat;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            r.receiveShadows = false;
+            var mpb = new MaterialPropertyBlock();
+            mpb.SetColor("_Color", ToColor(rgb) * strength);
+            r.SetPropertyBlock(mpb);
+        }
+
         static GameObject Part(Transform parent, PrimitiveType type, Vector3 pos, Vector3 scale, Material m)
         {
             var go = GameObject.CreatePrimitive(type);
@@ -404,6 +433,7 @@ namespace Loab.Game
             _night = Mathf.MoveTowards(_night, service ? 1f : 0f, Time.unscaledDeltaTime / 2.5f);
             float n = Mathf.SmoothStep(0, 1, _night);
             float L = s.lighting / 100f;
+            Shader.SetGlobalFloat("_HaloStrength", HalosOn ? Mathf.Lerp(0.12f, 0.6f, n) : 0f);
 
             var cam = Rig.Cam;
             cam.backgroundColor = Color.Lerp(Color.Lerp(StudioDayTop, StudioDayFloor, 0.35f), Color.Lerp(StudioNightTop, StudioNightFloor, 0.4f), n);
@@ -454,6 +484,7 @@ namespace Loab.Game
             if (_mpb == null) _mpb = new MaterialPropertyBlock();
             foreach (var r in go.GetComponentsInChildren<Renderer>())
             {
+                if (r.sharedMaterial == _haloMat) continue;
                 if (band == 0) { r.SetPropertyBlock(null); continue; }
                 var m = r.sharedMaterial;
                 if (m == null || m.IsKeywordEnabled("_EMISSION")) continue; // lamps and screens stay bright
@@ -502,6 +533,7 @@ namespace Loab.Game
                     l.color = ToColor(d.Color2);
                     l.shadows = LightShadows.None;
                     _lights.Add(l);
+                    Halo(go.transform, l.transform.localPosition * 0.8f, d.Fn == ItemFn.Screen ? 1.6f : 1.2f, d.Color2, 0.7f);
                 }
                 _items[it.uid] = go;
                 _itemKey[it.uid] = key;

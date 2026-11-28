@@ -174,7 +174,7 @@ namespace Loab.Game
             {
                 _tier--;
                 if (_tier == 1) { QualitySettings.pixelLightCount = 4; QualitySettings.shadows = ShadowQuality.HardOnly; QualitySettings.shadowDistance = 60; }
-                else { QualitySettings.pixelLightCount = 2; QualitySettings.shadows = ShadowQuality.Disable; Blur.Enabled = false; Ui?.SetGrain(false); }
+                else { QualitySettings.pixelLightCount = 2; QualitySettings.shadows = ShadowQuality.Disable; Blur.Enabled = false; Ui?.SetGrain(false); WorldView.HalosOn = false; }
                 Debug.Log($"LOAB: lowered quality to tier {_tier} (avg {1f / _dtAvg:0} fps)");
             }
         }
