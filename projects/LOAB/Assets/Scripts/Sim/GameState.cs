@@ -86,6 +86,17 @@ namespace Loab.Sim
         public string lastVisitNote;
     }
 
+    /// <summary>Lifetime numbers for the career stats card (task Y3). History only keeps 42 nights, so these count up.</summary>
+    [Serializable]
+    public class CareerStats
+    {
+        public int nights, customers, drinks, events, hits, turnedAway;
+        public float takings, profit;
+        public float bestTakings; public int bestTakingsDay = -1;
+        public int bestCustomers; public int bestCustomersDay = -1;
+        public int firstDay = -1;
+    }
+
     [Serializable]
     public class NightRecord
     {
@@ -156,6 +167,7 @@ namespace Loab.Sim
         public int venues = 1;
         public string firstBarName = "";
         public float managedIncome; // paid in each week with the rent
+        public CareerStats stats = new CareerStats(); // lifetime numbers (task Y3), carried to a second bar
 
         // Menu & stock
         public List<MenuEntry> menu = new List<MenuEntry>();

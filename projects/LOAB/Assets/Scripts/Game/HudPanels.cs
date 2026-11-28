@@ -641,6 +641,22 @@ namespace Loab.Game
                     p.Add(Row(Lbl($"{Content.DayShort[h.day % 7]} wk{h.day / 7 + 1}", "slider-label"), Lbl($"{h.customers} in", "card-sub"), Spacer(), Lbl(Money(h.takings), "card-sub"), Lbl("   " + Money(h.profit), h.profit >= 0 ? "price" : "neg")));
             }
 
+            // Career stats (task Y3).
+            var st = s.stats;
+            if (st != null && st.nights > 0)
+            {
+                p.Add(Lbl("YOUR CAREER", "section"));
+                string Day(int d) => d < 0 ? "" : $" ({Content.DayShort[d % 7]} wk{d / 7 + 1})";
+                int seasons = st.firstDay < 0 ? 1 : (s.day - st.firstDay) / 28 + 1;
+                p.Add(Row(Lbl("Nights", "row-label"), Lbl($"{st.nights:#,0} over {seasons} season{(seasons == 1 ? "" : "s")}", "card-sub")));
+                p.Add(Row(Lbl("Customers", "row-label"), Lbl($"{st.customers:#,0} served {st.drinks:#,0} drinks", "card-sub")));
+                p.Add(Row(Lbl("Takings", "row-label"), Lbl($"{Money(st.takings)} ({Money(st.profit)} profit)", "card-sub")));
+                p.Add(Row(Lbl("Best night", "row-label"), Lbl($"{Money(st.bestTakings)}{Day(st.bestTakingsDay)}", "card-sub")));
+                p.Add(Row(Lbl("Busiest night", "row-label"), Lbl($"{st.bestCustomers} customers{Day(st.bestCustomersDay)}", "card-sub")));
+                p.Add(Row(Lbl("Events", "row-label"), Lbl($"{st.events} run, {st.hits} hits", "card-sub")));
+                p.Add(Row(Lbl("Regulars", "row-label"), Lbl($"{s.regulars.Count} now" + (st.turnedAway > 0 ? $"  -  {st.turnedAway:#,0} turned away at the door, ever" : ""), "card-sub")));
+            }
+
             // Second venue (task P5).
             if (s.venues > 1)
             {

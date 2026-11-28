@@ -118,6 +118,12 @@ namespace Loab.Sim
             if (!s.agency.Exists(a => a.kind == 2)) Economy.AddOpenMicActs(s, new Rng(s.seed + 99)); // saves from before Open Mic
             if (!s.agency.Exists(a => a.kind == EventKinds.LiveMusic)) Economy.AddNewEventActs(s, new Rng(s.seed + 98)); // saves from before K6
             s.menu ??= new List<MenuEntry>(); s.staff ??= new List<StaffMember>(); s.events ??= new List<BookedEvent>();
+            if (s.stats == null || (s.stats.nights == 0 && s.history != null && s.history.Count > 0))
+            {
+                // Saves from before career stats: start from what history remembers.
+                s.stats = new CareerStats();
+                if (s.history != null) foreach (var h in s.history) CountNight(s.stats, h);
+            }
             L = new Layout(s);
             // LastNight isn't saved separately: restore it from history so a loaded game behaves like one that never left.
             LastNight = s.history != null && s.history.Count > 0 ? s.history[s.history.Count - 1] : null;
@@ -498,6 +504,7 @@ namespace Loab.Sim
             fresh.unlockedItems = new List<string>(S.unlockedItems);
             fresh.cardHistory = new List<string>(S.cardHistory);
             fresh.signatures = new List<string>(S.signatures);
+            fresh.stats = S.stats; // a career is a career, across both bars
             foreach (var sig in fresh.signatures)
             {
                 var dd = Content.Drink(sig);
@@ -1040,6 +1047,7 @@ namespace Loab.Sim
 
             S.events.RemoveAll(e => e.day <= S.day);
             S.history.Add(rec);
+            CountNight(S.stats, rec);
             if (S.history.Count > 42) S.history.RemoveAt(0);
             // Keep saves small (WebGL PlayerPrefs are capped): old nights keep their numbers, not their stories.
             for (int i = 0; i < S.history.Count - 7; i++)
@@ -1128,6 +1136,17 @@ namespace Loab.Sim
             S.cash += 2000;
             S.loanBalance += 3000;
             S.loanDaily = Math.Max(S.loanDaily, 110);
+        }
+
+        static void CountNight(CareerStats st, NightRecord r)
+        {
+            if (st.firstDay < 0) st.firstDay = r.day;
+            st.nights++;
+            st.customers += r.customers; st.drinks += r.servedDrinks; st.turnedAway += r.turnedAway;
+            st.takings += r.takings; st.profit += r.profit;
+            if (!string.IsNullOrEmpty(r.eventName)) { st.events++; if (r.eventOutcome == "Hit" || r.eventOutcome == "Viral hit") st.hits++; }
+            if (r.takings > st.bestTakings) { st.bestTakings = r.takings; st.bestTakingsDay = r.day; }
+            if (r.customers > st.bestCustomers) { st.bestCustomers = r.customers; st.bestCustomersDay = r.day; }
         }
 
         public void CheckGoals()

@@ -44,6 +44,7 @@ public static class Tests
         Test("beer garden: reputation-gated, weather and season rules, more room and more summer trade", BeerGarden);
         Test("full house: turning people away suggests a price rise, unless prices are already up", FullHouse);
         Test("second bar survives save and load; old saves without its fields load as the first bar", SecondVenueSave);
+        Test("career stats count every night, outlive the 42-night history and follow you to a second bar", CareerStatsCount);
         Test("second venue: gated, carries cash and recipes, district changes the crowd and rent, manager pays weekly", SecondVenue);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
@@ -550,6 +551,25 @@ public static class Tests
         Assert(!fair.When(st), "freshers' fair outside the University Quarter");
         st.district = "campus"; Assert(fair.When(st), "no freshers' fair on campus in autumn");
         st.day = 28 + 3; Assert(!fair.When(st), "freshers' fair in winter");
+    }
+
+    static void CareerStatsCount()
+    {
+        var g = Game.NewCareer(43, 1);
+        float takings = 0; int customers = 0;
+        for (int i = 0; i < 50; i++) { if (!PlayDay(g, true)) break; takings += g.LastNight.takings; customers += g.LastNight.customers; }
+        var st = g.S.stats;
+        Assert(st.nights == 50 && g.S.history.Count == 42, $"nights {st.nights}, history {g.S.history.Count}");
+        Assert(st.customers == customers && Math.Abs(st.takings - takings) < 1f, "totals don't match the nights played");
+        Assert(st.bestTakings > 0 && st.bestTakingsDay >= 0 && st.firstDay == 0, "best night not recorded");
+        g.S.cash = 60000; g.S.reputation = 80;
+        var (err, h) = g.OpenSecondVenue("campus", "Two");
+        Assert(err == null && h.S.stats.nights == 50, "stats didn't follow you to the second bar");
+        // A save from before career stats backfills from history.
+        var node = System.Text.Json.Nodes.JsonNode.Parse(Snapshot(g)).AsObject();
+        node.Remove("stats");
+        var old = new Game(JsonSerializer.Deserialize<GameState>(node.ToJsonString(), Json));
+        Assert(old.S.stats != null && old.S.stats.nights == 42, $"backfill gave {old.S.stats?.nights} nights");
     }
 
     static void SecondVenueSave()
