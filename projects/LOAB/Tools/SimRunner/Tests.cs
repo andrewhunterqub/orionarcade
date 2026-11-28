@@ -42,6 +42,7 @@ public static class Tests
         Test("unlocks: the reputation track lists the next thresholds in order", Unlocks);
         Test("staffing guidance: more bartenders for busier nights, capped by serving points, rota-aware", StaffingGuidance);
         Test("beer garden: reputation-gated, weather and season rules, more room and more summer trade", BeerGarden);
+        Test("second venue: gated, carries cash and recipes, district changes the crowd and rent, manager pays weekly", SecondVenue);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -497,6 +498,39 @@ public static class Tests
         Assert(Economy.BartendersTonight(g.S) == 1, "starting bar should have one bartender on");
         g.ToggleDayOff(g.S.staff[0].uid, g.S.DayOfWeek);
         Assert(Economy.BartendersTonight(g.S) == 0, "rota not respected");
+    }
+
+    static void SecondVenue()
+    {
+        var g = Game.NewCareer(29, 1);
+        for (int i = 0; i < 14; i++) PlayDay(g, true);
+        g.S.cash = 50000;
+        g.S.reputation = 40;
+        Assert(g.OpenSecondVenue("financial", "Number Two").error != null, "opened below the reputation gate");
+        g.S.reputation = 75;
+        g.S.signatures.Add(Content.Drinks.Find(d => d.Signature).Id);
+        float income = g.ManagedIncomeEstimate();
+        var (err, h) = g.OpenSecondVenue("financial", "Number Two");
+        Assert(err == null && h != null, "couldn't open: " + err);
+        var t = h.S;
+        Assert(t.cash == 50000 - Game.SecondVenueCost, $"cash carried {t.cash}");
+        Assert(t.day == g.S.day && t.district == "financial" && t.venues == 2 && t.firstBarName == g.S.barName && t.barName == "Number Two", "state not carried");
+        Assert(t.reputation < g.S.reputation && t.reputation >= 12, "reputation should drop for a new room");
+        Assert(t.Menu(t.signatures[0]).onMenu, "signature not on the new menu");
+        Assert(t.managedIncome == income && income >= 0, "managed income");
+        Assert(h.OpenSecondVenue("harbour", "Three").error != null, "a third venue shouldn't be possible");
+        // The district shapes the crowd and the rent.
+        var plain = Game.NewCareer(29, 1); plain.S.day = t.day; plain.S.reputation = t.reputation;
+        Assert(Economy.WeeklyRent(t) > Economy.WeeklyRent(plain.S) * 1.3f, "financial district rent should be higher");
+        var a = new float[Content.Segments.Count]; var b = new float[Content.Segments.Count];
+        Economy.ExpectedArrivals(t, h.V, a, null, out _); Economy.ExpectedArrivals(plain.S, plain.V, b, null, out _);
+        int afterWork = 5, students = 0;
+        Assert(a[afterWork] / Math.Max(0.01f, a[students]) > 2f * b[afterWork] / Math.Max(0.01f, b[students]), "financial district should tilt to the after-work crowd");
+        // The manager pays in on rent night.
+        t.managedIncome = 1234;
+        while (h.S.DayOfWeek != 6) PlayDay(h, true);
+        PlayDay(h, true);
+        Assert(h.S.history[h.S.history.Count - 1].moments.Exists(m => m.Contains("£1,234")), "no manager payment message");
     }
 
     static void BeerGarden()

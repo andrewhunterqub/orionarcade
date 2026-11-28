@@ -640,6 +640,29 @@ namespace Loab.Game
                 foreach (var h in recent.AsEnumerable().Reverse().Take(7))
                     p.Add(Row(Lbl($"{Content.DayShort[h.day % 7]} wk{h.day / 7 + 1}", "slider-label"), Lbl($"{h.customers} in", "card-sub"), Spacer(), Lbl(Money(h.takings), "card-sub"), Lbl("   " + Money(h.profit), h.profit >= 0 ? "price" : "neg")));
             }
+
+            // Second venue (task P5).
+            if (s.venues > 1)
+            {
+                p.Add(Lbl("YOUR FIRST BAR", "section"));
+                var dist = Content.District(s.district);
+                p.Add(Lbl($"{s.firstBarName} is run by your manager and sends {Money(s.managedIncome)} each Sunday. You're now running {s.barName}" + (dist != null ? $" in the {dist.Name}." : "."), "card-sub"));
+            }
+            else if (s.mode == 0)
+            {
+                p.Add(Lbl("A SECOND BAR", "section"));
+                var c = El("card");
+                if (!G.SecondVenueUnlocked)
+                    c.Add(Lbl($"Win Bar of the Year, or reach reputation {Sim.Game.SecondVenueRep}, and you can open a second bar in another part of town.", "card-sub"));
+                else
+                {
+                    c.Add(Lbl($"Hand {s.barName} to a manager, who'd send you about {Money(G.ManagedIncomeEstimate())} a week, and start again in a new district. The fit-out costs {Money(Sim.Game.SecondVenueCost)}.", "card-sub"));
+                    var b = Btn("Plan a second bar", () => ShowSecondVenue(), "btn-small");
+                    b.SetEnabled(G.Phase == Phase.Prep);
+                    c.Add(b);
+                }
+                p.Add(c);
+            }
         }
 
         // =====================================================================================

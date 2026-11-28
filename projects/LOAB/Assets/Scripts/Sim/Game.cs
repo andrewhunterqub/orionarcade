@@ -453,6 +453,66 @@ namespace Loab.Sim
             return null;
         }
 
+        // ---- Second venue (task P5) ----------------------------------------------------------------------
+        // Late career: hand the first bar to a manager (who sends back a share of its profit each week) and
+        // open a new bar in another district, starting again from a bare unit with your cash, recipes and know-how.
+        public const int SecondVenueCost = 30000, SecondVenueRep = 70;
+        public const float ManagerShare = 0.3f, ManagedIncomeCap = 6000f;
+
+        public bool SecondVenueUnlocked => S.mode == 0 && S.venues <= 1 && (S.GetFlag("bar_of_year") > 0 || S.reputation >= SecondVenueRep);
+
+        /// What the first bar would send back each week under a manager: 30% of its average weekly profit over the last 4 weeks.
+        public float ManagedIncomeEstimate()
+        {
+            float total = 0; int n = 0;
+            for (int i = S.history.Count - 1; i >= 0 && n < 28; i--, n++) total += S.history[i].profit;
+            if (n == 0) return 0;
+            float weekly = total / n * 7f;
+            return Math.Max(0f, Math.Min(ManagedIncomeCap, (float)Math.Round(weekly * ManagerShare / 10f) * 10f));
+        }
+
+        /// Opens the second bar. Returns (error, newGame): the caller swaps the running game for newGame.
+        public (string error, Game next) OpenSecondVenue(string districtId, string name)
+        {
+            var dist = Content.District(districtId);
+            if (dist == null) return ("Pick a district", null);
+            if (!SecondVenueUnlocked) return ($"Win Bar of the Year or reach reputation {SecondVenueRep} first", null);
+            if (Phase != Phase.Prep) return ("Wait until the bar is closed", null);
+            if (S.cash < SecondVenueCost) return ($"A second bar needs £{SecondVenueCost:#,0} for the fit-out", null);
+            var fresh = NewCareer(S.seed * 31 + 7, S.difficulty).S;
+            fresh.mode = S.mode;
+            fresh.district = dist.Id;
+            fresh.venues = 2;
+            fresh.firstBarName = S.barName;
+            fresh.barName = string.IsNullOrWhiteSpace(name) ? $"The Anchor, {dist.Name}" : name.Trim();
+            fresh.managedIncome = ManagedIncomeEstimate();
+            // What comes with you: the calendar, the money, your recipes, what you've unlocked and learned.
+            fresh.day = S.day;
+            fresh.weather = S.weather;
+            fresh.cash = S.cash - SecondVenueCost;
+            fresh.loanBalance = S.loanBalance; fresh.loanDaily = S.loanDaily; fresh.loansTaken = S.loansTaken;
+            fresh.goalIndex = S.goalIndex;
+            fresh.flags = new List<Flag>(S.flags);
+            fresh.seenTips = new List<string>(S.seenTips);
+            fresh.unlockedItems = new List<string>(S.unlockedItems);
+            fresh.cardHistory = new List<string>(S.cardHistory);
+            fresh.signatures = new List<string>(S.signatures);
+            foreach (var sig in fresh.signatures)
+            {
+                var dd = Content.Drink(sig);
+                var e = fresh.Menu(sig);
+                if (dd == null) continue;
+                if (e == null) { e = new MenuEntry { id = sig }; fresh.menu.Add(e); }
+                e.onMenu = true; e.price = dd.DefaultPrice; e.stock = dd.CaseSize;
+            }
+            // A known name travels, but a new room has to earn its own reputation.
+            fresh.reputation = Math.Max(12f, S.reputation * 0.4f);
+            fresh.SetFlag("second_venue_day", S.day);
+            var g = new Game(fresh);
+            g.Recompute();
+            return (null, g);
+        }
+
         public const int ExpandCost = 15000, ExpandRep = 35, ExpandCols = 6, MaxWidth = 22;
         public bool CanExpand => S.gridW + ExpandCols <= MaxWidth;
 
@@ -861,6 +921,11 @@ namespace Loab.Sim
             rec.profit = rec.takings - rec.costs;
             S.cash += rec.takings - (wages + utilities + rent + dog + loan);
             if (rent > 0 && S.GetFlag("food_truck") == 1) { S.cash += 50; rec.moments.Add("The street-food van paid its £50 pitch fee."); }
+            if (rent > 0 && S.managedIncome > 0)
+            {
+                S.cash += S.managedIncome;
+                rec.moments.Add($"Your manager at {S.firstBarName} sent over £{S.managedIncome:#,0}, your share of the week.");
+            }
             if (rent > 0)
             {
                 float week = rec.profit;

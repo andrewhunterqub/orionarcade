@@ -283,7 +283,7 @@ namespace Loab.Sim
             for (int i = 0; i < Content.Segments.Count; i++)
             {
                 var d = Content.Segments[i];
-                w[i] = Economy.EventAffinity(d, Event.kind) * d.Share * (0.3f + V.SegMatch[i]);
+                w[i] = Economy.EventAffinity(d, Event.kind) * d.Share * Economy.DistrictShare(S, i) * (0.3f + V.SegMatch[i]);
             }
             int idx = R.WeightedIndex(w);
             return (Seg)Math.Max(0, idx);

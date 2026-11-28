@@ -25,6 +25,34 @@ namespace Loab.Game
             return scroll;
         }
 
+        // Second venue (task P5): pick a district and a name, then the run switches to the new bar.
+        void ShowSecondVenue()
+        {
+            var s = G.S;
+            var m = Modal("A second bar", $"Your manager takes over {s.barName} and sends you about {Money(G.ManagedIncomeEstimate())} a week. You keep your cash (less the {Money(Sim.Game.SecondVenueCost)} fit-out), your recipes and everything you've unlocked, and start again in a bare unit. A known name helps, but the new room has to earn its own reputation. There's no going back.");
+            var nameRow = Row(Lbl("Bar name", "slider-label"));
+            var field = new TextField { value = "The Anchor II", maxLength = 28 };
+            field.style.flexGrow = 1;
+            nameRow.Add(field);
+            m.Add(nameRow);
+            foreach (var d in Content.Districts)
+            {
+                var dd = d;
+                var o = Btn("", () =>
+                {
+                    var (err, next) = G.OpenSecondVenue(dd.Id, field.value);
+                    if (err != null) { Flash(err); return; }
+                    CloseOverlay();
+                    _run.SwitchTo(next);
+                    Flash($"{next.S.barName} is yours. Time to build.");
+                }, "option");
+                o.Add(Lbl(d.Name, "option-label"));
+                o.Add(Lbl(d.Blurb + $" Rent ×{d.RentMult:0.##}.", "option-detail"));
+                m.Add(o);
+            }
+            m.Add(Btn("Not yet", () => CloseOverlay(), "option"));
+        }
+
         public void CloseOverlay()
         {
             _overlay.Clear();

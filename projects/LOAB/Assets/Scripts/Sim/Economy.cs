@@ -22,12 +22,18 @@ namespace Loab.Sim
         /// Supplier prices: Relaxed 0.92x, Hardcore 1.05x.
         public static float CostMult(GameState s) => s.difficulty == 0 ? 0.92f : s.difficulty == 2 ? 1.05f : 1f;
         /// Footfall: Relaxed 1.08x, Hardcore 0.96x.
-        public static float FootfallMult(GameState s) => s.difficulty == 0 ? 1.08f : s.difficulty == 2 ? 0.96f : 1f;
+        public static float FootfallMult(GameState s) => (s.difficulty == 0 ? 1.08f : s.difficulty == 2 ? 0.96f : 1f) * (Content.District(s.district)?.FootMult ?? 1f);
+        /// The district's pull on each crowd (second venue, task P5); 1 for the original bar.
+        public static float DistrictShare(GameState s, int seg)
+        {
+            var d = Content.District(s.district);
+            return d == null || seg >= d.ShareMult.Length ? 1f : d.ShareMult[seg];
+        }
         /// The landlord reviews the rent as the bar's reputation grows, and a bigger unit costs more.
         public static float WeeklyRent(GameState s)
         {
             float diff = s.difficulty == 0 ? 0.8f : s.difficulty == 2 ? 1.2f : 1f;
-            float rent = RentPerWeek * diff * (1f + s.reputation / 100f * 0.75f) * (float)Math.Pow(s.gridW / 16f, 0.7);
+            float rent = RentPerWeek * diff * (1f + s.reputation / 100f * 0.75f) * (float)Math.Pow(s.gridW / 16f, 0.7) * (Content.District(s.district)?.RentMult ?? 1f);
             return (float)Math.Round(rent / 10f) * 10f;
         }
 
@@ -121,7 +127,7 @@ namespace Loab.Sim
                 if (s.GetFlag("food_truck") == 1 && (s.DayOfWeek == 4 || s.DayOfWeek == 5)) sports *= 1.08f;   // the street-food van
                 float appeal = (0.15f + 0.85f * v.SegMatch[i]) * rep * price * ent * theme * sports * Calendar.SegmentMult(s, v, i);
                 float social = 1f + s.socialPostBoost;
-                outExpected[i] = canServe ? foot * d.Share * s.awareness[i] * appeal * day * social : 0;
+                outExpected[i] = canServe ? foot * d.Share * DistrictShare(s, i) * s.awareness[i] * appeal * day * social : 0;
 
                 if (ev != null)
                 {
@@ -129,7 +135,7 @@ namespace Loab.Sim
                     float draw = EventKinds.BaseDraw(ev.kind) * (ev.kind == EventKinds.Match && Calendar.Today(s)?.NeedsScreens == true ? 2.2f : 1f)
                                  + ev.act.following * 0.25f + ev.promo * 0.06f;
                     float ticketDrag = ev.ticket > 0 ? (float)Math.Exp(-ev.ticket * 0.05f * d.PriceSensitivity) : 1f;
-                    eventExtra += draw * aff2 * d.Share * (0.4f + v.SegMatch[i]) * rep * ticketDrag * 1.6f;
+                    eventExtra += draw * aff2 * d.Share * DistrictShare(s, i) * (0.4f + v.SegMatch[i]) * rep * ticketDrag * 1.6f;
                 }
             }
         }

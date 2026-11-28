@@ -151,6 +151,11 @@ namespace Loab.Sim
         public int volume = 50;
         public bool responsibleService = true;
         public bool garden, gardenHeaters; // beer garden behind the bar (task O1)
+        // Second venue (task P5): the district of this bar ("" = the original), and the first bar, now run by a manager.
+        public string district = "";
+        public int venues = 1;
+        public string firstBarName = "";
+        public float managedIncome; // paid in each week with the rent
 
         // Menu & stock
         public List<MenuEntry> menu = new List<MenuEntry>();

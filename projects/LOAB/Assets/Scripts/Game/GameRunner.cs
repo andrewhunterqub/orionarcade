@@ -117,6 +117,9 @@ namespace Loab.Game
             }
         }
 
+        /// Swaps in a different game in the same save slot (the second venue, task P5).
+        public void SwitchTo(Sim.Game g) => Load(g);
+
         void Load(Sim.Game g)
         {
             G = g;
