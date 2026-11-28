@@ -462,7 +462,7 @@ namespace Loab.Sim
         // ---- Second venue (task P5) ----------------------------------------------------------------------
         // Late career: hand the first bar to a manager (who sends back a share of its profit each week) and
         // open a new bar in another district, starting again from a bare unit with your cash, recipes and know-how.
-        public const int SecondVenueCost = 30000, SecondVenueRep = 70;
+        public const int SecondVenueCost = 30000, SecondVenueRep = 85;
         public const float ManagerShare = 0.3f, ManagedIncomeCap = 6000f;
 
         public bool SecondVenueUnlocked => S.mode == 0 && S.venues <= 1 && (S.GetFlag("bar_of_year") > 0 || S.reputation >= SecondVenueRep);

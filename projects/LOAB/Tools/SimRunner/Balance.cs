@@ -61,6 +61,43 @@ public static class Balance
     /// Second-venue balance (task X2): play 12 weeks sensibly on Standard, open a second bar in each district
     /// (reputation topped up to the gate and cash to the fit-out if short, as the harness only tests the districts),
     /// then play 8 more weeks. Reports bankruptcies and cash at the end per district.
+    /// Long-run soak (task Z1): a sensible Standard career for N weeks per seed, checking every invariant each
+    /// night, opening a second bar when it can afford one, and tracking how big the save gets (WebGL PlayerPrefs
+    /// are limited to about 1 MB in total).
+    public static int Soak(int weeks, int seeds)
+    {
+        int fails = 0;
+        Console.WriteLine("seed   nights  bankrupt  goal  awards  venue2  cash@26wk   cash@end    max save  reputation");
+        for (int i = 0; i < seeds; i++)
+        {
+            ulong seed = 5000 + (ulong)i * 104729;
+            var g = Game.NewCareer(seed, 1);
+            int maxSave = 0; float cash26 = 0; bool bust = false; string error = null; int venueDay = -1; int nights = 0;
+            try
+            {
+                for (int d = 0; d < weeks * 7; d++)
+                {
+                    bool going = Tests.PlayDay(g, Strategy("sensible"), null, null);
+                    nights++;
+                    Tests.Check(g);
+                    maxSave = Math.Max(maxSave, System.Text.Json.JsonSerializer.Serialize(g.S, Tests.Json).Length);
+                    if (d == 26 * 7 - 1) cash26 = g.S.cash;
+                    if (!going) { bust = true; break; }
+                    if (venueDay < 0 && g.SecondVenueUnlocked && g.S.cash > Game.SecondVenueCost + 15000 && g.Phase == Phase.Prep)
+                    {
+                        var (err, h) = g.OpenSecondVenue(Content.Districts[i % Content.Districts.Count].Id, "Two");
+                        if (err == null) { g = h; venueDay = g.S.day; }
+                    }
+                }
+            }
+            catch (Exception e) { error = e.Message; fails++; }
+            var goal = Goals.Career.Count > g.S.goalIndex ? g.S.goalIndex.ToString() : "done";
+            Console.WriteLine($"{seed,-6} {nights,6}  {(bust ? "yes" : "no"),8}  {goal,4}  {(g.S.GetFlag("bar_of_year") > 0 ? "won" : "-"),6}  {(venueDay >= 0 ? "wk" + (venueDay / 7 + 1) : "-"),6}  £{cash26,9:#,0}  £{g.S.cash,9:#,0}  {maxSave / 1024,6} KB  {g.S.reputation,6:0}" + (error != null ? "   ERROR: " + error : ""));
+        }
+        Console.WriteLine(fails == 0 ? "SOAK OK" : $"SOAK FAILED ({fails})");
+        return fails == 0 ? 0 : 1;
+    }
+
     public static int SecondVenue(int seeds)
     {
         Console.WriteLine("district        bankrupt   cash@+8wk (mean)   min        managed/wk   customers/night (last 2 wks)");

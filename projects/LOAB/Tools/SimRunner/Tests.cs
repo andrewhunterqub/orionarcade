@@ -11,7 +11,7 @@ public static class Tests
     static int _failed, _passed;
     static readonly List<string> Warnings = new List<string>();
 
-    static readonly JsonSerializerOptions Json = new JsonSerializerOptions
+    public static readonly JsonSerializerOptions Json = new JsonSerializerOptions
     {
         IncludeFields = true, // like Unity's JsonUtility: public fields, not properties
         WriteIndented = false,
@@ -510,7 +510,7 @@ public static class Tests
         g.S.cash = 50000;
         g.S.reputation = 40;
         Assert(g.OpenSecondVenue("financial", "Number Two").error != null, "opened below the reputation gate");
-        g.S.reputation = 75;
+        g.S.reputation = 90;
         g.S.signatures.Add(Content.Drinks.Find(d => d.Signature).Id);
         float income = g.ManagedIncomeEstimate();
         var (err, h) = g.OpenSecondVenue("financial", "Number Two");
@@ -562,7 +562,7 @@ public static class Tests
         Assert(st.nights == 50 && g.S.history.Count == 42, $"nights {st.nights}, history {g.S.history.Count}");
         Assert(st.customers == customers && Math.Abs(st.takings - takings) < 1f, "totals don't match the nights played");
         Assert(st.bestTakings > 0 && st.bestTakingsDay >= 0 && st.firstDay == 0, "best night not recorded");
-        g.S.cash = 60000; g.S.reputation = 80;
+        g.S.cash = 60000; g.S.reputation = 90;
         var (err, h) = g.OpenSecondVenue("campus", "Two");
         Assert(err == null && h.S.stats.nights == 50, "stats didn't follow you to the second bar");
         // A save from before career stats backfills from history.
@@ -576,7 +576,7 @@ public static class Tests
     {
         var g = Game.NewCareer(41, 1);
         for (int i = 0; i < 7; i++) PlayDay(g, true);
-        g.S.cash = 60000; g.S.reputation = 80;
+        g.S.cash = 60000; g.S.reputation = 90;
         var (err, h) = g.OpenSecondVenue("harbour", "Quayside");
         Assert(err == null, err);
         h.S.managedIncome = 1500;
@@ -591,7 +591,7 @@ public static class Tests
         foreach (var k in new[] { "district", "venues", "firstBarName", "managedIncome" }) node.Remove(k);
         var old = new Game(JsonSerializer.Deserialize<GameState>(node.ToJsonString(), Json));
         Assert(string.IsNullOrEmpty(old.S.district) && old.S.venues <= 1 && old.S.managedIncome == 0, "old save didn't load as the first bar");
-        Assert(old.SecondVenueUnlocked, "old save at reputation 80 should be able to open a second bar");
+        Assert(old.SecondVenueUnlocked, "old save at reputation 90 should be able to open a second bar");
         Assert(Economy.DistrictShare(old.S, 0) == 1f, "old save picked up a district mix");
         PlayDay(old, true);
     }
@@ -705,7 +705,7 @@ public static class Tests
         }
     }
 
-    static void Check(Game g)
+    public static void Check(Game g)
     {
         var s = g.S; var n = g.LastNight;
         string at = $"day {s.day}";

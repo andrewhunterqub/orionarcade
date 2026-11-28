@@ -88,7 +88,7 @@ namespace Loab.Game
             // and reputation, so the late-game screens (beer garden, second bar) can be reached in a test walk.
             if (Application.absoluteURL != null && Application.absoluteURL.Contains("qa=late"))
             {
-                g.S.day = 7 * 19; g.S.reputation = 75; g.S.cash = 50000;
+                g.S.day = 7 * 19; g.S.reputation = 88; g.S.cash = 50000;
                 g.Recompute();
             }
             G = g;
