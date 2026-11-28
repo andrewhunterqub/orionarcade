@@ -294,6 +294,7 @@ namespace Loab.Game
             else if (G.S.day == 2) Tip("stock");
             else if (G.S.day == 3) Tip("events");
             else if (G.S.cash < 1500) Tip("cash");
+            if (Calendar.Today(G.S) != null) Tip("calendar");
             if (G.LastNight != null && G.LastNight.thoughts.Exists(t => t.Contains("slow") || t.Contains("gave up"))) Tip("staff");
         }
 
@@ -503,6 +504,7 @@ namespace Loab.Game
             _run.Audio.Play("click");
             if (_tab == tab) { CloseSide(); return; }
             _tab = tab;
+            Tip("tab_" + tab.ToLowerInvariant()); // first time on each tab, Maggie explains it (task U1)
             _side.style.display = DisplayStyle.Flex;
             UpdateTabButtons();
             SetMode();
@@ -580,8 +582,16 @@ namespace Loab.Game
             body.style.fontSize = 14;
             col.Add(body);
             var ok = Btn("Got it", () => { _mentor.style.display = DisplayStyle.None; _run.Audio.Play("click"); FlushPendingTip(); }, "btn-primary");
-            ok.style.alignSelf = Align.FlexEnd;
-            col.Add(ok);
+            var skip = Btn("Skip all tips", () =>
+            {
+                foreach (var k in Mentor.Tips.Keys) if (!G.S.seenTips.Contains(k)) G.S.seenTips.Add(k);
+                _tipQueue.Clear();
+                _mentor.style.display = DisplayStyle.None;
+                _run.Audio.Play("click");
+            }, "btn-small");
+            skip.tooltip = "Maggie won't offer any more tips in this game.";
+            var buttons = Row(skip, Spacer(), ok);
+            col.Add(buttons);
             _mentor.Add(col);
             _mentor.style.display = DisplayStyle.Flex;
         }

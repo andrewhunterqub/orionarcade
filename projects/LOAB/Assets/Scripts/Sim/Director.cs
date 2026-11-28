@@ -589,6 +589,16 @@ namespace Loab.Sim
             { "staff", "One bartender can manage about 30 drinks an hour. If queues are long, hire more. Floor staff collect glasses and mop spills." },
             { "cash", "Cash is getting low. Watch your wages and stock spending. Rent's due every Sunday night." },
             { "card", "Every so often something happens: an opportunity, a problem, or a dog. Choose wisely." },
+            // First visit to each tab (task U1)
+            { "tab_build", "This is where you change the place. Tap an item, then tap the floor. Everything you add shifts the Vibe, and some things only unlock as your reputation grows." },
+            { "tab_vibe", "The Vibe tab tells you who'll love your bar. Match a crowd, or build towards a theme: get one recognised and the right people will seek you out. The reputation track shows what unlocks next." },
+            { "tab_drinks", "Red prices are above normal, blue are bargains. Restock all orders what actually sells. And the Cocktail Lab up top lets you invent your own signature drinks." },
+            { "tab_staff", "Bartenders serve, floor staff tidy, door security keeps the peace and cleaners work after closing. Give people a night off on the rota or they'll burn out." },
+            { "tab_events", "Events bring in crowds and build regulars. Check Coming up for special nights: a quiz in freshers' week, the big match on a tournament night." },
+            { "tab_promote", "Awareness is how many people in each crowd know you exist. A social post is free once a day. Flyers and ads cost money but reach further." },
+            { "tab_money", "Rent is due on Sunday nights and goes up as you get better known. Keep a cushion in the bank: it's the quiet Mondays that catch you out." },
+            { "tab_reviews", "BarHopper reviews come from real customers' nights. If three people mention sticky tables, you've got sticky tables." },
+            { "calendar", "It's a special night tonight. Check the feed and the Events tab: the calendar changes who comes in and what they drink." },
         };
     }
 }
