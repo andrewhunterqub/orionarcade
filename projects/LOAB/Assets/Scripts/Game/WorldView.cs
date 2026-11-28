@@ -61,7 +61,7 @@ namespace Loab.Game
         {
             _g = g;
             foreach (Transform c in _roomRoot) Destroy(c.gameObject);
-            foreach (var kv in _items) Destroy(kv.Value);
+            foreach (var kv in _items) ModelFactory.DestroyModel(kv.Value);
             _items.Clear(); _itemKey.Clear(); _floorTiles.Clear(); _walls.Clear();
             _lights.Clear(); _wearBand.Clear();
             ClearAgents();
@@ -487,16 +487,21 @@ namespace Loab.Game
             foreach (var r in go.GetComponentsInChildren<Renderer>())
             {
                 if (r.sharedMaterial == _haloMat) continue;
-                if (band == 0) { r.SetPropertyBlock(null); continue; }
-                var m = r.sharedMaterial;
-                if (m == null || m.IsKeywordEnabled("_EMISSION")) continue; // lamps and screens stay bright
-                var c = m.color;
-                float grey = c.grayscale;
-                float fade = band == 2 ? 0.45f : 0.22f;
-                var worn = Color.Lerp(c, new Color(grey, grey * 0.96f, grey * 0.9f), fade) * (band == 2 ? 0.8f : 0.9f);
-                worn.a = 1;
-                _mpb.SetColor("_Color", worn);
-                r.SetPropertyBlock(_mpb);
+                var mats = r.sharedMaterials; // merged items have one submesh per material (task X6)
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    if (band == 0) { r.SetPropertyBlock(null, i); continue; }
+                    var m = mats[i];
+                    if (m == null || m.IsKeywordEnabled("_EMISSION")) { r.SetPropertyBlock(null, i); continue; } // lamps and screens stay bright
+                    var c = m.color;
+                    float grey = c.grayscale;
+                    float fade = band == 2 ? 0.45f : 0.22f;
+                    var worn = Color.Lerp(c, new Color(grey, grey * 0.96f, grey * 0.9f), fade) * (band == 2 ? 0.8f : 0.9f);
+                    worn.a = 1;
+                    _mpb.Clear();
+                    _mpb.SetColor("_Color", worn);
+                    r.SetPropertyBlock(_mpb, i);
+                }
             }
         }
 
@@ -547,7 +552,7 @@ namespace Loab.Game
             foreach (var uid in remove)
             {
                 foreach (var l in _items[uid].GetComponentsInChildren<Light>()) _lights.Remove(l);
-                Destroy(_items[uid]);
+                ModelFactory.DestroyModel(_items[uid]);
                 _items.Remove(uid); _itemKey.Remove(uid);
                 _practicalDirty = true;
             }
@@ -573,12 +578,17 @@ namespace Loab.Game
         {
             if (_ghost == null || _ghostId != itemId || _ghostOk != ok)
             {
-                if (_ghost != null) Destroy(_ghost);
+                if (_ghost != null) ModelFactory.DestroyModel(_ghost);
                 var d = Content.Item(itemId);
                 _ghost = ModelFactory.Build(d);
                 foreach (var c in _ghost.GetComponentsInChildren<Collider>()) Destroy(c);
                 var m = ModelFactory.Glow(ok ? 0x3ddc84 : 0xff4d4d, 0.5f);
-                foreach (var r in _ghost.GetComponentsInChildren<Renderer>()) r.sharedMaterial = m;
+                foreach (var r in _ghost.GetComponentsInChildren<Renderer>())
+                {
+                    var arr = new Material[r.sharedMaterials.Length];
+                    for (int i = 0; i < arr.Length; i++) arr[i] = m;
+                    r.sharedMaterials = arr;
+                }
                 _ghostId = itemId; _ghostOk = ok;
             }
             var temp = new PlacedItem { id = itemId, x = x, y = y, rot = rot };

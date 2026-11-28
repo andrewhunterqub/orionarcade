@@ -184,6 +184,57 @@ namespace Loab.Game
             return mesh;
         }
 
+        // ---- Mesh merging (performance pass, task X6): an item is dozens of primitives, each its own draw.
+        // Merge them into one renderer with one submesh per material. Nothing animates item parts, wear
+        // tinting works per submesh, and halos and lights are added later by WorldView, so they stay separate.
+        public static bool MergeMeshes = true;
+
+        /// Destroys an item model and the merged mesh it owns.
+        public static void DestroyModel(GameObject go)
+        {
+            if (go == null) return;
+            foreach (var f in go.GetComponentsInChildren<MeshFilter>(true))
+                if (f.name == "Merged" && f.sharedMesh != null) Object.Destroy(f.sharedMesh);
+            Object.Destroy(go);
+        }
+
+        static void Merge(GameObject root)
+        {
+            var filters = root.GetComponentsInChildren<MeshFilter>();
+            if (filters.Length < 2) return;
+            var toRoot = root.transform.worldToLocalMatrix;
+            var byMat = new Dictionary<Material, List<CombineInstance>>();
+            var order = new List<Material>();
+            int verts = 0;
+            foreach (var f in filters)
+            {
+                var r = f.GetComponent<MeshRenderer>();
+                if (r == null || f.sharedMesh == null || r.sharedMaterial == null) return; // unexpected: leave it alone
+                var m = r.sharedMaterial;
+                if (!byMat.TryGetValue(m, out var list)) { list = new List<CombineInstance>(); byMat[m] = list; order.Add(m); }
+                list.Add(new CombineInstance { mesh = f.sharedMesh, transform = toRoot * f.transform.localToWorldMatrix });
+                verts += f.sharedMesh.vertexCount;
+            }
+            // One mesh per material, then those as submeshes of the item mesh.
+            var parts = new CombineInstance[order.Count];
+            for (int i = 0; i < order.Count; i++)
+            {
+                var sub = new Mesh();
+                if (verts > 65000) sub.indexFormat = IndexFormat.UInt32;
+                sub.CombineMeshes(byMat[order[i]].ToArray(), true, true);
+                parts[i] = new CombineInstance { mesh = sub, transform = Matrix4x4.identity };
+            }
+            var merged = new Mesh { name = root.name + "_merged" };
+            if (verts > 65000) merged.indexFormat = IndexFormat.UInt32;
+            merged.CombineMeshes(parts, false, true);
+            foreach (var p in parts) Object.Destroy(p.mesh);
+            foreach (var f in filters) { f.gameObject.SetActive(false); Object.Destroy(f.gameObject); }
+            var go = new GameObject("Merged");
+            go.transform.SetParent(root.transform, false);
+            go.AddComponent<MeshFilter>().sharedMesh = merged;
+            go.AddComponent<MeshRenderer>().sharedMaterials = order.ToArray();
+        }
+
         static GameObject BoxR(Transform p, Vector3 pos, Vector3 size, Material m, Vector3 euler) =>
             Part(p, PrimitiveType.Cube, pos, size, m, euler);
 
@@ -330,6 +381,7 @@ namespace Loab.Game
                     break;
             }
 
+            if (MergeMeshes) Merge(root);
             // One pick collider on the root covering the footprint.
             float top = 0.05f;
             foreach (var r in root.GetComponentsInChildren<Renderer>())
