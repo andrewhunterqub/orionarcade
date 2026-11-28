@@ -55,8 +55,34 @@ namespace Loab.Game
             if (PlayerPrefs.GetInt("loab_large_text", 0) == 1) ps.scale = 1.18f;
             _root.EnableInClassList("cb", PlayerPrefs.GetInt("loab_cb", 0) == 1); // colour-blind friendly palette (task U2)
             _root.pickingMode = PickingMode.Ignore;
+            BuildGrain();
             BuildChrome();
         }
+
+        // Paper-grain overlay (visual brief, task V3): a faint, fixed speckle over the world, under the panels,
+        // so the flat-shaded scene reads like a printed illustration. Turned off on the lowest device tier.
+        VisualElement _grain;
+        void BuildGrain()
+        {
+            const int W = 640, H = 400;
+            var tex = new Texture2D(W, H, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp, name = "loab-grain" };
+            var px = new Color32[W * H];
+            var rng = new System.Random(1977);
+            for (int i = 0; i < px.Length; i++)
+            {
+                double v = rng.NextDouble() - 0.5;
+                byte a = (byte)(System.Math.Abs(v) * 2 * 22); // at most about 9% opacity
+                px[i] = v > 0 ? new Color32(255, 248, 235, a) : new Color32(40, 28, 20, a);
+            }
+            tex.SetPixels32(px); tex.Apply(false, true);
+            _grain = new VisualElement { name = "grain", pickingMode = PickingMode.Ignore };
+            _grain.style.position = Position.Absolute;
+            _grain.style.left = 0; _grain.style.right = 0; _grain.style.top = 0; _grain.style.bottom = 0;
+            _grain.style.backgroundImage = new StyleBackground(tex);
+            _root.Add(_grain);
+        }
+
+        public void SetGrain(bool on) { if (_grain != null) _grain.style.display = on ? DisplayStyle.Flex : DisplayStyle.None; }
 
         // =====================================================================================
         //  Element helpers
