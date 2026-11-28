@@ -91,6 +91,13 @@ public static class Balance
                 }
             }
             catch (Exception e) { error = e.Message; fails++; }
+            if (i == 0)
+            {
+                var obj = System.Text.Json.Nodes.JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(g.S, Tests.Json)).AsObject();
+                var last = g.S.history[g.S.history.Count - 1];
+                Console.WriteLine($"   newest night {System.Text.Json.JsonSerializer.Serialize(last, Tests.Json).Length} B (thoughts {last.thoughts.Count}, moments {last.moments.Count}, reviews {last.reviews.Count}), oldest night {System.Text.Json.JsonSerializer.Serialize(g.S.history[0], Tests.Json).Length} B");
+                Console.WriteLine("   biggest save fields: " + string.Join(", ", obj.Select(kv => (kv.Key, Len: kv.Value?.ToJsonString().Length ?? 0)).OrderByDescending(x => x.Len).Take(8).Select(x => $"{x.Key} {x.Len / 1024.0:0.0}KB")));
+            }
             var goal = Goals.Career.Count > g.S.goalIndex ? g.S.goalIndex.ToString() : "done";
             Console.WriteLine($"{seed,-6} {nights,6}  {(bust ? "yes" : "no"),8}  {goal,4}  {(g.S.GetFlag("bar_of_year") > 0 ? "won" : "-"),6}  {(venueDay >= 0 ? "wk" + (venueDay / 7 + 1) : "-"),6}  £{cash26,9:#,0}  £{g.S.cash,9:#,0}  {maxSave / 1024,6} KB  {g.S.reputation,6:0}" + (error != null ? "   ERROR: " + error : ""));
         }

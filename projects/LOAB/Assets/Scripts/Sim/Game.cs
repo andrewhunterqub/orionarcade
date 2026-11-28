@@ -1055,6 +1055,9 @@ namespace Loab.Sim
                 var h = S.history[i];
                 h.reviews.Clear(); h.moments.Clear(); h.thoughts.Clear(); h.stockOuts.Clear();
             }
+            // The report only shows a night's first 6 reviews (the Reviews tab keeps its own list), so don't
+            // save the other eighty-odd (task Z3: they were most of the save).
+            if (rec.reviews.Count > 8) rec.reviews.RemoveRange(8, rec.reviews.Count - 8);
 
             // Goals (after the night is in the history, so "first night" etc. count tonight)
             GoalsDoneLastNight.Clear();
