@@ -161,6 +161,8 @@ namespace Loab.Game
 
         // ---- Device tiers (visual brief 16.2): step quality down if the frame rate can't keep up.
         int _tier = 2;
+        // "?quality=high" in the page URL keeps full quality (for screenshots and visual checks on slow machines).
+        static readonly bool PinnedQuality = Application.absoluteURL != null && Application.absoluteURL.Contains("quality=high");
         float _dtAvg = 1f / 60f, _tierTimer;
 
         void AutoQuality()
@@ -168,7 +170,7 @@ namespace Loab.Game
             float dt = Mathf.Min(Time.unscaledDeltaTime, 0.25f);
             _dtAvg = Mathf.Lerp(_dtAvg, dt, 0.02f);
             _tierTimer += dt;
-            if (_tierTimer < 6f || _tier == 0 || Time.realtimeSinceStartup < 20f) return;
+            if (_tierTimer < 6f || _tier == 0 || Time.realtimeSinceStartup < 20f || PinnedQuality) return;
             _tierTimer = 0;
             if (_dtAvg > 1f / 28f)
             {

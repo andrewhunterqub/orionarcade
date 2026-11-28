@@ -213,7 +213,7 @@ namespace Loab.Game
             for (int i = 0; i < Content.Segments.Count; i++)
             {
                 var seg = Content.Segments[i];
-                var r = Row(Lbl(seg.Plural, "row-label"), Bar(v.SegMatch[i], Col(seg.Color)), Lbl($" {v.SegMatch[i] * 100:0}%", "card-sub"));
+                var r = Row(Lbl(seg.Plural, "row-label"), Bar(v.SegMatch[i], Col(seg.Color)), Pct(v.SegMatch[i]));
                 r.tooltip = seg.Blurb;
                 p.Add(r);
             }
@@ -561,6 +561,9 @@ namespace Loab.Game
             c.Add(Lbl("Signatures sell better than anything off the shelf, and enough of them earns a reputation.", "hint"));
             return c;
         }
+
+        // A short right-aligned percentage that never wraps under its bar.
+        Label Pct(float f) { var l = Lbl($"{f * 100:0}%", "card-sub"); l.style.width = 36; l.style.whiteSpace = WhiteSpace.NoWrap; l.style.unityTextAlign = TextAnchor.MiddleRight; return l; }
 
         Button Toggle(string text, bool on, Action click)
         {

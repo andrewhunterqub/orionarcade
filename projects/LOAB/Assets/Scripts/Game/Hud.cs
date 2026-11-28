@@ -64,14 +64,14 @@ namespace Loab.Game
         VisualElement _grain;
         void BuildGrain()
         {
-            const int W = 640, H = 400;
-            var tex = new Texture2D(W, H, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp, name = "loab-grain" };
+            const int W = 1024, H = 640;
+            var tex = new Texture2D(W, H, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp, name = "loab-grain" };
             var px = new Color32[W * H];
             var rng = new System.Random(1977);
             for (int i = 0; i < px.Length; i++)
             {
                 double v = rng.NextDouble() - 0.5;
-                byte a = (byte)(System.Math.Abs(v) * 2 * 22); // at most about 9% opacity
+                byte a = (byte)(System.Math.Abs(v) * 2 * 16); // at most about 6% opacity
                 px[i] = v > 0 ? new Color32(255, 248, 235, a) : new Color32(40, 28, 20, a);
             }
             tex.SetPixels32(px); tex.Apply(false, true);
