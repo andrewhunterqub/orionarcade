@@ -519,6 +519,29 @@ namespace Loab.Sim
             return null;
         }
 
+        // ---- Beer garden (task O1) ----
+        public string BuyGarden()
+        {
+            if (S.garden) return Fail("You've already got a beer garden");
+            if (S.reputation < Economy.GardenRep && S.mode != 1) return Fail($"Needs reputation {Economy.GardenRep}");
+            if (S.cash < Economy.GardenCost && S.difficulty > 0) return Fail("Not enough cash");
+            Spend(Economy.GardenCost, "Beer garden");
+            S.garden = true;
+            Recompute();
+            return null;
+        }
+
+        public string BuyGardenHeaters()
+        {
+            if (!S.garden) return Fail("Build the beer garden first");
+            if (S.gardenHeaters) return Fail("Already toasty");
+            if (S.cash < Economy.GardenHeaterCost && S.difficulty > 0) return Fail("Not enough cash");
+            Spend(Economy.GardenHeaterCost, "Patio heaters");
+            S.gardenHeaters = true;
+            Changed?.Invoke();
+            return null;
+        }
+
         public string CleanLines()
         {
             if (S.lineQuality >= 95) return Fail("Lines are already clean");
@@ -827,7 +850,7 @@ namespace Loab.Sim
 
             // Money
             rec.wages = wages;
-            float utilities = Economy.UtilitiesPerNight + rec.customers * 0.4f;
+            float utilities = Economy.UtilitiesPerNight + rec.customers * 0.4f + (S.garden ? Economy.GardenUpkeep : 0);
             float rent = S.DayOfWeek == 6 ? Economy.WeeklyRent(S) : 0;
             float dog = S.GetFlag("dog") == 1 ? 5 : 0;
             float loan = 0;

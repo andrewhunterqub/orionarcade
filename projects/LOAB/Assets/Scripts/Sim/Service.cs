@@ -107,7 +107,8 @@ namespace Loab.Sim
             var reach = L.ReachableFromDoor();
             foreach (var c in reach)
                 if (c.y >= 2 && L.ItemAt(c) == 0) _standSpots.Add(c);
-            Capacity = Math.Max(20, (int)(reach.Count * 1.2f));
+            Capacity = Math.Max(20, (int)(reach.Count * 1.2f)) + (Economy.GardenOpen(s) ? Economy.GardenCapacity : 0);
+            if (s.garden) Say(Economy.GardenOpen(s) ? "The beer garden's open tonight." : s.Season == 1 && !s.gardenHeaters ? "Too cold for the beer garden without heaters." : "The beer garden's closed: it's too wet.", 0);
             CleanGlasses = s.GetFlag("glasswasher") == s.day + 1 ? 30 : 90;
             foreach (var m in s.menu) { m.soldTonight = 0; m.missedTonight = 0; }
             if (s.GetFlag("hen_day") == s.day + 1) _henAt = 120;

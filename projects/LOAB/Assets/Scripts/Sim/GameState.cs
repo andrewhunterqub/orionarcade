@@ -150,6 +150,7 @@ namespace Loab.Sim
         public int lighting = 60;   // 0 dim .. 100 bright
         public int volume = 50;
         public bool responsibleService = true;
+        public bool garden, gardenHeaters; // beer garden behind the bar (task O1)
 
         // Menu & stock
         public List<MenuEntry> menu = new List<MenuEntry>();

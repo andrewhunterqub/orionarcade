@@ -41,6 +41,7 @@ public static class Tests
         Test("awards: once a year at the end of summer; a strong season wins the trophy", Awards);
         Test("unlocks: the reputation track lists the next thresholds in order", Unlocks);
         Test("staffing guidance: more bartenders for busier nights, capped by serving points, rota-aware", StaffingGuidance);
+        Test("beer garden: reputation-gated, weather and season rules, more room and more summer trade", BeerGarden);
         foreach (int diff in new[] { 0, 1, 2 })
             foreach (ulong seed in new ulong[] { 1, 2, 3 })
                 Test($"invariants: career diff {diff} seed {seed}, 28 nights", () => Invariants(Game.NewCareer(seed, diff), 28, true));
@@ -496,6 +497,30 @@ public static class Tests
         Assert(Economy.BartendersTonight(g.S) == 1, "starting bar should have one bartender on");
         g.ToggleDayOff(g.S.staff[0].uid, g.S.DayOfWeek);
         Assert(Economy.BartendersTonight(g.S) == 0, "rota not respected");
+    }
+
+    static void BeerGarden()
+    {
+        var g = Game.NewCareer(23, 1);
+        g.S.cash = 20000;
+        Assert(g.BuyGarden() != null, "garden bought below the reputation gate");
+        g.S.reputation = 30;
+        Assert(g.BuyGarden() == null && g.S.garden, "couldn't build the garden");
+        // Summer sunshine: open, a big footfall boost and more room.
+        g.S.day = 3 * 28 + 10; g.S.weather = "Sunny";
+        Assert(Economy.GardenOpen(g.S) && Economy.GardenMult(g.S) > 1.3f, "summer sun should open the garden with a big boost");
+        float withGarden = Economy.ExpectedTotal(g.S, g.V);
+        g.S.garden = false; float without = Economy.ExpectedTotal(g.S, g.V); g.S.garden = true;
+        Assert(withGarden > without * 1.25f, $"summer footfall with garden {withGarden:0} vs without {without:0}");
+        g.OpenDoors();
+        int cap = g.Svc.Capacity;
+        while (g.Phase == Phase.Service) { g.Svc.Step(); g.EndServiceIfDone(); }
+        // Rain closes it; winter needs heaters.
+        g.S.weather = "Rain"; Assert(!Economy.GardenOpen(g.S), "open in the rain");
+        g.S.day = 28 + 5; g.S.weather = "Cloudy"; Assert(!Economy.GardenOpen(g.S), "open in winter without heaters");
+        Assert(g.BuyGardenHeaters() == null && Economy.GardenOpen(g.S), "heaters didn't open it in winter");
+        var h = Game.NewCareer(23, 1); h.OpenDoors();
+        Assert(cap >= h.Svc.Capacity + Economy.GardenCapacity, $"capacity {cap} vs {h.Svc.Capacity} without garden");
     }
 
     static void CashCrisisArc()

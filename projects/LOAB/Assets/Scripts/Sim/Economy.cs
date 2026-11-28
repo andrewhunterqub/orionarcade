@@ -102,7 +102,7 @@ namespace Loab.Sim
         /// <summary>Expected customers per segment tonight, plus extra event-driven arrivals.</summary>
         public static void ExpectedArrivals(GameState s, VibeReport v, float[] outExpected, BookedEvent ev, out float eventExtra)
         {
-            float foot = BaseFootfall * FootfallMult(s) * SeasonMult(s) * SeasonalVibeMult(s, v) * WeatherMult(s.weather) * (1f - s.rivalPressure * 0.3f);
+            float foot = BaseFootfall * FootfallMult(s) * SeasonMult(s) * SeasonalVibeMult(s, v) * WeatherMult(s.weather) * GardenMult(s) * (1f - s.rivalPressure * 0.3f);
             if (s.day == 0) foot *= 1.5f; // opening-night curiosity
             float rep = 0.35f + s.reputation / 100f * 1.25f;
             float ratio = VibeCalc.PriceRatio(s);
@@ -145,6 +145,25 @@ namespace Loab.Sim
         }
 
         public static bool IsBadTag(string t) => t == "Overpriced" || t == "Slow Service" || t == "Sticky Tables" || t == "Rough on a Saturday";
+
+        // ---- Beer garden (task O1, brief 6.5) ----------------------------------------------------------
+        public const int GardenCost = 6000, GardenHeaterCost = 1500, GardenRep = 25, GardenCapacity = 40, GardenUpkeep = 20;
+
+        /// Open tonight? Rain and storms close it; winter needs heaters.
+        public static bool GardenOpen(GameState s) => s.garden && s.weather != "Rain" && s.weather != "Storm" && (s.Season != 1 || s.gardenHeaters);
+
+        /// Extra footfall from the garden tonight: summer evenings are what it's for.
+        public static float GardenMult(GameState s)
+        {
+            if (!GardenOpen(s)) return 1f;
+            switch (s.Season)
+            {
+                case 3: return s.weather == "Sunny" ? 1.35f : 1.22f;
+                case 2: return s.weather == "Sunny" ? 1.15f : 1.08f;
+                case 0: return 1.05f;
+                default: return 1.03f; // a heated winter garden for the hardy
+            }
+        }
 
         // ---- Staffing guidance (task B1) -------------------------------------------------------------------
         /// About one bartender per 45 customers expected tonight (a bartender pours roughly 30 drinks an hour),

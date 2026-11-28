@@ -51,6 +51,24 @@ namespace Loab.Game
                 ex.Add(eb);
                 p.Add(ex);
             }
+            // Beer garden (task O1).
+            {
+                var gc = El("card");
+                gc.Add(Lbl("Beer garden", "card-title"));
+                if (!G.S.garden)
+                {
+                    gc.Add(Lbl($"Turn the back yard into a beer garden: room for {Economy.GardenCapacity} more and a big draw on summer evenings. Closed when it rains, and in winter without heaters. £{Economy.GardenUpkeep} a night upkeep. Needs reputation {Economy.GardenRep}.", "card-sub"));
+                    var gb = Btn($"Build it ({Money(Economy.GardenCost)})", () => { var e = G.BuyGarden(); if (e != null) Flash(e); else { _run.Audio.Play("fanfare", 0.4f); _run.World.Bind(G); } }, "btn-primary");
+                    gb.SetEnabled(G.S.reputation >= Economy.GardenRep || G.S.mode == 1);
+                    gc.Add(gb);
+                }
+                else
+                {
+                    gc.Add(Lbl(Economy.GardenOpen(G.S) ? $"Open tonight. Expect about {(Economy.GardenMult(G.S) - 1) * 100:0}% more people." : "Closed tonight.", "card-sub"));
+                    if (!G.S.gardenHeaters) gc.Add(Btn($"Patio heaters ({Money(Economy.GardenHeaterCost)}): open in winter", () => { var e = G.BuyGardenHeaters(); if (e != null) Flash(e); }, "btn-small"));
+                }
+                p.Add(gc);
+            }
             var undo = Row(Btn("Undo", () => { G.Undo(); _run.ClearInteraction(); }, "btn-small"), Btn("Redo", () => { G.Redo(); _run.ClearInteraction(); }, "btn-small"), Spacer(),
                 Lbl($"Seats {G.V.Seats}  -  Serving points {G.V.BarPoints}  -  Toilets {G.V.Toilets}", "card-sub"));
             p.Add(undo);

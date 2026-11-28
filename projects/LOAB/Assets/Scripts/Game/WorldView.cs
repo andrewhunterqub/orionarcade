@@ -88,6 +88,37 @@ namespace Loab.Game
         bool _practicalDirty = true;
         public static Vector3 PlaquePos(GameState s) => new Vector3((s.gridW - 1) / 2f, -0.36f, -3.17f);
 
+        // Beer garden (task O1): a lawn on a plinth extension behind the back wall, picnic benches and festoon lights.
+        void BuildGarden(Transform st, float w, float maxZ)
+        {
+            float z0 = maxZ, depth = 3.2f, cx = (w - 1) / 2f;
+            Part(st, PrimitiveType.Cube, new Vector3(cx, -0.38f, z0 + depth / 2f), new Vector3(w + 2.5f, 0.7f, depth), ModelFactory.Mat(PlinthWood));
+            Part(st, PrimitiveType.Cube, new Vector3(cx, -0.02f, z0 + depth / 2f), new Vector3(w + 2.48f, 0.04f, depth - 0.02f), ModelFactory.Mat(0x7fb069));
+            // Low fence along the back
+            Part(st, PrimitiveType.Cube, new Vector3(cx, 0.35f, z0 + depth - 0.1f), new Vector3(w + 2.4f, 0.7f, 0.06f), ModelFactory.Mat(0x8a6a42));
+            var wood = ModelFactory.Mat(0xc9a26b);
+            for (int i = 0; i < 3; i++)
+            {
+                float x = cx - w * 0.3f + i * w * 0.3f, z = z0 + 1.5f;
+                Part(st, PrimitiveType.Cube, new Vector3(x, 0.72f, z), new Vector3(1.8f, 0.06f, 0.7f), wood);
+                Part(st, PrimitiveType.Cube, new Vector3(x, 0.42f, z - 0.55f), new Vector3(1.8f, 0.05f, 0.25f), wood);
+                Part(st, PrimitiveType.Cube, new Vector3(x, 0.42f, z + 0.55f), new Vector3(1.8f, 0.05f, 0.25f), wood);
+                Part(st, PrimitiveType.Cube, new Vector3(x - 0.7f, 0.36f, z), new Vector3(0.08f, 0.72f, 1.3f), wood);
+                Part(st, PrimitiveType.Cube, new Vector3(x + 0.7f, 0.36f, z), new Vector3(0.08f, 0.72f, 1.3f), wood);
+                // Parasol
+                Part(st, PrimitiveType.Cylinder, new Vector3(x, 1.3f, z), new Vector3(0.05f, 0.6f, 0.05f), ModelFactory.Mat(0xeeeeee));
+                Part(st, PrimitiveType.Cylinder, new Vector3(x, 1.95f, z), new Vector3(1.6f, 0.04f, 1.6f), ModelFactory.Mat(i % 2 == 0 ? 0x2a9d8fu : 0xe76f51u));
+            }
+            // Festoon lights strung across the garden
+            var glow = ModelFactory.Glow(0xFFD27A, 2f);
+            for (int i = 0; i <= 10; i++)
+            {
+                float x = cx - w / 2f - 0.8f + i * (w + 1.6f) / 10f;
+                float sag = Mathf.Sin(i / 10f * Mathf.PI) * 0.35f;
+                Part(st, PrimitiveType.Sphere, new Vector3(x, 2.5f - sag, z0 + 2.6f), new Vector3(0.12f, 0.12f, 0.12f), glow);
+            }
+        }
+
         void BuildRoom()
         {
             var s = _g.S;
@@ -140,7 +171,8 @@ namespace Loab.Game
                 Massing(new Vector3(maxX + 0.2f + Sim.Game.ExpandCols / 2f, 0, (h - 1) / 2f + 0.5f), new Vector3(Sim.Game.ExpandCols - 0.4f, 2.9f, h + 0.6f), dx);
             else
                 Massing(new Vector3(maxX + 4.6f, 0, (h - 1) / 2f + 1.2f), new Vector3(5f, 2.8f, h), dx);
-            Massing(new Vector3((w - 1) / 2f - 2f, 0, maxZ + 4.2f), new Vector3(9f, 2.4f, 4.5f), dx);
+            Massing(new Vector3((w - 1) / 2f - 2f, 0, maxZ + 4.2f + (s.garden ? 3.4f : 0f)), new Vector3(9f, 2.4f, 4.5f), dx);
+            if (s.garden) BuildGarden(st, w, maxZ);
 
             // ---- Pavement furniture
             Part(st, PrimitiveType.Cube, new Vector3(dx, 0.005f, -0.25f), new Vector3(0.9f, 0.02f, 0.5f), ModelFactory.Mat(0xA8573A));
