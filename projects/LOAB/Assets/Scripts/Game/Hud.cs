@@ -53,7 +53,8 @@ namespace Loab.Game
             _root.styleSheets.Add(Resources.Load<StyleSheet>("UI/Loab"));
             _root.AddToClassList("root");
             _root.EnableInClassList("mobile", Application.isMobilePlatform); // compact layout for the bigger phone UI (task X3)
-            ps.scale = UiScale(PlayerPrefs.GetInt("loab_large_text", 0) == 1);
+            _largeText = PlayerPrefs.GetInt("loab_large_text", 0) == 1;
+            ps.scale = UiScale(_largeText, false);
             _root.EnableInClassList("cb", PlayerPrefs.GetInt("loab_cb", 0) == 1); // colour-blind friendly palette (task U2)
             _root.pickingMode = PickingMode.Ignore;
             BuildGrain();
@@ -78,6 +79,8 @@ namespace Loab.Game
             var ps = _doc.panelSettings;
             ps.referenceResolution = tall ? new Vector2Int(800, 1366) : new Vector2Int(1366, 800);
             ps.match = tall || a < 1366f / 800f ? 0f : 1f;
+            _tall = tall;
+            ps.scale = UiScale(_largeText, tall);
             _root.EnableInClassList("ar-tall", tall);
             _root.EnableInClassList("ar-wide", a > 2.2f);
         }
@@ -545,15 +548,19 @@ namespace Loab.Game
 
         // Phones and tablets (task X3): the HUD is laid out for a 1366x800 screen, which leaves buttons
         // around 10 CSS pixels tall on a phone held sideways. Scale it up so they're comfortable to tap.
-        static float UiScale(bool largeText)
+        bool _largeText, _tall;
+        // The phone boost is for landscape, where a 1366x800 layout shrinks a lot on a phone. A tablet held
+        // upright uses the 800-wide portrait layout, which is already big enough (task Z6).
+        static float UiScale(bool largeText, bool tall)
         {
-            float s = Application.isMobilePlatform ? 1.6f : 1f; // phones now fit to height (task Z6), so a bit more to keep the same size
+            float s = Application.isMobilePlatform && !tall ? 1.6f : 1f; // phones fit to height (task Z6), so a bit more to keep the same size
             return largeText ? s * 1.18f : s;
         }
 
         public void SetLargeText(bool on)
         {
-            _doc.panelSettings.scale = UiScale(on);
+            _largeText = on;
+            _doc.panelSettings.scale = UiScale(on, _tall);
             PlayerPrefs.SetInt("loab_large_text", on ? 1 : 0);
         }
 
