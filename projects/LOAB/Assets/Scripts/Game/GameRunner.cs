@@ -364,7 +364,16 @@ namespace Loab.Game
             if (Input.GetKeyDown(KeyCode.Delete) || Input.GetKeyDown(KeyCode.Backspace)) SellSelected();
             if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.LeftCommand)) && Input.GetKeyDown(KeyCode.Z)) { G.Undo(); ClearInteraction(); }
             if ((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.LeftCommand)) && Input.GetKeyDown(KeyCode.Y)) { G.Redo(); ClearInteraction(); }
-            if (G.Phase == Phase.Service && !Ui.ModalOpen)
+            // Tabs from the keyboard (task Y4): 1-8 while preparing, Shift+1-8 at any time
+            // (during service, plain 1-3 set the speed).
+            if (!Ui.ModalOpen && !Ui.TitleOpen && !Ui.TextFocused)
+            {
+                bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+                if (G.Phase == Phase.Prep || shift)
+                    for (int k = 0; k < 8; k++)
+                        if (Input.GetKeyDown(KeyCode.Alpha1 + k)) Ui.ToggleTabByIndex(k);
+            }
+            if (G.Phase == Phase.Service && !Ui.ModalOpen && !Input.GetKey(KeyCode.LeftShift) && !Input.GetKey(KeyCode.RightShift))
             {
                 if (Input.GetKeyDown(KeyCode.Space)) Paused = !Paused;
                 if (Input.GetKeyDown(KeyCode.Alpha1)) { SpeedMult = 1; Paused = false; }

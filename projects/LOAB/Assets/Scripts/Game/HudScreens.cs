@@ -165,6 +165,7 @@ namespace Loab.Game
                 ("Ctrl+Z / Ctrl+Y", "Undo / redo building"),
                 ("Space", "Pause or resume service"),
                 ("1 / 2 / 3", "Service speed 1x / 2x / 4x"),
+                ("1 to 8", "Open a tab while preparing (Shift+1 to 8 during service)"),
                 ("Enter", "Next day (from the report)"),
                 ("H", "Hide the interface (photo mode)"),
                 ("Esc", "Cancel placing or close the side panel"),

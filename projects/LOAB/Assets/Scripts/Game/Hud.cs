@@ -570,6 +570,11 @@ namespace Loab.Game
         //  Tabs & side panel
         // =====================================================================================
 
+        static readonly string[] TabNames = { "Build", "Vibe", "Drinks", "Staff", "Events", "Promote", "Money", "Reviews" };
+
+        /// Keyboard shortcut for a tab (task Y4): index 0..7 in the tab column's order.
+        public void ToggleTabByIndex(int i) { if (i >= 0 && i < TabNames.Length) ToggleTab(TabNames[i]); }
+
         void ToggleTab(string tab)
         {
             _run.Audio.Play("click");
