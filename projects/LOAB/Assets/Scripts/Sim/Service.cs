@@ -31,6 +31,9 @@ namespace Loab.Sim
 
         public float T;                 // minutes since 18:00
         public bool Finished;
+        /// Named sound cues for the presentation layer to play (task V2): "chime", "laugh", "applause", "riff", "keychange", "goal".
+        public readonly List<string> SoundCues = new List<string>();
+        void Cue(string id) { if (SoundCues.Count < 8) SoundCues.Add(id); }
         public readonly List<Customer> Customers = new List<Customer>();
         public readonly List<StaffAgent> Staff = new List<StaffAgent>();
         public readonly List<BarPoint> BarPoints = new List<BarPoint>();
@@ -1274,6 +1277,7 @@ namespace Loab.Sim
                         if (R.Chance(aff)) { c.watching = true; joined++; if (!EventKinds.DoorTicket(Event.kind) && Event.ticket > 0) TicketIncome += Event.ticket; }
                     }
                     Say(EventKinds.StartLine(Event.kind, Event.act.name, joined), 3);
+                    Cue(Event.kind == EventKinds.Quiz ? "chime" : Event.kind == EventKinds.LiveMusic ? "riff" : Event.kind == EventKinds.Match ? "goal" : "applause");
                 }
                 return;
             }
@@ -1284,6 +1288,7 @@ namespace Loab.Sim
                 if (round > _quizRound && round <= 6)
                 {
                     _quizRound = round;
+                    Cue("chime");
                     if (round < 6)
                         Say($"Quiz round {round} done. {Content.QuizTeams[(S.day + round * 3) % Content.QuizTeams.Length]} {(EventPerf > 60 ? "are loving it." : EventPerf > 40 ? "lead narrowly." : "are arguing with the quizmaster.")}", 3);
                     foreach (var c in Customers) if (c.watching) c.thirst = Math.Max(c.thirst, 0.6f);
@@ -1301,6 +1306,8 @@ namespace Loab.Sim
                     {
                         float roll = EventPerf + R.Gaussian() * 18f;
                         Say(EventBeat(Event.kind, beat, roll), roll > 70 ? 1 : roll < 35 ? 2 : 3);
+                        if (roll > 70) Cue(Event.kind == EventKinds.Match ? "goal" : Event.kind == EventKinds.Karaoke ? "keychange" : "riff");
+                        else if (roll > 40 && Event.kind == EventKinds.LiveMusic) Cue("applause");
                         if (Event.kind == EventKinds.Match && roll > 85) Moments.Add("A last-minute winner on the big screen. The whole bar went up.");
                     }
                     foreach (var c in Customers) if (c.watching) c.thirst = Math.Max(c.thirst, 0.65f);
@@ -1318,6 +1325,7 @@ namespace Loab.Sim
                     {
                         float roll = EventPerf + R.Gaussian() * 22f;
                         string who = R.Pick(OpenMicActs);
+                        if (roll > 50) Cue("applause");
                         if (roll > 80) { Say($"{who} brings the house down. Is that a talent scout?", 1); EventPerf = Math.Min(100, EventPerf + 3); if (roll > 92) Moments.Add($"An unknown {who.Replace("A ", "").Replace("An ", "")} stole the show at open mic."); }
                         else if (roll > 50) Say($"{who} gets a warm round of applause.", 3);
                         else { Say($"{who} forgets the words halfway through. Supportive clapping.", 2); EventPerf = Math.Max(5, EventPerf - 2); }
@@ -1338,6 +1346,7 @@ namespace Loab.Sim
                 {
                     EventPhase = 3;
                     Say($"{Event.act.name} takes the stage for the headline set.", 3);
+                    Cue(EventPerf > 50 ? "laugh" : "applause");
                 }
                 if (EventPhase == 3 && !_heckled && into >= 85)
                 {
@@ -1345,7 +1354,7 @@ namespace Loab.Sim
                     if (R.Chance(0.35))
                     {
                         bool staffHelp = Staff.Exists(s => s.present && !s.IsOwner && s.Duty == 1);
-                        if (EventPerf > 62) { Say($"A heckler pipes up... and {Event.act.name} turns it into the best bit of the night!", 1); EventPerf = Math.Min(100, EventPerf + 6); Moments.Add("A heckler got destroyed by the headliner. The room erupted."); }
+                        if (EventPerf > 62) { Cue("laugh"); Say($"A heckler pipes up... and {Event.act.name} turns it into the best bit of the night!", 1); EventPerf = Math.Min(100, EventPerf + 6); Moments.Add("A heckler got destroyed by the headliner. The room erupted."); }
                         else if (staffHelp) Say("A heckler starts up. Your floor staff have a quiet word.", 0);
                         else { Say("A heckler derails the set. Awkward.", 2); EventPerf -= 8; }
                     }

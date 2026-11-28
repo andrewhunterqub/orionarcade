@@ -229,6 +229,7 @@ namespace Loab.Game
         {
             if (G.Phase != Phase.Service) return;
             G.Svc.RunToEnd();
+            G.Svc.SoundCues.Clear(); // don't play a whole night's cues at once
             G.EndServiceIfDone();
             if (G.Phase == Phase.Report) { ClearInteraction(); Audio.Play("till"); Ui.OnReport(); }
         }
@@ -323,6 +324,8 @@ namespace Loab.Game
                 float takings = svc.Takings;
                 for (int i = 0; i < steps && !svc.Finished; i++) svc.Step();
                 for (int i = before; i < svc.Messages.Count; i++) Ui.Toast(svc.Messages[i]);
+                foreach (var cue in svc.SoundCues) { Audio.Play(cue, 0.45f); if (cue == "goal") Audio.Play("cheer", 0.55f); }
+                svc.SoundCues.Clear();
                 if (svc.EventPhase == 4 && _lastEventPhase != 4 && (svc.EventOutcome == "Hit" || svc.EventOutcome == "Viral hit")) Audio.Play("cheer", 0.7f);
                 _lastEventPhase = svc.EventPhase;
                 if (svc.Takings > takings && Time.frameCount % 3 == 0) Audio.Play("till", 0.25f);

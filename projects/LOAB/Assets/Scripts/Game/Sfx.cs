@@ -36,6 +36,40 @@ namespace Loab.Game
                 float whoop = (t > 0.2f && t < 0.6f ? 0.15f * Sin(t, 520 + 400 * (t - 0.2f)) : 0) + (t > 0.5f && t < 0.9f ? 0.12f * Sin(t, 700 - 200 * (t - 0.5f)) : 0);
                 return (lp * 1.3f + whoop) * env;
             });
+            // ---- Event moments (task V2) ----
+            // Applause: dozens of short clap bursts, thick in the middle, thinning out.
+            var ar = new System.Random(11);
+            var claps = new List<float>();
+            for (int k = 0; k < 70; k++) claps.Add((float)(ar.NextDouble() * ar.NextDouble() * 1.7));
+            _clips["applause"] = Make(1.9f, (t, i) =>
+            {
+                float v = 0;
+                foreach (var c in claps) { float d = t - c; if (d >= 0 && d < 0.03f) v += Mathf.Exp(-d * 160f) * Noise(i) * 0.5f; }
+                return v * Mathf.Clamp01(1.9f - t);
+            });
+            // Laughter: a run of "ha"s, a vowel-ish tone pulsing about six times a second, falling in pitch.
+            _clips["laugh"] = Make(1.3f, (t, i) =>
+            {
+                float pulse = Mathf.Max(0, Mathf.Sin(2 * Mathf.PI * 5.5f * t));
+                float f = 260f - 60f * t;
+                return Env(t, 0.03f, 1.1f) * pulse * pulse * (0.3f * Sin(t, f) + 0.15f * Sin(t, f * 2.7f) + 0.08f * Noise(i));
+            });
+            // Quiz chime: a soft two-note ding-dong.
+            _clips["chime"] = Make(1.0f, (t, i) => (t < 0.45f ? Env(t, 0.003f, 0.5f) * Sin(t, 1047) : Env(t - 0.45f, 0.003f, 0.5f) * Sin(t, 784)) * 0.32f);
+            // Guitar riff: three plucked notes with decaying harmonics.
+            _clips["riff"] = Make(1.0f, (t, i) =>
+            {
+                float[] notes = { 164.8f, 220f, 246.9f };
+                int n = Mathf.Min(2, (int)(t / 0.22f));
+                float lt = t - n * 0.22f;
+                float f = notes[n], e = Mathf.Exp(-lt * 6f);
+                return 0.3f * e * (Sin(lt, f) + 0.5f * Sin(lt, f * 2) + 0.25f * Sin(lt, f * 3) + 0.12f * Square(lt, f));
+            });
+            // Karaoke key change: a sung note that slides up a tone, with vibrato.
+            _clips["keychange"] = Make(0.9f, (t, i) => Env(t, 0.05f, 0.8f) * 0.3f * (Sin(t, (t < 0.4f ? 392f : 440f) + 6f * Mathf.Sin(t * 35f)) + 0.3f * Sin(t, 880f)));
+            // Goal: a stadium horn, then the cheer.
+            _clips["goal"] = Make(0.6f, (t, i) => Env(t, 0.02f, 0.55f) * 0.25f * (Square(t, 233) * 0.5f + Sin(t, 466)));
+
             // Crowd murmur: brown noise with slow swells and the odd glass clink.
             float brown = 0;
             var rng = new System.Random(3);
