@@ -112,7 +112,43 @@ namespace Loab.Sim
                 Won = g => g.S.loanBalance <= 0 && g.S.cash >= 5000,
                 Progress = g => $"Debt £{Math.Max(0, g.S.loanBalance):#,0} left  -  cash £{g.S.cash:#,0}/£5,000",
             },
+            // ---- Scenarios for the beer garden and the districts (task Z4) -------------------------------
+            new ScenarioDef
+            {
+                Id = "suntrap", Name = "The Sun Trap", Days = 21, StartDay = 3 * 28, // the start of summer
+                Blurb = "A tired pub with a big, empty yard out the back, and the forecast says it's going to be a scorcher. Make hay while the sun shines.",
+                GoalText = "Build a beer garden and take £5,200 in a single night, within 3 weeks",
+                Setup = s => { s.cash = 9000; s.reputation = 30; s.barName = "The Sun Trap"; s.weather = "Sunny"; },
+                Won = g => g.S.garden && g.S.history.Exists(h => h.takings >= 5200),
+                Progress = g =>
+                {
+                    float best = 0; foreach (var h in g.S.history) best = Math.Max(best, h.takings);
+                    return $"Beer garden {(g.S.garden ? "BUILT" : "not yet")}  -  best night £{best:#,0}/£5,200";
+                },
+            },
+            new ScenarioDef
+            {
+                Id = "quayside", Name = "Quayside", Days = 28, StartDay = 2 * 28, // spring, as the boats come back
+                Blurb = "A bare unit on the Old Harbour quay, rent to match, and the day-trippers are about to arrive. Tourists and couples are your crowd. Win them over before summer.",
+                GoalText = "Serve 130 tourists and couples in a single night, within 4 weeks",
+                Setup = s =>
+                {
+                    var d = Content.District("harbour");
+                    s.district = d.Id; s.floor = d.Floor; s.wall = d.Wall;
+                    s.cash = 14000; s.reputation = 20; s.barName = "The Quayside";
+                },
+                Won = g => BestTouristsAndCouples(g) >= 130,
+                Progress = g => $"Best night: {BestTouristsAndCouples(g)}/130 tourists and couples",
+            },
         };
+
+        static int BestTouristsAndCouples(Game g)
+        {
+            int best = 0;
+            foreach (var h in g.S.history)
+                if (h.segCounts.Count > (int)Seg.Couples) best = Math.Max(best, h.segCounts[(int)Seg.Tourists] + h.segCounts[(int)Seg.Couples]);
+            return best;
+        }
 
         /// <summary>How many of the most recent nights in a row ended with at least this rating.</summary>
         public static int Streak(Game g, float rating)

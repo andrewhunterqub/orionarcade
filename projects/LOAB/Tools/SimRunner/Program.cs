@@ -9,6 +9,25 @@ public static class Program
     public static void Main(string[] args)
     {
         if (args.Length > 0 && args[0] == "balance") { Environment.Exit(Balance.Report(args.Length > 1 ? int.Parse(args[1]) : 84, args.Length > 2 ? int.Parse(args[2]) : 5)); return; }
+        if (args.Length > 0 && args[0] == "scencal")
+        {
+            // Scenario calibration (task Z4): play a scenario sensibly on several seeds and print how close it got.
+            int seeds = args.Length > 2 ? int.Parse(args[2]) : 8, wins = 0;
+            for (int i = 0; i < seeds; i++)
+            {
+                var sg = Game.NewScenario(args[1], 900 + (ulong)i * 31);
+                var def = Scenarios.Get(args[1]);
+                for (int d = 0; d < def.Days && sg.S.scenarioResult == 0; d++)
+                {
+                    if (sg.S.cash > Economy.GardenCost + 3000 && !sg.S.garden) sg.BuyGarden(); // a sensible player builds the yard
+                    if (!Tests.PlayDay(sg, true)) break;
+                }
+                if (def.Won(sg)) wins++;
+                Console.WriteLine($"seed {i}: {(def.Won(sg) ? "WON " : "lost")}  {def.Progress(sg)}  (day {sg.ScenarioDay})");
+            }
+            Console.WriteLine($"{wins}/{seeds} won");
+            Environment.Exit(0); return;
+        }
         if (args.Length > 0 && args[0] == "soak") { Environment.Exit(Balance.Soak(args.Length > 1 ? int.Parse(args[1]) : 52, args.Length > 2 ? int.Parse(args[2]) : 5)); return; }
         if (args.Length > 0 && args[0] == "venue2") { Environment.Exit(Balance.SecondVenue(args.Length > 1 ? int.Parse(args[1]) : 10)); return; }
         if (args.Length > 0 && args[0] == "test") { Environment.Exit(Tests.Run()); return; }
